@@ -17,6 +17,7 @@ class RiskState:
     peak_equity: float
     entry_price: float | None = None  # Volume-weighted entry of current position.
     halted: bool = False
+    halt_price: float | None = None  # Price at which the breaker tripped.
 
 
 class RiskManager:
@@ -33,12 +34,28 @@ class RiskManager:
         return sign * min(abs(delta_frac), self.cfg.per_trade_frac)
 
     def update_and_check(self, state: RiskState, equity: float, price: float, exposure: float) -> RiskState:
-        """Update peak equity and evaluate the drawdown circuit breaker."""
+        """Evaluate the drawdown circuit breaker.
+
+        When ``halted`` is True the caller must move to CASH (target exposure 0)
+        — halting must *reduce risk*, not merely stop rebalancing a position that
+        then rides the crash down. We re-enter only after price bounces
+        ``reenter_bounce_frac`` off the halt price, i.e. once the decline that
+        tripped the breaker has clearly reversed.
+        """
         if equity > state.peak_equity:
             state.peak_equity = equity
         drawdown = 0.0 if state.peak_equity == 0 else 1.0 - equity / state.peak_equity
-        if drawdown >= self.cfg.max_drawdown_frac:
-            state.halted = True
+
+        if not state.halted:
+            if drawdown >= self.cfg.max_drawdown_frac:
+                state.halted = True
+                state.halt_price = price
+        else:
+            # Re-enter once price has recovered off the halt level.
+            if state.halt_price and price >= state.halt_price * (1.0 + self.cfg.reenter_bounce_frac):
+                state.halted = False
+                state.halt_price = None
+                state.peak_equity = equity  # reset the high-water mark on re-entry
         return state
 
     def stop_triggered(self, state: RiskState, price: float) -> bool:

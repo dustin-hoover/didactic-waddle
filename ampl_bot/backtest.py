@@ -91,8 +91,13 @@ def run_backtest(bars: List[PriceBar], cfg: BotConfig) -> BacktestResult:
         equity = pf.equity(bar.price)
         rstate = risk.update_and_check(rstate, equity, bar.price, pf.exposure(bar.price))
 
-        # 2) Decide + act (unless halted or too little history).
-        if not rstate.halted and len(prices) >= 2:
+        # 2) Decide + act.
+        if rstate.halted:
+            # Circuit breaker tripped: get flat (to cash) and stay there until
+            # risk clears the halt on a price recovery. This is real protection.
+            execu.rebalance_to(pf, 0.0, bar.price, bar.timestamp)
+            rstate.entry_price = None
+        elif len(prices) >= 2:
             sig = strategy.generate(prices)
             target = risk.clamp_exposure(sig.target_exposure)
             # Respect per-trade size cap by not jumping more than allowed.

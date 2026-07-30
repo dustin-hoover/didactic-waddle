@@ -1,24 +1,24 @@
-"""Stress-test the strategies across market regimes.
+"""Stress-test the strategies across REAL AMPL market regimes.
 
-The single year of free real data is a bull run, which flatters
-buy-and-hold and pure mean reversion. This script adds a synthetic *de-peg*
-(sustained downtrend) so the capital-protection behaviour is visible — the
-regime pure mean reversion is dangerous in.
+Uses the bundled full-history CSV (data/ampl_full.csv, sourced from DefiLlama:
+2019 -> present, including the 2020 peak and the 2021-22 de-peg) and slices out
+three regimes so the behaviour is grounded in real data, not a synthetic proxy.
 
-    python scripts/regime_test.py [--csv data/ampl_history.csv]
+    python scripts/fetch_ampl_history.py --source defillama --out data/ampl_full.csv
+    python scripts/regime_test.py
 
-Findings it reproduces:
-  * Bull: pure MR edges out the trend filter on return; both beat buy & hold
-    on risk-adjusted terms.
-  * De-peg: pure MR catches the falling knife (huge drawdown); the gated
-    trend filter caps the drawdown dramatically. That is the whole point of it.
+Findings it reproduces (see README for the full discussion):
+  * Bull:  buy & hold has the highest raw return but the deepest drawdown; pure
+           mean reversion wins on risk-adjusted terms.
+  * Crash: pure mean reversion beats buy & hold OUTRIGHT and by drawdown.
+  * The "trend_mr" filter underperforms pure "mr" on real data everywhere — it
+    was tuned on a synthetic downtrend and does not survive contact with real,
+    choppy AMPL. Kept only for study.
 """
 
 import argparse
 import os
-import random
 import sys
-from datetime import date, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -27,23 +27,13 @@ from ampl_bot.config import BotConfig  # noqa: E402
 from ampl_bot.data import CsvPriceProvider, PriceBar  # noqa: E402
 from ampl_bot.mechanics import compute_rebase  # noqa: E402
 
-
-def synth_depeg(days: int = 365, start_price: float = 1.20, drift: float = -0.006, seed: int = 11):
-    rng = random.Random(seed)
-    price = start_price
-    bars = []
-    d0 = date(2024, 1, 1)
-    for i in range(days):
-        price *= 1 + drift + rng.gauss(0, 0.05)
-        price = max(0.10, price)
-        bars.append(PriceBar((d0 + timedelta(days=i)).isoformat(), round(price, 6)))
-    return bars
+FULL = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "ampl_full.csv")
 
 
-def buyhold_return(bars):
+def buyhold(bars):
     pol = BotConfig().policy
     units = 10_000 / bars[0].price
-    peak = 10_000
+    peak = 10_000.0
     mdd = 0.0
     for i, b in enumerate(bars):
         if i > 0:
@@ -54,32 +44,39 @@ def buyhold_return(bars):
     return units * bars[-1].price / 10_000 - 1, mdd
 
 
+def window(bars, lo, hi):
+    return [b for b in bars if lo <= b.timestamp <= hi]
+
+
 def report(label, bars):
-    print(f"\n=== {label}  ({len(bars)} bars, {bars[0].price} -> {bars[-1].price}) ===")
-    print(f"{'strategy':<12}{'return':>11}{'sharpe':>9}{'maxDD':>9}")
-    print("-" * 41)
+    print(f"\n=== {label}  ({len(bars)} bars, {bars[0].timestamp} -> {bars[-1].timestamp}) ===")
+    print(f"{'strategy':<12}{'return':>13}{'sharpe':>9}{'maxDD':>9}")
+    print("-" * 43)
     for name in ("mr", "trend_mr"):
         cfg = BotConfig()
         cfg.strategy.name = name
         r = run_backtest(bars, cfg)
-        print(f"{name:<12}{r.strategy_return:>+10.1%}{r.sharpe:>9.2f}{r.max_drawdown:>8.1%}")
-    bh_ret, bh_dd = buyhold_return(bars)
-    print(f"{'buy & hold':<12}{bh_ret:>+10.1%}{'—':>9}{bh_dd:>8.1%}")
+        print(f"{name:<12}{r.strategy_return:>+12.1%}{r.sharpe:>9.2f}{r.max_drawdown:>8.1%}")
+    bh_ret, bh_dd = buyhold(bars)
+    print(f"{'buy & hold':<12}{bh_ret:>+12.1%}{'—':>9}{bh_dd:>8.1%}")
 
 
 def main():
     p = argparse.ArgumentParser()
-    default = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "ampl_history.csv")
-    p.add_argument("--csv", default=default)
+    p.add_argument("--csv", default=FULL)
     args = p.parse_args()
+    if not os.path.exists(args.csv):
+        sys.exit("Run: python scripts/fetch_ampl_history.py --source defillama --out data/ampl_full.csv")
 
-    if os.path.exists(args.csv):
-        report("BULL — real AMPL", CsvPriceProvider(args.csv).history())
-    report("DE-PEG — synthetic downtrend", synth_depeg())
+    bars = CsvPriceProvider(args.csv).history()
+    report("BULL — recent ~1yr", bars[-365:])
+    report("CRASH — real de-peg 2020-07 to 2022-12", window(bars, "2020-07-01", "2022-12-31"))
+    report("FULL CYCLE — 2019 to present", bars)
     print(
-        "\nNote: the de-peg is synthetic; treat its magnitudes as illustrative, "
-        "not a forecast. The robust takeaway is the DRAWDOWN gap: pure MR is "
-        "dangerous in a sustained decline, the gated trend filter is not."
+        "\nCaveat: full-cycle ABSOLUTE returns are unreliable — the model uses a "
+        "fixed CPI target, but AMPL's real target drifted over 7 years, and "
+        "rebase compounding dominates long spans. Trust the RELATIVE comparisons "
+        "and drawdowns, especially in the crash window."
     )
 
 

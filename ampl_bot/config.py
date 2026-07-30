@@ -21,7 +21,8 @@ class RiskConfig:
     max_position_frac: float = 0.85  # Max fraction of equity held in AMPL.
     per_trade_frac: float = 0.30  # Max fraction of equity moved in one trade.
     stop_loss_frac: float = 0.25  # Exit if position down this much from entry.
-    max_drawdown_frac: float = 0.35  # Circuit breaker: halt trading past this DD.
+    max_drawdown_frac: float = 0.35  # Circuit breaker: liquidate to cash past this DD.
+    reenter_bounce_frac: float = 0.15  # Re-enter after price bounces this off the halt price.
 
 
 @dataclass
@@ -32,7 +33,12 @@ class CostModel:
 
 @dataclass
 class StrategyConfig:
-    name: str = "trend_mr"  # "mr" (pure mean reversion) or "trend_mr" (regime-aware).
+    # "mr" (pure mean reversion) is the default: on real full-cycle AMPL data it
+    # beat both buy-and-hold (risk-adjusted, and outright through the crash) and
+    # the "trend_mr" variant. "trend_mr" is kept for study but underperformed on
+    # real data — it was tuned on a synthetic downtrend that doesn't resemble
+    # real, choppy AMPL. See README.
+    name: str = "mr"
     lookback: int = 30  # Days for the mean/vol estimate.
     entry_z: float = 1.0  # Enter when |z-score of deviation| exceeds this.
     exit_z: float = 0.25  # Scale out as price returns toward target.

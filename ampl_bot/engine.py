@@ -57,7 +57,16 @@ class TradingEngine:
         self.rstate = self.risk.update_and_check(self.rstate, equity, price, self.pf.exposure(price))
 
         action = "hold"
-        if not self.rstate.halted and len(self.prices) >= 2:
+        if self.rstate.halted:
+            # Circuit breaker: liquidate to cash and wait for a price recovery.
+            fill = self.execu.rebalance_to(self.pf, 0.0, price, timestamp)
+            self.rstate.entry_price = None
+            action = (
+                f"HALT liquidate {fill.side} {fill.ampl:.2f} AMPL @ {fill.price:.4f}"
+                if fill is not None
+                else "halted (in cash, awaiting recovery)"
+            )
+        elif len(self.prices) >= 2:
             sig = self.strategy.generate(self.prices)
             target = self.risk.clamp_exposure(sig.target_exposure)
             current = self.pf.exposure(price)
@@ -72,8 +81,6 @@ class TradingEngine:
                     self.rstate.entry_price = price
             if self.pf.ampl <= 1e-9:
                 self.rstate.entry_price = None
-        elif self.rstate.halted:
-            action = "halted (drawdown circuit breaker)"
 
         save_portfolio(self.pf, self.cfg.state_path)
         return TickReport(

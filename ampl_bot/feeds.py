@@ -96,6 +96,44 @@ class CoinGeckoFeed:
         return bars[-1]
 
 
+# ------------------------------ DefiLlama -------------------------------------
+class DefiLlamaFeed:
+    """Real multi-year AMPL/USD daily history from DefiLlama (free, no API key).
+
+    DefiLlama caps each ``/chart`` call at ~365 points, so this paginates from a
+    start date to now. Prices are derived from on-chain DEX liquidity, which is
+    the honest source for a token like AMPL. This is how the bundled full-history
+    CSV (2019->present, incl. the 2020 peak and 2021-22 de-peg) is produced.
+    """
+
+    BASE = "https://coins.llama.fi/chart"
+    AMPL_COIN = f"ethereum:{AMPL_TOKEN}"
+    LAUNCH_TS = 1_561_593_600  # 2019-06-27, AMPL mainnet launch.
+
+    def __init__(self, coin: Optional[str] = None):
+        self.coin = coin or self.AMPL_COIN
+
+    def history(self, start_ts: int = LAUNCH_TS) -> List[PriceBar]:
+        day = 86_400
+        now = int(time.time())
+        by_date: Dict[str, float] = {}
+        cursor = start_ts
+        while cursor < now:
+            url = f"{self.BASE}/{self.coin}?start={cursor}&span=365&period=1d"
+            payload = _http_json(url)
+            points = payload.get("coins", {}).get(self.coin, {}).get("prices", [])
+            if not points:
+                break
+            for p in points:
+                date = datetime.fromtimestamp(p["timestamp"], tz=timezone.utc).date().isoformat()
+                by_date[date] = float(p["price"])
+            last = points[-1]["timestamp"]
+            if last <= cursor:
+                break
+            cursor = last + day
+        return [PriceBar(d, round(px, 6)) for d, px in sorted(by_date.items())]
+
+
 # ------------------------------ On-chain --------------------------------------
 class OnChainFeed:
     """Live AMPL/USD spot read directly from Ethereum mainnet.
