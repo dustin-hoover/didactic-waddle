@@ -22,7 +22,7 @@ from .backtest import run_backtest
 from .config import BotConfig
 from .data import CsvPriceProvider, SyntheticPriceProvider
 from .mechanics import deviation, market_zone
-from .strategy import RebaseMeanReversionStrategy
+from .strategy import build_strategy
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 SAMPLE_CSV = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "sample_ampl.csv")
@@ -37,7 +37,7 @@ def _load_bars():
 def _state_payload(cfg: BotConfig) -> dict:
     bars = _load_bars()
     prices = [b.price for b in bars]
-    strat = RebaseMeanReversionStrategy(cfg.strategy, cfg.policy)
+    strat = build_strategy(cfg.strategy, cfg.policy)
     sig = strat.generate(prices)
     latest = bars[-1]
     return {

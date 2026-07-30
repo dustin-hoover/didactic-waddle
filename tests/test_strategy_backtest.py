@@ -9,8 +9,48 @@ from ampl_bot.data import SyntheticPriceProvider
 from ampl_bot.engine import TradingEngine
 from ampl_bot.executor import PaperExecutor, Portfolio
 from ampl_bot.mechanics import PolicyParams
-from ampl_bot.strategy import RebaseMeanReversionStrategy
+from ampl_bot.strategy import (
+    RebaseMeanReversionStrategy,
+    TrendAwareRebaseStrategy,
+    build_strategy,
+)
 from ampl_bot.config import StrategyConfig
+
+
+def test_build_strategy_factory():
+    policy = PolicyParams()
+    assert isinstance(build_strategy(StrategyConfig(name="mr"), policy), RebaseMeanReversionStrategy)
+    assert isinstance(build_strategy(StrategyConfig(name="trend_mr"), policy), TrendAwareRebaseStrategy)
+    raised = False
+    try:
+        build_strategy(StrategyConfig(name="nope"), policy)
+    except ValueError:
+        raised = True
+    assert raised
+
+
+def test_trend_mr_falls_back_to_mr_without_history():
+    cfg = StrategyConfig(name="trend_mr")
+    policy = PolicyParams(target_price=1.0)
+    trend = TrendAwareRebaseStrategy(cfg, policy)
+    mr = RebaseMeanReversionStrategy(cfg, policy)
+    prices = [1.0, 0.9, 1.1]  # far too short for the slow MA
+    assert trend.generate(prices).target_exposure == mr.generate(prices).target_exposure
+
+
+def test_trend_mr_protects_in_confirmed_downtrend():
+    cfg = StrategyConfig(name="trend_mr")
+    policy = PolicyParams(target_price=1.0)
+    trend = TrendAwareRebaseStrategy(cfg, policy)
+    mr = RebaseMeanReversionStrategy(cfg, policy)
+    # A long, steady decline: price well below target (MR wants to buy) but the
+    # slow MA is falling, so the trend filter must cap exposure BELOW what MR
+    # wants — the knife-catch protection.
+    prices = [max(0.2, 2.0 - 0.01 * i) for i in range(150)]
+    mr_expo = mr.generate(prices).target_exposure
+    trend_expo = trend.generate(prices).target_exposure
+    assert trend_expo <= mr_expo
+    assert trend_expo < 0.5  # capped defensively
 
 
 def test_strategy_leans_long_below_target():

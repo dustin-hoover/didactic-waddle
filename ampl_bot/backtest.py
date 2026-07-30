@@ -17,7 +17,7 @@ from .config import BotConfig
 from .data import PriceBar
 from .executor import PaperExecutor, Portfolio
 from .risk import RiskManager, RiskState
-from .strategy import RebaseMeanReversionStrategy
+from .strategy import build_strategy
 
 
 @dataclass
@@ -63,7 +63,7 @@ def _max_drawdown(curve: List[float]) -> float:
 
 
 def run_backtest(bars: List[PriceBar], cfg: BotConfig) -> BacktestResult:
-    strategy = RebaseMeanReversionStrategy(cfg.strategy, cfg.policy)
+    strategy = build_strategy(cfg.strategy, cfg.policy)
     risk = RiskManager(cfg.risk)
     execu = PaperExecutor(cfg.costs)
 

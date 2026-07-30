@@ -16,7 +16,7 @@ from .config import BotConfig
 from .executor import PaperExecutor, Portfolio, load_portfolio, save_portfolio
 from .mechanics import market_zone
 from .risk import RiskManager, RiskState
-from .strategy import RebaseMeanReversionStrategy
+from .strategy import build_strategy
 
 
 @dataclass
@@ -38,7 +38,7 @@ class TradingEngine:
                 "a live executor must be added deliberately and audited."
             )
         self.cfg = cfg
-        self.strategy = RebaseMeanReversionStrategy(cfg.strategy, cfg.policy)
+        self.strategy = build_strategy(cfg.strategy, cfg.policy)
         self.risk = RiskManager(cfg.risk)
         self.execu = PaperExecutor(cfg.costs)
         self.prices: List[float] = []

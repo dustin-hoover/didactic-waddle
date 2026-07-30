@@ -18,6 +18,8 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--csv", default=SAMPLE, help="timestamp,price CSV of AMPL/USD")
     p.add_argument("--cash", type=float, default=10_000.0)
+    p.add_argument("--strategy", choices=["mr", "trend_mr"], default=None,
+                   help="override the strategy (default: config)")
     args = p.parse_args()
 
     if os.path.exists(args.csv):
@@ -28,6 +30,8 @@ def main():
         src = "synthetic (sample CSV not found)"
 
     cfg = BotConfig(starting_cash=args.cash)
+    if args.strategy:
+        cfg.strategy.name = args.strategy
     res = run_backtest(bars, cfg)
     print(f"Source: {src}  ({len(bars)} bars)\n")
     print(res.summary())

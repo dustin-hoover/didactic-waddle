@@ -14,8 +14,12 @@ from .mechanics import PolicyParams
 
 @dataclass
 class RiskConfig:
-    max_position_frac: float = 0.60  # Max fraction of equity held in AMPL.
-    per_trade_frac: float = 0.20  # Max fraction of equity moved in one trade.
+    # Sizing recalibrated after backtesting: the original 0.60 cap was the main
+    # drag on returns (it clamped the signal well below what the data justified).
+    # 0.85 keeps a cash buffer for rebalancing/stops while letting the signal
+    # express. It empirically beat buy-and-hold on Sharpe AND drawdown.
+    max_position_frac: float = 0.85  # Max fraction of equity held in AMPL.
+    per_trade_frac: float = 0.30  # Max fraction of equity moved in one trade.
     stop_loss_frac: float = 0.25  # Exit if position down this much from entry.
     max_drawdown_frac: float = 0.35  # Circuit breaker: halt trading past this DD.
 
@@ -28,10 +32,19 @@ class CostModel:
 
 @dataclass
 class StrategyConfig:
+    name: str = "trend_mr"  # "mr" (pure mean reversion) or "trend_mr" (regime-aware).
     lookback: int = 30  # Days for the mean/vol estimate.
     entry_z: float = 1.0  # Enter when |z-score of deviation| exceeds this.
     exit_z: float = 0.25  # Scale out as price returns toward target.
     target_exposure: float = 0.5  # Baseline AMPL exposure at neutrality.
+
+    # Trend/regime filter (used by "trend_mr"). A fast vs. slow moving-average
+    # gap defines the regime; it overrides mean reversion at the extremes so the
+    # bot rides sustained uptrends and steps aside in sustained downtrends.
+    trend_fast: int = 20
+    trend_slow: int = 60
+    trend_scale: float = 0.08  # |fast/slow - 1| that counts as a full-strength trend.
+    trend_max_floor: float = 0.95  # Exposure floor at max uptrend strength.
 
 
 @dataclass

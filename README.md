@@ -36,27 +36,72 @@ loses to buy-and-hold.
 ## The strategy
 
 AMPL's price tends to mean-revert toward its target because the daily rebase
-pushes supply to move it there. So the bot:
+pushes supply to move it there. The **mean-reversion core** (`name="mr"`):
 
 - holds **more** AMPL when price is stretched **below** target (contraction
   zone — reversion up expected),
-- holds **less** when stretched **above** target (expansion zone — reversion
-  down expected),
-- measures "stretched" with a **rolling z-score of the deviation from target**
-  so it adapts to changing volatility,
+- holds **less** when stretched **above** target (expansion zone),
+- measures "stretched" with a **rolling z-score of the deviation from target**,
 - sizes every move through the risk layer (position cap, per-trade cap,
   stop-loss, drawdown circuit breaker).
 
-The rebase itself is value-neutral at the instant it happens (your balance
-scales up/down while price scales the opposite way); the edge being sought is
+The rebase itself is value-neutral at the instant it happens; the edge sought is
 the *reversion after*, not the rebase.
+
+### The default: regime-gated trend filter (`name="trend_mr"`)
+
+Backtesting on real data exposed a fatal flaw in *pure* mean reversion: in a
+sustained **de-peg** it catches the falling knife — it keeps buying below target
+all the way down (~90% drawdown in the backtest). The default strategy adds a
+**regime-confirmed trend filter** on top of the MR core:
+
+- **Confirmed uptrend** (fast MA > slow MA *and* slow MA rising) → raise a floor
+  under exposure so winners run; still buys dips.
+- **Confirmed downtrend** (fast < slow *and* slow MA falling) → cap exposure so
+  the bot steps aside instead of knife-catching. **This is the capital-
+  protection leg.**
+- **Anything else (chop)** → behave exactly like pure mean reversion.
+
+The "confirmed" gate — requiring the *slow* MA itself to slope the same way, not
+just a transient fast-MA cross — is what stops the filter whipsawing on short
+pullbacks inside an intact trend (an earlier ungated version underperformed
+badly for exactly that reason).
+
+### What the backtests showed (reproduce with `scripts/regime_test.py`)
+
+| Regime | Pure MR | **Gated trend-MR (default)** | Buy & Hold |
+| --- | --- | --- | --- |
+| Bull (real ~1yr) | +903%, DD 12.5% | +650%, DD 14.6% | +1207%, DD 18.5% |
+| De-peg (synthetic) | **−61%, DD 89%** | **+479%, DD 20%** | **−79%, DD 99%** |
+
+Both active strategies beat buy-and-hold on **Sharpe and drawdown** in the bull.
+The decisive difference is the de-peg column: pure MR and buy-and-hold are wiped
+out; the gated trend filter caps the drawdown. It gives up some bull upside in
+exchange for surviving a regime that destroys the alternatives — the right trade
+for "protect all assets."
+
+> The de-peg series is **synthetic** — treat its magnitudes as illustrative, not
+> a forecast. The robust, repeatable finding is the *drawdown gap*, not the exact
+> returns. Things also tested and **rejected** as non-improvements on this data:
+> an ungated trend filter (whipsaw) and volatility-targeted sizing (AMPL is too
+> volatile — it keeps you underexposed and you miss the move).
+
+### Position sizing was the other lever
+
+The original 0.60 position cap — not the signal — was the biggest drag on
+returns; it clamped the strategy far below what the data justified. Recalibrated
+to **0.85** (keeping a cash buffer for rebalancing/stops), which is what lifts
+the returns above while still beating buy-and-hold on risk-adjusted terms. Tune
+it in `RiskConfig`; compare with `scripts/compare_strategies.py`.
 
 ## Quick start
 
 ```bash
 # Real data
 python scripts/fetch_ampl_history.py           # real AMPL history -> data/ampl_history.csv
-python run_backtest.py --csv data/ampl_history.csv
+python run_backtest.py --csv data/ampl_history.csv --strategy trend_mr
+python scripts/compare_strategies.py           # mr vs trend_mr side by side
+python scripts/regime_test.py                  # bull vs de-peg stress test
 
 # Live paper trading on real prices (no real orders)
 python run_paper.py --source onchain --once    # one tick from Ethereum
