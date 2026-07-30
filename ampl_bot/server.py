@@ -74,6 +74,25 @@ def _backtest_payload(cfg: BotConfig) -> dict:
     }
 
 
+def _live_payload(cfg: BotConfig) -> dict:
+    """Best-effort live on-chain spot. Never raises to the browser."""
+    from .feeds import OnChainFeed
+    from .mechanics import deviation, market_zone
+
+    try:
+        bar = OnChainFeed().latest()
+        return {
+            "ok": True,
+            "source": "uniswap-v2 + chainlink (ethereum mainnet)",
+            "timestamp": bar.timestamp,
+            "price": bar.price,
+            "deviation": deviation(bar.price, cfg.policy),
+            "zone": market_zone(bar.price, cfg.policy),
+        }
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": str(exc)}
+
+
 class Handler(BaseHTTPRequestHandler):
     cfg = BotConfig()
 
@@ -97,6 +116,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(_state_payload(self.cfg))
             elif path == "/api/backtest":
                 self._json(_backtest_payload(self.cfg))
+            elif path == "/api/live":
+                self._json(_live_payload(self.cfg))
             else:
                 self._send(404, b"not found", "text/plain")
         except Exception as exc:  # keep the dev server alive, report the error

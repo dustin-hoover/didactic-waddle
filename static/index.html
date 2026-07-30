@@ -43,6 +43,7 @@
 </header>
 <main>
   <div class="grid" id="stateGrid">
+    <div class="card"><h3>Live On-Chain Spot</h3><div class="v" id="live">—</div><div class="sub" id="liveSub">reading Ethereum…</div></div>
     <div class="card"><h3>Price / Target</h3><div class="v" id="price">—</div><div class="sub" id="target"></div></div>
     <div class="card"><h3>Deviation</h3><div class="v" id="dev">—</div><div class="sub">from CPI target</div></div>
     <div class="card"><h3>Market Zone</h3><div class="v" id="zone">—</div><div class="sub">supply policy state</div></div>
@@ -103,6 +104,25 @@ async function load() {
   drawChart(bt.equity_curve, bt.prices);
 }
 
+async function loadLive() {
+  try {
+    const live = await fetch('/api/live').then(r => r.json());
+    const el = document.getElementById('live');
+    const sub = document.getElementById('liveSub');
+    if (live.ok) {
+      el.textContent = '$' + live.price.toFixed(4);
+      const dev = (live.deviation * 100).toFixed(2);
+      el.className = 'v zone-' + live.zone;
+      sub.textContent = `${live.zone} · ${dev >= 0 ? '+' : ''}${dev}% vs target · on-chain`;
+    } else {
+      el.textContent = 'n/a';
+      sub.textContent = 'on-chain read unavailable';
+    }
+  } catch (e) {
+    document.getElementById('liveSub').textContent = 'on-chain read failed';
+  }
+}
+
 function drawChart(equity, prices) {
   const c = document.getElementById('chart');
   const dpr = window.devicePixelRatio || 1;
@@ -133,6 +153,8 @@ function drawChart(equity, prices) {
 }
 
 load().catch(e => { document.getElementById('reason').textContent = 'Error: ' + e; });
+loadLive();
+setInterval(loadLive, 60000);  // refresh live spot each minute
 </script>
 </body>
 </html>

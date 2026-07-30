@@ -93,25 +93,25 @@ class SyntheticPriceProvider:
 
 
 class LivePriceProvider:
-    """Stub for a live feed (e.g. CEX ticker or on-chain TWAP oracle).
+    """Deprecated shim. Real feeds now live in ampl_bot.feeds.
 
-    Intentionally unimplemented: connecting a real feed and keys is an explicit
-    operator action, kept out of the default path.
+    Use CoinGeckoFeed (history) or OnChainFeed (live spot) instead. This class
+    forwards to them so older imports keep working.
     """
 
     def __init__(self, source: str = "coingecko"):
         self.source = source
 
+    def _provider(self):
+        from .feeds import CoinGeckoFeed, OnChainFeed
+
+        return OnChainFeed() if self.source == "onchain" else CoinGeckoFeed()
+
     def history(self) -> List[PriceBar]:
-        raise NotImplementedError(
-            "Live data is not wired by default. Provide a CSV via CsvPriceProvider "
-            "or implement this adapter against your chosen feed."
-        )
+        return self._provider().history()
 
     def latest(self) -> PriceBar:
-        raise NotImplementedError(
-            "Live data is not wired by default. See LivePriceProvider docstring."
-        )
+        return self._provider().latest()
 
 
 def write_csv(bars: Iterable[PriceBar], path: str) -> None:

@@ -54,9 +54,19 @@ the *reversion after*, not the rebase.
 ## Quick start
 
 ```bash
-python scripts/gen_sample_data.py      # writes data/sample_ampl.csv (synthetic)
-python run_backtest.py                 # backtest strategy vs. buy & hold
-python -m ampl_bot.server              # dashboard at http://127.0.0.1:8000
+# Real data
+python scripts/fetch_ampl_history.py           # real AMPL history -> data/ampl_history.csv
+python run_backtest.py --csv data/ampl_history.csv
+
+# Live paper trading on real prices (no real orders)
+python run_paper.py --source onchain --once    # one tick from Ethereum
+python run_paper.py --source onchain            # hourly loop
+
+# Dashboard (shows live on-chain spot + backtest)
+python -m ampl_bot.server                       # http://127.0.0.1:8000
+
+# Or run fully offline on synthetic demo data
+python scripts/gen_sample_data.py && python run_backtest.py
 ```
 
 No third-party packages are required to run it (Python 3.10+ stdlib only).
@@ -80,12 +90,34 @@ pip install pytest && python -m pytest -q
 | `ampl_bot/data.py` | CSV / synthetic / (stub) live price providers. |
 | `ampl_bot/server.py` | Zero-dependency read-only dashboard. |
 
-## Using real data
+## Real data & live on-chain price (`ampl_bot/feeds.py`)
 
-Replace `data/sample_ampl.csv` with real AMPL/USD history in `timestamp,price`
-format and re-run the backtest. The sample series is **synthetic** (a
-mean-reverting-around-target generator) so everything runs out of the box — it
-is not real market data and must not be treated as such.
+Two real feeds are wired in, stdlib-only, no API key required:
+
+- **`CoinGeckoFeed`** — real AMPL/USD **daily history** for backtesting.
+  `scripts/fetch_ampl_history.py` pulls it to a CSV. The free public API caps
+  history at ~365 days; pass `--api-key` (or `COINGECKO_API_KEY`) for more.
+- **`OnChainFeed`** — **live AMPL/USD spot read directly from Ethereum**: the
+  Uniswap V2 AMPL/WETH pool reserves priced in ETH, times the Chainlink ETH/USD
+  aggregator. Falls back across several public JSON-RPC endpoints; point it at
+  your own (e.g. a [QuickNode](https://www.quicknode.com/) endpoint) by passing
+  `rpc_urls`. On-chain *history* is intentionally not implemented — a public
+  node can't cheaply serve it — so history comes from CoinGecko/CSV.
+
+The dashboard's `/api/live` endpoint and the top "Live On-Chain Spot" card use
+`OnChainFeed`; `run_paper.py --source onchain` steps the paper engine on it.
+
+### What one year of real data showed
+
+On the trailing ~year of real AMPL (a strong bull run), the mean-reversion
+strategy returned well but **underperformed buy-and-hold**, because it trimmed
+exposure as price ran far above target — with a much lower max drawdown. That's
+the honest tradeoff: this is a *lower-volatility* profile, not a return
+maximiser, and mean reversion loses in a sustained trend. Re-run the backtest
+yourself; the numbers move with the market.
+
+The bundled `data/sample_ampl.csv` is **synthetic** (a mean-reverting generator)
+so the project runs fully offline — it is not real market data.
 
 ## Safety model
 
@@ -99,11 +131,13 @@ is not real market data and must not be treated as such.
 
 ## Roadmap (opt-in, operator-driven)
 
-These are intentionally *not* enabled and would each be added deliberately:
+1. **Live data adapter** — ✅ done: `CoinGeckoFeed` (history) and `OnChainFeed`
+   (live spot from Uniswap V2 + Chainlink). Swap in your own RPC for
+   reliability/rate limits.
 
-1. **Live data adapter** — on-chain TWAP oracle or a CEX ticker
-   (e.g. via an [EVM MCP server](https://www.quicknode.com/guides/ai/evm-mcp-server)
-   for on-chain reads).
+The following remain intentionally *not* enabled and would each be added
+deliberately:
+
 2. **Live execution adapter** — a specific venue behind an explicit flag, with
    its own tests and dry-run mode, plus key management the operator controls.
 3. **Staking integration** — read positions and surface real APRs from the
