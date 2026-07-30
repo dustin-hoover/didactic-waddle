@@ -1,0 +1,4 @@
+# Runtime: none. The bot and dashboard run on the Python 3.10+ standard library.
+#
+# Development only:
+pytest>=7.0
