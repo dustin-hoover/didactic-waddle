@@ -4,5 +4,6 @@ __pycache__/
 venv/
 .pytest_cache/
 data/portfolio_state.json
+data/tradebot_state.json
 *.log
 .DS_Store

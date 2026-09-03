@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>tradebot — crypto day/swing signals</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;
+        --accent:#58a6ff;--green:#3fb950;--red:#f85149;--amber:#d29922;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
+  header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  header h1{margin:0;font-size:17px}
+  header .sub{color:var(--muted);font-size:12px}
+  .badge{padding:2px 8px;border-radius:999px;font-size:11px;border:1px solid var(--border);color:var(--amber)}
+  main{padding:20px;max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:20px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  select,button{background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px}
+  button{cursor:pointer}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px}
+  .panel h2{margin:0 0 12px;font-size:14px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:right;padding:7px 10px;border-bottom:1px solid var(--border)}
+  th:first-child,td:first-child{text-align:left}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:rgba(88,166,255,.08)}
+  .up{color:var(--green)}.down{color:var(--red)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .stat{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:12px}
+  .stat h3{margin:0 0 4px;font-size:11px;text-transform:uppercase;color:var(--muted);letter-spacing:.04em}
+  .stat .v{font-size:20px;font-weight:600}
+  .votes{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .vote{display:grid;grid-template-columns:90px 1fr 48px;align-items:center;gap:8px;font-size:12px}
+  .bar{height:10px;background:#0d1117;border-radius:5px;position:relative;overflow:hidden}
+  .bar span{position:absolute;top:0;bottom:0;left:50%}
+  canvas{width:100%;height:260px}
+  .muted{color:var(--muted);font-size:12px}
+  .note{font-size:12px;color:var(--muted);border-left:3px solid var(--accent);padding:8px 12px;background:rgba(88,166,255,.06);border-radius:4px;margin-top:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>tradebot</h1><span class="sub">crypto day/swing signal screener · long/flat spot · paper</span>
+  <span class="badge" id="mode">paper</span>
+</header>
+<main>
+  <div class="panel">
+    <div class="controls">
+      <label class="muted">timeframe</label>
+      <select id="interval"><option>1h</option><option selected>4h</option><option>1d</option></select>
+      <label class="muted">style</label>
+      <select id="style"><option selected>swing</option><option>day</option></select>
+      <button onclick="loadScreen()">Refresh screen</button>
+      <span class="muted" id="screenStatus"></span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Signal screener — ranked by trend, then conviction</h2>
+    <table>
+      <thead><tr><th>Coin</th><th>Price</th><th>Trend</th><th>Score</th><th>RSI</th><th>ATR%</th></tr></thead>
+      <tbody id="screenBody"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody>
+    </table>
+    <div class="muted" style="margin-top:8px">Click a coin for its signal breakdown and backtest.</div>
+  </div>
+
+  <div class="panel" id="coinPanel" hidden>
+    <h2 id="coinTitle"></h2>
+    <div class="grid" id="coinStats"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px" id="coinGrid">
+      <div>
+        <h2 style="font-size:13px">Signal votes</h2>
+        <div class="votes" id="votes"></div>
+      </div>
+      <div>
+        <h2 style="font-size:13px">Backtest — strategy vs buy & hold</h2>
+        <canvas id="chart"></canvas>
+      </div>
+    </div>
+    <div class="note" id="reason"></div>
+    <div class="note">Default trades on the robust <b>trend filter</b> (fully invested when
+      the trend is up, cash when down). The composite score shown here powers the screener;
+      in backtests it under-performs the simple filter, so it's surfaced for context, not traded by default.
+      Past performance is not a forecast; no live orders are placed.</div>
+  </div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+function pct(x){return (x>=0?'+':'')+(x*100).toFixed(1)+'%';}
+
+async function loadScreen(){
+  const iv=$('interval').value, st=$('style').value;
+  $('screenStatus').textContent='fetching '+iv+'…';
+  $('screenBody').innerHTML='<tr><td colspan=6 class=muted>Loading…</td></tr>';
+  try{
+    const d=await fetch(`/api/screen?interval=${iv}&style=${st}`).then(r=>r.json());
+    $('screenBody').innerHTML='';
+    d.rows.forEach(r=>{
+      const tr=document.createElement('tr');
+      if(r.error){tr.innerHTML=`<td>${r.symbol}</td><td colspan=5 class=muted>${r.error}</td>`;}
+      else{
+        tr.innerHTML=`<td>${r.symbol}</td><td>$${r.price.toLocaleString(undefined,{maximumFractionDigits:4})}</td>`+
+          `<td class="${r.trend_up?'up':'down'}">${r.trend_up?'UP':'down'}</td>`+
+          `<td class="${r.score>=0?'up':'down'}">${(r.score>=0?'+':'')+r.score.toFixed(2)}</td>`+
+          `<td>${r.rsi?r.rsi.toFixed(0):'–'}</td><td>${r.atr_pct?(r.atr_pct*100).toFixed(1)+'%':'–'}</td>`;
+        tr.onclick=()=>loadCoin(r.symbol);
+      }
+      $('screenBody').appendChild(tr);
+    });
+    $('screenStatus').textContent=iv+' · '+st;
+  }catch(e){$('screenStatus').textContent='error: '+e;}
+}
+
+async function loadCoin(sym){
+  const iv=$('interval').value, st=$('style').value;
+  $('coinPanel').hidden=false;
+  $('coinTitle').textContent=`${sym} · ${iv} · ${st}`;
+  $('coinStats').innerHTML='<div class=muted>Loading…</div>';
+  window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
+  const d=await fetch(`/api/coin?symbol=${sym}&interval=${iv}&style=${st}`).then(r=>r.json());
+  if(d.error){$('coinStats').innerHTML='<div class=muted>'+d.error+'</div>';return;}
+  const b=d.backtest;
+  $('coinStats').innerHTML=`
+    <div class="stat"><h3>Price</h3><div class="v">$${d.price.toLocaleString(undefined,{maximumFractionDigits:4})}</div></div>
+    <div class="stat"><h3>Trend</h3><div class="v ${d.trend_up?'up':'down'}">${d.trend_up?'UP':'DOWN'}</div></div>
+    <div class="stat"><h3>Strategy ret</h3><div class="v ${b.strategy_return>=0?'up':'down'}">${pct(b.strategy_return)}</div></div>
+    <div class="stat"><h3>Buy & hold</h3><div class="v ${b.buyhold_return>=0?'up':'down'}">${pct(b.buyhold_return)}</div></div>
+    <div class="stat"><h3>Sharpe</h3><div class="v">${b.sharpe.toFixed(2)}</div></div>
+    <div class="stat"><h3>Max DD</h3><div class="v">${(b.max_drawdown*100).toFixed(0)}%</div></div>`;
+  const order=['ema_trend','macd','adx_dir','donchian','roc','vwap','obv','rsi','percent_b'];
+  $('votes').innerHTML='';
+  order.forEach(k=>{
+    const v=d.votes[k]; if(v===undefined)return;
+    const w=Math.abs(v)*50, col=v>=0?'var(--green)':'var(--red)';
+    const el=document.createElement('div');el.className='vote';
+    el.innerHTML=`<span>${k}</span><div class="bar"><span style="${v>=0?'left:50%':'right:50%;left:auto'};width:${w}%;background:${col}"></span></div><span>${(v>=0?'+':'')+v.toFixed(2)}</span>`;
+    $('votes').appendChild(el);
+  });
+  $('reason').textContent=d.reason;
+  drawChart(d.equity,d.prices);
+}
+
+function drawChart(equity,prices){
+  const c=$('chart'),dpr=window.devicePixelRatio||1,w=c.clientWidth,h=260;
+  c.width=w*dpr;c.height=h*dpr;const x=c.getContext('2d');x.scale(dpr,dpr);x.clearRect(0,0,w,h);
+  const norm=a=>a.map(v=>v/a[0]);
+  function line(a,col){const mn=Math.min(...a),mx=Math.max(...a),r=(mx-mn)||1;x.strokeStyle=col;x.lineWidth=2;x.beginPath();
+    a.forEach((v,i)=>{const px=i/(a.length-1)*(w-32)+16,py=h-16-((v-mn)/r)*(h-32);i?x.lineTo(px,py):x.moveTo(px,py);});x.stroke();}
+  line(norm(equity),'#58a6ff');line(norm(prices),'#8b949e');
+  x.fillStyle='#58a6ff';x.font='12px sans-serif';x.fillText('■ strategy',20,18);
+  x.fillStyle='#8b949e';x.fillText('■ buy & hold',100,18);
+}
+loadScreen();
+</script>
+</body>
+</html>

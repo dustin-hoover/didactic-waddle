@@ -1,202 +1,127 @@
-# AMPL Rebase Bot
+# tradebot — crypto day/swing signal framework
 
-A rebase-aware trading bot for [Ampleforth (AMPL)](https://www.ampleforth.org/),
-built around the protocol's actual supply mechanics. It ships as a runnable
-Python project with a strategy engine, backtester, risk management, a
-paper-trading engine, and a zero-dependency web dashboard.
+An asset-agnostic framework for day and swing trading **any** crypto with real
+market data: a full panel of the critical technical signals, a screener that
+ranks a universe of coins, a backtester, ATR-based risk management, a paper
+engine, and a dashboard. Long/flat spot only. **Paper trading by default — no
+live-order or key-custody code ships enabled.**
 
-## What this is — and what it deliberately is not
+It grew out of an AMPL-specific rebase bot (now a plugin — see below). The same
+honest ethos carries over: **backtest everything, report the real number even
+when it's unflattering, and prefer the simple thing that works over the clever
+thing that doesn't.**
 
-**It is:** an algorithm that trades **one account's own capital** on public,
-observable signals (price vs. the CPI-adjusted target, rebase zone,
-mean-reversion z-score), with disciplined risk controls and honest backtesting
-against a buy-and-hold baseline.
+## The critical signals
 
-**It is not**, and will not be built to be:
+All computed in `tradebot/indicators.py` (pure functions, standard conventions
+incl. Wilder smoothing), grouped by what they measure:
 
-- a **wash-trading** or **fake-volume** generator (trading with yourself to
-  inflate volume),
-- a **pump / "make it too hot to ignore"** coordination engine,
-- anything that claims to *guarantee* a price increase or guaranteed profit.
+| Group | Signals |
+| --- | --- |
+| Trend / momentum | EMA(fast/slow), MACD, ADX (+DI/−DI), ROC |
+| Mean reversion | RSI, Bollinger Bands + %b, Stochastic |
+| Volatility | ATR, realized volatility |
+| Volume | OBV, rolling VWAP |
+| Structure | Donchian channels (breakouts) |
 
-Those were part of the original ask, and they're left out on purpose. They are
-illegal market manipulation under CFTC/securities rules (crypto included), and —
-just as important — **they don't work for the person running them**: you pay
-fees and slippage on every fake trade while the price round-trips straight back.
-A single actor cannot engineer a "positive feedback loop that increases the
-price." The only durable flywheel is a strategy that is genuinely profitable and
-transparent enough that others independently choose to copy it, which is why
-this code is readable and the backtest reports the honest number even when it
-loses to buy-and-hold.
+`tradebot/signals.py` turns these into per-signal votes in [−1,+1] and combines
+them — but see the honest results below for how they're actually used.
 
-> **No profits are promised.** Mean reversion fails during regime breaks (a
-> sustained AMPL de-peg is the obvious one). The risk module exists precisely
-> because the thesis can be wrong.
+## What actually works (and what doesn't) — backtested on real data
 
-## The strategy
+Data is real OHLCV with volume from public exchanges (Binance.US → Coinbase →
+OKX fallback, no API key). Two strategies were built and backtested head-to-head
+across BTC/ETH/SOL and multiple timeframes:
 
-AMPL's price tends to mean-revert toward its target because the daily rebase
-pushes supply to move it there. The **mean-reversion core** (`name="mr"`):
+- **`composite`** — the full weighted signal panel, regime-adaptive (ADX-weighted
+  blend of trend vs. mean reversion).
+- **`trend`** — a plain EMA trend filter: fully invested when price is above a
+  slow EMA (with a hysteresis buffer), cash when below.
 
-- holds **more** AMPL when price is stretched **below** target (contraction
-  zone — reversion up expected),
-- holds **less** when stretched **above** target (expansion zone),
-- measures "stretched" with a **rolling z-score of the deviation from target**,
-- sizes every move through the risk layer (position cap, per-trade cap,
-  stop-loss, drawdown circuit breaker).
+**The simple `trend` filter won, decisively and repeatably.** The elaborate
+composite chronically under-invested and mistimed entries, losing money on
+several coins after fees. Representative results (1000 bars each):
 
-The rebase itself is value-neutral at the instant it happens; the edge sought is
-the *reversion after*, not the rebase.
+| Market | `trend` (default) | Buy & Hold |
+| --- | --- | --- |
+| BTC 4h | **+22%, Sharpe 1.77, DD 16%** | +15%, DD ~35% |
+| ETH 4h | +15%, Sharpe 0.99, DD 21% | +16%, DD ~40% |
+| SOL 1h | +18%, **Sharpe 3.38, DD 11%** | +37%, deep DD |
+| BTC 1d | +46%, DD 32% | +86%, DD 53% |
 
-The default is **pure mean reversion** (`name="mr"`). That is a conclusion from
-real data, arrived at the honest way — by trying fancier things and watching
-them lose.
+The honest read: **the trend filter rarely out-*returns* buy-and-hold in a raw
+bull, but it delivers much better risk-adjusted performance and far lower
+drawdowns**, especially on the 4h/1h timeframes day/swing traders use. That —
+drawdown reduction, not magic alpha — is its real value.
 
-### What the real full-cycle data showed (reproduce with `scripts/regime_test.py`)
+So the **default strategy is `trend`**. The composite panel is kept for two
+things it's genuinely good at: **the screener** (ranking many coins by signal)
+and **the dashboard** (surfacing what's setting up). It's available as
+`--kind composite` for experimentation, documented as the weaker trader. This is
+the same lesson the AMPL work taught: complexity that loses to a simple baseline
+is not an improvement.
 
-Tested on real AMPL history (DefiLlama, 2019→present, incl. the 2020 $3.83 peak
-and the 2021–22 de-peg), sliced into three regimes:
-
-| Regime | **Pure MR (default)** | trend_mr | Buy & Hold |
-| --- | --- | --- | --- |
-| Bull (recent ~1yr) | +902%, DD **12.6%** | +645%, DD 14.6% | **+1226%**, DD 18.6% |
-| Crash (2020–22, real) | **+840%**, DD **49%** | +237%, DD 54% | +176%, DD 84% |
-| Full cycle (2019→now) | +105264%, DD **77%** | +3002%, DD 82% | **+261270%**, DD 96% |
-
-Reading this honestly:
-
-- **Pure MR is the best strategy on real data** — lowest drawdown in every
-  regime, and it *beats buy-and-hold outright through the real crash* (+840% vs
-  +176%). AMPL genuinely mean-reverts, so buying its recurrent dips works.
-- **Buy-and-hold's edge is bull-only and comes with brutal drawdowns** (84–96%).
-  Its higher raw return over the full cycle is not something a human survives —
-  nobody holds through a 96% drawdown.
-
-### Two honest corrections baked into this default
-
-1. **The trend filter (`trend_mr`) was a mistake.** An earlier version made it
-   the default after it looked great on a *synthetic* de-peg. On **real** choppy
-   crash data it underperforms pure MR everywhere — stepping aside in downtrends
-   skips exactly the bounces AMPL mean-reversion profits from. It's kept for
-   study, not used by default. (Volatility-targeted sizing was also tested and
-   rejected — AMPL is too volatile, it keeps you underexposed and you miss the
-   move.)
-2. **The drawdown circuit breaker was broken** — it "halted" by *freezing* the
-   position, which rode the crash down (a 72% drawdown that was invisible until
-   real data). It now **liquidates to cash** on a breach and **re-enters after
-   price bounces** `reenter_bounce_frac` off the halt price. That is real
-   protection, validated on the real crash (drawdown cut, strategies now behave
-   distinctly).
-
-> **Caveat, stated plainly:** the full-cycle *absolute* returns are not
-> trustworthy — the model uses a fixed CPI target, but AMPL's real target
-> drifted over seven years, and rebase compounding dominates long spans. Trust
-> the *relative* comparisons and the *drawdowns*, especially in the crash window
-> where the fixed target is roughly right. Even the "winning" MR still takes a
-> painful 49–77% drawdown in a real crash; this smooths the ride, it does not
-> make AMPL safe.
-
-### Position sizing
-
-The original 0.60 position cap — not the signal — was a big drag on returns; it
-clamped the strategy below what the data justified. It's now **0.85** (keeping a
-cash buffer for rebalancing/stops). Tune it in `RiskConfig`; compare strategies
-with `scripts/compare_strategies.py`.
+> No edge is promised. TA is hard, fees are real, and every number here moves
+> with the sample. Backtest your own symbols/timeframes before trusting anything.
 
 ## Quick start
 
 ```bash
-# Real data — full multi-year history (2019->now), free, no API key
-python scripts/fetch_ampl_history.py --source defillama --out data/ampl_full.csv
-python run_backtest.py --csv data/ampl_full.csv
-python scripts/regime_test.py                  # bull / real-crash / full-cycle
-python scripts/compare_strategies.py --csv data/ampl_full.csv   # mr vs trend_mr
+# Backtest any coin (real exchange data, no key needed)
+python tb.py backtest --symbol BTC --interval 4h --style swing
+python tb.py backtest --symbol ETH --interval 1d --kind composite   # experimental
 
-# Live paper trading on real prices (no real orders)
-python run_paper.py --source onchain --once    # one tick from Ethereum
-python run_paper.py --source onchain            # hourly loop
+# Screen a universe of coins by their live signals
+python tb.py screen --interval 4h --style swing
 
-# Dashboard (shows live on-chain spot + backtest)
-python -m ampl_bot.server                       # http://127.0.0.1:8000
+# Live paper trading (simulated fills, no real orders)
+python tb.py paper --symbol BTC --interval 1h --once
 
-# Or run fully offline on synthetic demo data
-python scripts/gen_sample_data.py && python run_backtest.py
+# Dashboard: screener + per-coin signal panel + backtest
+python -m tradebot.server            # http://127.0.0.1:8000
 ```
 
-No third-party packages are required to run it (Python 3.10+ stdlib only).
-`pytest` is only needed for the test suite:
-
-```bash
-pip install pytest && python -m pytest -q
-```
+Python 3.10+, standard library only. `pytest` is only needed for the tests.
 
 ## Architecture
 
 | Module | Responsibility |
 | --- | --- |
-| `ampl_bot/mechanics.py` | Faithful, parameterised AMPL rebase math (target, ±5% dead band, lag, supply delta). |
-| `ampl_bot/strategy.py` | Rebase-aware mean-reversion signal → desired exposure. |
-| `ampl_bot/risk.py` | Position/trade caps, stop-loss, drawdown circuit breaker. |
-| `ampl_bot/executor.py` | Portfolio + paper fills with fees/slippage; state persistence. |
-| `ampl_bot/engine.py` | Live-ish paper loop, one tick at a time (paper-only by default). |
-| `ampl_bot/backtest.py` | Day-by-day backtest with rebases; metrics vs. buy & hold. |
-| `ampl_bot/yields.py` | Transparent "stake vs. hold" math (no auto-deposit). |
-| `ampl_bot/data.py` | CSV / synthetic price providers (offline core). |
-| `ampl_bot/feeds.py` | Real feeds: DefiLlama + CoinGecko history, live on-chain spot. |
-| `ampl_bot/server.py` | Zero-dependency read-only dashboard. |
+| `tradebot/ohlcv.py` | Real OHLCV with volume; multi-venue fallback + pagination. |
+| `tradebot/indicators.py` | The technical-indicator library (pure functions). |
+| `tradebot/signals.py` | Votes → `TrendFilterStrategy` (default) and `CompositeStrategy`. |
+| `tradebot/risk.py` | ATR stop-loss, position caps, liquidate-and-re-enter breaker. |
+| `tradebot/portfolio.py` | Portfolio + paper fills (fees/slippage), persistence. |
+| `tradebot/backtest.py` | OHLCV backtest with intrabar ATR stop; metrics vs. buy & hold. |
+| `tradebot/engine.py` | Live paper loop, one candle at a time. |
+| `tradebot/screener.py` | Rank a coin universe by trend + conviction. |
+| `tradebot/server.py` | Zero-dependency dashboard. |
+| `tradebot/plugins/ampl.py` | AMPL rebase specialization (see below). |
 
-## Real data & live on-chain price (`ampl_bot/feeds.py`)
+## Risk & safety model
 
-Three real feeds are wired in, stdlib-only, no API key required:
+- **Paper only by default.** `BotConfig.mode="paper"`; the engine refuses other
+  modes. No live-order path, no key custody.
+- **ATR stop-loss** per position (`entry − mult·ATR`), checked intrabar at the low.
+- **Drawdown circuit breaker** that *liquidates to cash* on a breach and
+  re-enters only after price recovers — it de-risks, it doesn't just stop trading
+  (a bug fixed in the original AMPL project and carried over correctly here).
+- **Long/flat spot only** — no leverage, no shorting, no liquidation risk.
 
-- **`DefiLlamaFeed`** — real AMPL/USD **full multi-year daily history**
-  (2019→present) by paginating DefiLlama's on-chain price chart. This is the
-  recommended source and how `data/ampl_full.csv` is produced.
-- **`CoinGeckoFeed`** — real AMPL/USD daily history too, but the free public API
-  caps at ~365 days; pass `--api-key` (or `COINGECKO_API_KEY`) for more.
-- **`OnChainFeed`** — **live AMPL/USD spot read directly from Ethereum**: the
-  Uniswap V2 AMPL/WETH pool reserves priced in ETH, times the Chainlink ETH/USD
-  aggregator. Falls back across several public JSON-RPC endpoints; point it at
-  your own (e.g. a [QuickNode](https://www.quicknode.com/) endpoint) by passing
-  `rpc_urls`. On-chain *history* is intentionally not implemented — a public
-  node can't cheaply serve it — so history comes from CoinGecko/CSV.
+## AMPL plugin (the original project)
 
-The dashboard's `/api/live` endpoint and the top "Live On-Chain Spot" card use
-`OnChainFeed`; `run_paper.py --source onchain` steps the paper engine on it.
-
-See "What the real full-cycle data showed" above for the headline results across
-bull / crash / full-cycle regimes. The bundled `data/ampl_full.csv` is the real
-DefiLlama history; `data/sample_ampl.csv` is **synthetic** (a mean-reverting
-generator) so the project also runs fully offline.
-
-## Safety model
-
-- **Paper mode only by default.** `BotConfig.mode` is `"paper"`; the engine
-  raises if asked to run any other mode. There is no live-order code path in
-  this repo — adding one is a deliberate, auditable step.
-- **No custody of keys** anywhere in the default code.
-- **Circuit breaker** liquidates to cash past the configured max drawdown and
-  re-enters only after price recovers — it de-risks, it doesn't just stop trading.
-- **Yield/vault decisions stay with the operator** — `yields.py` only computes
-  and compares; it never moves funds.
-
-## Roadmap (opt-in, operator-driven)
-
-1. **Live data adapter** — ✅ done: `CoinGeckoFeed` (history) and `OnChainFeed`
-   (live spot from Uniswap V2 + Chainlink). Swap in your own RPC for
-   reliability/rate limits.
-
-The following remain intentionally *not* enabled and would each be added
-deliberately:
-
-2. **Live execution adapter** — a specific venue behind an explicit flag, with
-   its own tests and dry-run mode, plus key management the operator controls.
-3. **Staking integration** — read positions and surface real APRs from the
-   Ampleforth ecosystem (see [spot.cash](https://www.spot.cash/)); auto-deposit
-   only ever behind explicit operator confirmation.
+The original rebase-aware AMPL bot lives on in `ampl_bot/` and as
+`tradebot/plugins/ampl.py`. AMPL is special — its supply rebases daily toward a
+CPI target, so price mean-reverts and a holder's *units* change with the rebase.
+The plugin overlays that on the trend filter (trimming exposure deep in the
+"expansion" zone). The full rebase-aware backtester, its real 2019→present data
+(via DefiLlama), and the findings — including that pure mean-reversion beat
+buy-and-hold *through AMPL's real 2020–22 crash* while a fixed CPI target makes
+full-cycle absolute returns unreliable — are documented in `ampl_bot/` and its
+scripts (`scripts/regime_test.py`, `scripts/compare_strategies.py`).
 
 ## Disclaimer
 
-Educational software. Not financial advice. Trading crypto assets — AMPL
-especially, given its elastic supply — can lose money quickly. You are
-responsible for legal compliance in your jurisdiction.
+Educational software, not financial advice. Crypto trading can lose money fast.
+You are responsible for legal compliance in your jurisdiction. Backtests are not
+forecasts.
