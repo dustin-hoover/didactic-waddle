@@ -1,0 +1,50 @@
+name: tradebot
+
+# The "computer" in a phone-only setup: GitHub's free cloud runners execute the
+# bot on a schedule, refresh the dashboard site (docs/, served by GitHub Pages),
+# and push BUY/EXIT alerts to your phone via ntfy.sh.
+
+on:
+  schedule:
+    - cron: "0 */2 * * *"   # every 2 hours (UTC). Tighten/loosen as you like.
+  workflow_dispatch: {}      # a "Run" button in the GitHub mobile app
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tradebot
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run bot + build dashboard + push alerts
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}   # your ntfy topic (optional but recommended)
+          TB_INTERVAL: "4h"
+          TB_STYLE: "swing"
+        run: python scripts/build_site.py
+
+      - name: Publish updated site
+        run: |
+          git config user.name "tradebot"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs
+          if git diff --cached --quiet; then
+            echo "No changes to publish."
+            exit 0
+          fi
+          git commit -m "site: refresh $(date -u +%FT%TZ) [skip ci]"
+          for i in 1 2 3 4; do
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || true
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then echo pushed; break; fi
+            sleep $((2**i))
+          done

@@ -11,6 +11,14 @@ honest ethos carries over: **backtest everything, report the real number even
 when it's unflattering, and prefer the simple thing that works over the clever
 thing that doesn't.**
 
+## 📱 Run it from your phone, no computer
+
+GitHub's free cloud runners execute the bot on a schedule, publish a live
+dashboard to **GitHub Pages**, and push BUY/EXIT alerts to your phone via
+**ntfy.sh** — managed entirely from the GitHub app + your browser. The workflow
+is `.github/workflows/tradebot.yml`; the site generator is `scripts/build_site.py`.
+**Full step-by-step: [SETUP_PHONE.md](SETUP_PHONE.md).**
+
 ## The critical signals
 
 All computed in `tradebot/indicators.py` (pure functions, standard conventions
