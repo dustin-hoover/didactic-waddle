@@ -80,11 +80,31 @@ python tb.py onchain
 # Read-only wallet balances (self-custody view — no keys, public chain state)
 python tb.py wallet 0xYourAddress
 
+# Never miss a move: check for signal flips, optionally push to your phone
+python tb.py alert --interval 4h --ntfy your-secret-topic
+
 # Live paper trading (simulated fills, no real orders)
 python tb.py paper --symbol BTC --interval 1h --once
 
-# Dashboard: screener + signal panel + backtest + on-chain regime + wallet + reserve
+# Dashboard: strategy explainer at /, the app at /app
 python -m tradebot.server            # http://127.0.0.1:8000
+```
+
+The dashboard opens on a **strategy explainer page** (the graph + why the
+approach works, grounded in real trend-following and capital-preservation
+theory) at `/`, with the live screener/wallet/backtest app at `/app`.
+
+## Never miss an opportunity — alerts & push (`tradebot/alerts.py`)
+
+The bot runs the same rule every candle and fires an alert when the actionable
+state *changes* (flat→long = BUY, long→flat = EXIT). Run `tb.py alert` on a
+schedule (cron, or a Claude Code routine) and pass `--ntfy <topic>` to get a
+**free push to your phone** via [ntfy.sh](https://ntfy.sh) — pick a hard-to-guess
+topic and subscribe to it in the ntfy app. You keep custody and place the trade;
+the bot just guarantees you see the signal. Example cron (hourly):
+
+```cron
+0 * * * * cd /path/to/repo && python tb.py alert --interval 4h --ntfy your-secret-topic
 ```
 
 Python 3.10+, standard library only. `pytest` is only needed for the tests.
@@ -102,8 +122,10 @@ Python 3.10+, standard library only. `pytest` is only needed for the tests.
 | `tradebot/engine.py` | Live paper loop, one candle at a time. |
 | `tradebot/protection.py` | Bag protection: profit skim → stable reserve + yield. |
 | `tradebot/onchain.py` | On-chain metrics, risk regime, read-only wallet balances. |
+| `tradebot/alerts.py` | Signal-flip alerts + free phone push (ntfy.sh). |
 | `tradebot/screener.py` | Rank a coin universe by trend + conviction. |
-| `tradebot/server.py` | Zero-dependency dashboard. |
+| `tradebot/server.py` | Dashboard: strategy explainer (`/`) + app (`/app`). |
+| `static/landing.html` | The strategy explainer / landing page. |
 | `tradebot/plugins/ampl.py` | AMPL rebase specialization (see below). |
 
 ## Risk & safety model

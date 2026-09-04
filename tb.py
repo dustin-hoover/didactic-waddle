@@ -63,6 +63,16 @@ def cmd_paper(a):
         time.sleep(a.interval_seconds)
 
 
+def cmd_alert(a):
+    from tradebot.alerts import check_many
+    syms = a.symbols.split(",") if a.symbols else DEFAULT_UNIVERSE
+    alerts = check_many(syms, a.interval, a.style, ntfy_topic=a.ntfy)
+    print(f"Alerts [{a.style} {a.interval}]" + (f" · pushing BUY/EXIT to ntfy.sh/{a.ntfy}" if a.ntfy else "") + "\n")
+    for al in alerts:
+        mark = {"BUY": "🟢", "EXIT": "🔴", "HOLD": "  ", "ERROR": "⚠️"}.get(al.action, "  ")
+        print(f"{mark} {al.action:<5} {al.message}")
+
+
 def cmd_onchain(a):
     m = fetch_onchain()
     b = lambda x: f"${x/1e9:,.1f}B" if x else "n/a"
@@ -109,6 +119,13 @@ def main():
     pa.add_argument("--once", action="store_true")
     pa.add_argument("--interval-seconds", type=int, default=3600, dest="interval_seconds")
     pa.set_defaults(fn=cmd_paper)
+
+    al = sub.add_parser("alert")
+    al.add_argument("--symbols", default="", help="comma-separated; default is the 10-coin universe")
+    al.add_argument("--interval", default="4h")
+    al.add_argument("--style", choices=["swing", "day"], default="swing")
+    al.add_argument("--ntfy", default="", help="ntfy.sh topic to push BUY/EXIT alerts to your phone")
+    al.set_defaults(fn=cmd_alert)
 
     oc = sub.add_parser("onchain")
     oc.set_defaults(fn=cmd_onchain)

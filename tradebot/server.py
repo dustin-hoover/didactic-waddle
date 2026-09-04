@@ -23,7 +23,9 @@ from .onchain import wallet_balances
 from .screener import DEFAULT_UNIVERSE, screen
 from .signals import CompositeStrategy, TrendFilterStrategy
 
-STATIC = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "tradebot.html")
+_STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+STATIC = os.path.join(_STATIC_DIR, "tradebot.html")
+LANDING = os.path.join(_STATIC_DIR, "landing.html")
 _FEED = ExchangeFeed()
 
 
@@ -79,6 +81,9 @@ class Handler(BaseHTTPRequestHandler):
         q = parse_qs(u.query)
         try:
             if u.path in ("/", "/index.html"):
+                with open(LANDING, "rb") as f:
+                    self._send(200, f.read(), "text/html; charset=utf-8")
+            elif u.path in ("/app", "/app.html"):
                 with open(STATIC, "rb") as f:
                     self._send(200, f.read(), "text/html; charset=utf-8")
             elif u.path == "/api/screen":
