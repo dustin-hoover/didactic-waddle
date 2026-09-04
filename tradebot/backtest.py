@@ -16,6 +16,7 @@ from typing import List
 from .config import BotConfig
 from .ohlcv import Bar
 from .portfolio import PaperExecutor, Portfolio
+from .protection import ProfitProtector
 from .risk import RiskManager, RiskState
 from .signals import build_strategy
 
@@ -32,9 +33,13 @@ class BacktestResult:
     win_rate: float = 0.0
     exposure_avg: float = 0.0
     bars_per_year: float = 365.0
+    reserve_final: float = 0.0        # stable value banked (protected)
+    reserve_frac: float = 0.0         # reserve as fraction of final total equity
+    reserve_yield: float = 0.0        # yield earned on the reserve
+    num_skims: int = 0
 
     def summary(self) -> str:
-        return (
+        s = (
             f"Strategy return : {self.strategy_return:+.1%}\n"
             f"Buy & hold      : {self.buyhold_return:+.1%}\n"
             f"Sharpe (annual) : {self.sharpe:.2f}\n"
@@ -42,6 +47,11 @@ class BacktestResult:
             f"Trades          : {self.num_trades}\n"
             f"Avg exposure    : {self.exposure_avg:.0%}"
         )
+        if self.reserve_final > 0:
+            s += (f"\nBanked reserve  : ${self.reserve_final:,.0f} "
+                  f"({self.reserve_frac:.0%} of equity, +${self.reserve_yield:,.0f} yield, "
+                  f"{self.num_skims} skims)")
+        return s
 
 
 _BARS_PER_YEAR = {
@@ -79,17 +89,17 @@ def run_backtest(bars: List[Bar], cfg: BotConfig) -> BacktestResult:
     result.bars_per_year = _BARS_PER_YEAR.get(cfg.interval, 365.0)
     exposures: List[float] = []
 
+    protector = ProfitProtector(cfg.protection, execu, result.bars_per_year)
+
     for i, bar in enumerate(bars):
         price = bar.close
-        equity = pf.equity(price)
-        rstate = risk.update_and_check(rstate, equity, price)
+        rstate = risk.update_and_check(rstate, pf.equity(price), price)
 
         if rstate.halted:
             execu.rebalance_to(pf, 0.0, price, bar.ts)
             rstate.entry_price = rstate.stop_price = None
         else:
-            window = bars[: i + 1]
-            sig = strat.generate(window)
+            sig = strat.generate(bars[: i + 1])
             target = risk.clamp_exposure(sig.target_exposure)
 
             # Intrabar ATR stop: if this bar's low pierced the stop, exit first.
@@ -99,21 +109,20 @@ def run_backtest(bars: List[Bar], cfg: BotConfig) -> BacktestResult:
                 target = 0.0
 
             current = pf.exposure(price)
-            # Deadband: ignore small exposure changes to avoid fee-churn, but
-            # always allow a full exit (target == 0).
-            if target > 0 and abs(target - current) < cfg.strategy.rebalance_band:
-                result.equity_curve.append(pf.equity(price))
-                result.timestamps.append(bar.ts)
-                exposures.append(current)
-                continue
-            target = current + risk.limit_trade_size(target - current)
-            fill = execu.rebalance_to(pf, target, price, bar.ts)
-            if fill is not None and fill.side == "buy" and rstate.entry_price is None:
-                risk.set_stop(rstate, price, sig.atr_pct)
-            if pf.units <= 1e-12:
-                rstate.entry_price = rstate.stop_price = None
+            # Deadband: skip tiny rebalances (fee churn), but always allow a full exit.
+            in_band = target > 0 and abs(target - current) < cfg.strategy.rebalance_band
+            if not in_band:
+                target = current + risk.limit_trade_size(target - current)
+                fill = execu.rebalance_to(pf, target, price, bar.ts)
+                if fill is not None and fill.side == "buy" and rstate.entry_price is None:
+                    risk.set_stop(rstate, price, sig.atr_pct)
+                if pf.units <= 1e-12:
+                    rstate.entry_price = rstate.stop_price = None
 
-        result.equity_curve.append(pf.equity(price))
+        # Capital-preservation layer: skim profits into the protected reserve.
+        protector.step(pf, price, bar.ts)
+
+        result.equity_curve.append(protector.total_equity(pf, price))
         result.timestamps.append(bar.ts)
         exposures.append(pf.exposure(price))
 
@@ -126,4 +135,8 @@ def run_backtest(bars: List[Bar], cfg: BotConfig) -> BacktestResult:
     result.max_drawdown = _max_dd(result.equity_curve)
     result.num_trades = len(pf.fills)
     result.exposure_avg = statistics.fmean(exposures) if exposures else 0.0
+    result.reserve_final = protector.state.reserve
+    result.reserve_frac = protector.state.reserve / final if final > 0 else 0.0
+    result.reserve_yield = protector.state.yield_earned
+    result.num_skims = protector.state.skims
     return result

@@ -18,6 +18,8 @@ from urllib.parse import parse_qs, urlparse
 from .backtest import run_backtest
 from .config import BotConfig, StrategyConfig
 from .ohlcv import ExchangeFeed
+from .onchain import fetch as fetch_onchain
+from .onchain import wallet_balances
 from .screener import DEFAULT_UNIVERSE, screen
 from .signals import CompositeStrategy, TrendFilterStrategy
 
@@ -55,7 +57,9 @@ def _coin_payload(q):
         "reason": comp.reason,
         "backtest": {"strategy_return": bt.strategy_return, "buyhold_return": bt.buyhold_return,
                      "sharpe": bt.sharpe, "max_drawdown": bt.max_drawdown,
-                     "num_trades": bt.num_trades, "exposure_avg": bt.exposure_avg},
+                     "num_trades": bt.num_trades, "exposure_avg": bt.exposure_avg,
+                     "reserve_final": bt.reserve_final, "reserve_frac": bt.reserve_frac,
+                     "reserve_yield": bt.reserve_yield, "num_skims": bt.num_skims},
         "times": [b.date[:10] for b in bars][::step],
         "prices": [b.close for b in bars][::step],
         "equity": bt.equity_curve[::step],
@@ -81,6 +85,21 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, json.dumps(_screen_payload(q)).encode(), "application/json")
             elif u.path == "/api/coin":
                 self._send(200, json.dumps(_coin_payload(q)).encode(), "application/json")
+            elif u.path == "/api/onchain":
+                m = fetch_onchain()
+                self._send(200, json.dumps({
+                    "fear_greed": m.fear_greed, "fear_greed_label": m.fear_greed_label,
+                    "defi_tvl_usd": m.defi_tvl_usd, "stablecoin_mcap_usd": m.stablecoin_mcap_usd,
+                    "eth_gas_gwei": m.eth_gas_gwei, "risk_regime": m.risk_regime,
+                    "exposure_scale": m.exposure_scale(), "notes": m.notes,
+                }).encode(), "application/json")
+            elif u.path == "/api/wallet":
+                addr = q.get("address", [""])[0]
+                try:
+                    bals = wallet_balances(addr)
+                    self._send(200, json.dumps({"address": addr, "balances": bals}).encode(), "application/json")
+                except Exception as e:  # noqa: BLE001
+                    self._send(200, json.dumps({"error": str(e)}).encode(), "application/json")
             else:
                 self._send(404, b"not found", "text/plain")
         except Exception as exc:  # noqa: BLE001

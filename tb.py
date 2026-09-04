@@ -15,6 +15,8 @@ from tradebot.backtest import run_backtest
 from tradebot.config import BotConfig, StrategyConfig
 from tradebot.engine import TradingEngine
 from tradebot.ohlcv import ExchangeFeed
+from tradebot.onchain import fetch as fetch_onchain
+from tradebot.onchain import wallet_balances
 from tradebot.screener import DEFAULT_UNIVERSE, screen
 
 
@@ -61,6 +63,26 @@ def cmd_paper(a):
         time.sleep(a.interval_seconds)
 
 
+def cmd_onchain(a):
+    m = fetch_onchain()
+    b = lambda x: f"${x/1e9:,.1f}B" if x else "n/a"
+    print("On-chain / market-structure context (live):\n")
+    print(f"  Fear & Greed : {m.fear_greed} ({m.fear_greed_label})")
+    print(f"  DeFi TVL     : {b(m.defi_tvl_usd)}")
+    print(f"  Stablecoins  : {b(m.stablecoin_mcap_usd)}  (sideline dry powder)")
+    print(f"  ETH gas      : {m.eth_gas_gwei:.1f} gwei" if m.eth_gas_gwei else "  ETH gas      : n/a")
+    print(f"\n  RISK REGIME  : {m.risk_regime}  (suggested exposure ×{m.exposure_scale():.2f})")
+    if m.notes:
+        print("  notes:", m.notes)
+
+
+def cmd_wallet(a):
+    print(f"Read-only balances for {a.address} (no keys, public chain state):\n")
+    for sym, amt in wallet_balances(a.address).items():
+        if amt > 0:
+            print(f"  {sym:<5} {amt:,.6f}")
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -87,6 +109,13 @@ def main():
     pa.add_argument("--once", action="store_true")
     pa.add_argument("--interval-seconds", type=int, default=3600, dest="interval_seconds")
     pa.set_defaults(fn=cmd_paper)
+
+    oc = sub.add_parser("onchain")
+    oc.set_defaults(fn=cmd_onchain)
+
+    wa = sub.add_parser("wallet")
+    wa.add_argument("address")
+    wa.set_defaults(fn=cmd_wallet)
 
     a = p.parse_args()
     a.fn(a)

@@ -74,10 +74,16 @@ python tb.py backtest --symbol ETH --interval 1d --kind composite   # experiment
 # Screen a universe of coins by their live signals
 python tb.py screen --interval 4h --style swing
 
+# Live on-chain market context (Fear & Greed, TVL, stablecoins, gas, risk regime)
+python tb.py onchain
+
+# Read-only wallet balances (self-custody view — no keys, public chain state)
+python tb.py wallet 0xYourAddress
+
 # Live paper trading (simulated fills, no real orders)
 python tb.py paper --symbol BTC --interval 1h --once
 
-# Dashboard: screener + per-coin signal panel + backtest
+# Dashboard: screener + signal panel + backtest + on-chain regime + wallet + reserve
 python -m tradebot.server            # http://127.0.0.1:8000
 ```
 
@@ -94,6 +100,8 @@ Python 3.10+, standard library only. `pytest` is only needed for the tests.
 | `tradebot/portfolio.py` | Portfolio + paper fills (fees/slippage), persistence. |
 | `tradebot/backtest.py` | OHLCV backtest with intrabar ATR stop; metrics vs. buy & hold. |
 | `tradebot/engine.py` | Live paper loop, one candle at a time. |
+| `tradebot/protection.py` | Bag protection: profit skim → stable reserve + yield. |
+| `tradebot/onchain.py` | On-chain metrics, risk regime, read-only wallet balances. |
 | `tradebot/screener.py` | Rank a coin universe by trend + conviction. |
 | `tradebot/server.py` | Zero-dependency dashboard. |
 | `tradebot/plugins/ampl.py` | AMPL rebase specialization (see below). |
@@ -107,6 +115,68 @@ Python 3.10+, standard library only. `pytest` is only needed for the tests.
   re-enters only after price recovers — it de-risks, it doesn't just stop trading
   (a bug fixed in the original AMPL project and carried over correctly here).
 - **Long/flat spot only** — no leverage, no shorting, no liquidation risk.
+
+## Protect the bags — capital preservation (`tradebot/protection.py`)
+
+Trading isn't just entries; it's taking money off the table and ring-fencing it.
+The protection layer does this automatically:
+
+- **Profit skim**: each time total equity makes a new high by a tier, a fraction
+  of the *new* gain is realized (sold into strength) and swept into a stable
+  **reserve** (think USDC).
+- **Ratchet**: the reserve only grows. A drawdown in the trading book can never
+  claw back banked profit — that's the "at all costs" guarantee.
+- **Yield**: the reserve is assumed to earn a stable APY (a stablecoin lending
+  position, or SPOT/AMPL staking). Accounting only — a real deposit is a signed
+  action you authorize; the bot never moves funds.
+- **Reserve floor**: an optional minimum always kept in stable/cash.
+
+The strategy only trades the *unreserved* book, so safety compounds. In backtests
+this took money off the table without hurting returns (e.g. BTC 1d: banked ~24%
+of equity into the reserve, drawdown 32%→28%). Configure in `ProtectionConfig`.
+
+## On-chain metrics & how they reach Claude (`tradebot/onchain.py`)
+
+Real, free, no-key market-structure context: **Fear & Greed** (alternative.me),
+**DeFi TVL** and **stablecoin market cap** (DefiLlama), **ETH gas** (JSON-RPC).
+These derive a coarse **risk regime** (`risk_on` / `neutral` / `risk_off`) that
+can optionally scale exposure (`BotConfig.onchain_gate`). It's context, not a
+standalone signal.
+
+**How on-chain data integrates with Claude** — the pattern, three layers:
+
+1. **Source** — raw chain data comes from an RPC/indexer: a public JSON-RPC node
+   (what this repo uses), or a provider like QuickNode/Alchemy, or aggregated
+   APIs (DefiLlama, The Graph subgraphs, Dune).
+2. **Adapter/tool** — that data is exposed as callable tools. Either a plain
+   Python module you call (this repo's `onchain.py`), or an **MCP server** (e.g.
+   QuickNode's EVM MCP) that presents `eth_call`, balances, logs, etc. as tools.
+3. **Agent** — Claude (Claude Code, or an app using the Agent SDK) calls those
+   tools, reasons over the metrics, and either reports or feeds them into the
+   bot. In this repo the same functions power the CLI (`tb.py onchain`), the
+   dashboard (`/api/onchain`), and the optional engine gate — so "integrating
+   on-chain metrics with Claude" here means: Claude runs `onchain.fetch()` (or an
+   MCP tool), reads the regime, and the strategy scales exposure accordingly.
+
+## Self-custody: connect a wallet the safe way
+
+`tb.py wallet 0x…` and the dashboard's wallet panel read balances **read-only**
+from public chain state — **no keys, no signing, ever**. That is the safe first
+step. Automated *execution* from your own wallet is a separate, deliberate
+decision with a real security trade-off — see the honest note in the project
+discussion; the short version:
+
+- **"Fee-free" DEXs are real-ish**: CoW Swap, 1inch Fusion, and Jupiter charge
+  no explicit platform fee and are **gasless** (a solver pays gas), with strong
+  **MEV protection** (orders never hit the public mempool). But nothing is truly
+  free — you still pay via the spread/price impact baked into execution and the
+  underlying pool's LP fee. "No trading fee," not "no cost."
+- **Automation vs. custody is a genuine trade-off.** Full "never miss"
+  automation requires the bot to sign transactions, which means it holds a key
+  or a scoped permission — a real risk to the funds it can reach. The safe
+  designs keep your main bags in a wallet the bot can never touch and expose only
+  a small, capped trading slice (or use propose-and-sign, where you approve each
+  order). This repo ships **none** of that enabled by choice.
 
 ## AMPL plugin (the original project)
 

@@ -55,6 +55,22 @@
     </div>
   </div>
 
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" id="topRow">
+    <div class="panel">
+      <h2>On-chain market context</h2>
+      <div class="grid" id="onchain"><div class="muted">Loading…</div></div>
+      <div class="muted" style="margin-top:8px">Regime can optionally scale exposure — context, not a standalone signal.</div>
+    </div>
+    <div class="panel">
+      <h2>Wallet (read-only · self-custody)</h2>
+      <div class="controls">
+        <input id="addr" placeholder="0x… your address" style="flex:1;min-width:180px;background:#0d1117;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px"/>
+        <button onclick="loadWallet()">View balances</button>
+      </div>
+      <div id="wallet" class="muted" style="margin-top:10px">No keys are ever requested. This reads public chain state only.</div>
+    </div>
+  </div>
+
   <div class="panel">
     <h2>Signal screener — ranked by trend, then conviction</h2>
     <table>
@@ -126,7 +142,9 @@ async function loadCoin(sym){
     <div class="stat"><h3>Strategy ret</h3><div class="v ${b.strategy_return>=0?'up':'down'}">${pct(b.strategy_return)}</div></div>
     <div class="stat"><h3>Buy & hold</h3><div class="v ${b.buyhold_return>=0?'up':'down'}">${pct(b.buyhold_return)}</div></div>
     <div class="stat"><h3>Sharpe</h3><div class="v">${b.sharpe.toFixed(2)}</div></div>
-    <div class="stat"><h3>Max DD</h3><div class="v">${(b.max_drawdown*100).toFixed(0)}%</div></div>`;
+    <div class="stat"><h3>Max DD</h3><div class="v">${(b.max_drawdown*100).toFixed(0)}%</div></div>
+    <div class="stat"><h3>Banked reserve 🔒</h3><div class="v up">$${(b.reserve_final||0).toLocaleString(undefined,{maximumFractionDigits:0})}</div>
+      <div class="muted">${((b.reserve_frac||0)*100).toFixed(0)}% of equity · ${b.num_skims||0} skims · +$${(b.reserve_yield||0).toFixed(0)} yield</div></div>`;
   const order=['ema_trend','macd','adx_dir','donchian','roc','vwap','obv','rsi','percent_b'];
   $('votes').innerHTML='';
   order.forEach(k=>{
@@ -150,7 +168,33 @@ function drawChart(equity,prices){
   x.fillStyle='#58a6ff';x.font='12px sans-serif';x.fillText('■ strategy',20,18);
   x.fillStyle='#8b949e';x.fillText('■ buy & hold',100,18);
 }
+async function loadOnchain(){
+  try{
+    const m=await fetch('/api/onchain').then(r=>r.json());
+    const regimeColor={risk_on:'var(--green)',neutral:'var(--amber)',risk_off:'var(--red)'}[m.risk_regime]||'var(--muted)';
+    const b=x=>x?('$'+(x/1e9).toFixed(1)+'B'):'–';
+    $('onchain').innerHTML=`
+      <div class="stat"><h3>Risk regime</h3><div class="v" style="color:${regimeColor}">${(m.risk_regime||'').replace('_',' ')}</div><div class="muted">exposure ×${(m.exposure_scale||1).toFixed(2)}</div></div>
+      <div class="stat"><h3>Fear & Greed</h3><div class="v">${m.fear_greed??'–'}</div><div class="muted">${m.fear_greed_label||''}</div></div>
+      <div class="stat"><h3>DeFi TVL</h3><div class="v">${b(m.defi_tvl_usd)}</div></div>
+      <div class="stat"><h3>Stablecoins</h3><div class="v">${b(m.stablecoin_mcap_usd)}</div><div class="muted">dry powder</div></div>
+      <div class="stat"><h3>ETH gas</h3><div class="v">${m.eth_gas_gwei?m.eth_gas_gwei.toFixed(1):'–'}</div><div class="muted">gwei</div></div>`;
+  }catch(e){$('onchain').innerHTML='<div class=muted>on-chain metrics unavailable</div>';}
+}
+
+async function loadWallet(){
+  const addr=$('addr').value.trim();
+  if(!addr){$('wallet').textContent='Enter an address.';return;}
+  $('wallet').textContent='Reading chain…';
+  const d=await fetch('/api/wallet?address='+encodeURIComponent(addr)).then(r=>r.json());
+  if(d.error){$('wallet').textContent='Error: '+d.error;return;}
+  const rows=Object.entries(d.balances).filter(([k,v])=>v>0)
+    .map(([k,v])=>`<div class="vote"><span>${k}</span><div class="muted">${v.toLocaleString(undefined,{maximumFractionDigits:4})}</div><span></span></div>`).join('');
+  $('wallet').innerHTML=rows||'<span class="muted">no tracked-token balances</span>';
+}
+
 loadScreen();
+loadOnchain();
 </script>
 </body>
 </html>

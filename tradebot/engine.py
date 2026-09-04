@@ -55,6 +55,14 @@ class TradingEngine:
             action = "HALT -> cash (drawdown breaker)"
         else:
             target = self.risk.clamp_exposure(sig.target_exposure)
+            # Optional on-chain regime gate: trim exposure when the market is
+            # frothy/risk-off (extreme greed, gas spikes). Context, not a signal.
+            if self.cfg.onchain_gate and target > 0:
+                try:
+                    from .onchain import fetch as _fetch_oc
+                    target *= _fetch_oc().exposure_scale()
+                except Exception:  # noqa: BLE001 — never let context break trading
+                    pass
             if self.risk.stop_triggered(self.rstate, bar.low) and self.pf.units > 0:
                 self.execu.rebalance_to(self.pf, 0.0, price, bar.ts)
                 self.rstate.entry_price = self.rstate.stop_price = None

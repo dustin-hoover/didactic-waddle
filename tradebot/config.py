@@ -9,6 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, Optional
 
+from .protection import ProtectionConfig
+
 
 @dataclass
 class RiskConfig:
@@ -41,8 +43,10 @@ class BotConfig:
     mode: str = "paper"
     symbol: str = "BTC"
     interval: str = "4h"                # candle size ("1h","4h","1d",...)
+    onchain_gate: bool = False          # scale exposure by the live on-chain risk regime
     starting_cash: float = 10_000.0
     strategy: StrategyConfig = field(default_factory=StrategyConfig)
     risk: RiskConfig = field(default_factory=RiskConfig)
     costs: CostModel = field(default_factory=CostModel)
+    protection: ProtectionConfig = field(default_factory=ProtectionConfig)
     state_path: str = "data/tradebot_state.json"
