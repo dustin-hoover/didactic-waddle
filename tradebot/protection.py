@@ -45,8 +45,22 @@ class ProtectionConfig:
     reserve_apy: float = 0.06     # assumed stable yield on the reserve (accounting)
     # Flywheel / reinvestment
     reinvest_enabled: bool = True
-    reinvest_multiple: float = 3.0     # trigger when reserve >= this * seed
-    reinvest_fraction: float = 2 / 3   # portion of reserve injected into trading
+    reinvest_fraction: float = 2 / 3   # portion of ELIGIBLE reserve injected into trading
+    # Trigger mode:
+    #   "ratio" (default, actually fires) — recycle when the eligible reserve grows
+    #     to >= reinvest_ratio x the current trading pool. Scales with the account,
+    #     so it stays a living mechanism instead of a once-a-decade event.
+    #   "seed" — the literal "reserve reaches reinvest_multiple x the original seed"
+    #     rule. Faithful to the first spec, but on realistic returns it almost
+    #     never fires (the reserve rarely reaches multiples of the seed).
+    reinvest_trigger_mode: str = "ratio"
+    reinvest_ratio: float = 0.5        # ratio-mode threshold (reserve vs trading pool)
+    reinvest_multiple: float = 3.0     # seed-mode threshold (reserve vs original seed)
+    # Principal protection ("house money"): once the seed is banked, never push it
+    # back into risk — the flywheel then recycles only profit ABOVE the seed, and
+    # the reserve is never drawn below the seed. Bounds the realistic worst case to
+    # losing profit, not capital (after the seed has been secured once).
+    protect_principal: bool = True
 
 
 @dataclass
@@ -121,12 +135,19 @@ class ProfitProtector:
         if self.state.reserve < floor_target - 1e-9:
             self._bank(pf, price, floor_target - self.state.reserve, ts)
 
-        # 4) FLYWHEEL: once the reserve triples the seed, inject 2/3 of it back
-        #    into the trading pool, enlarging the base. The rest stays banked.
+        # 4) FLYWHEEL: recycle reserve back into the trading pool once it has
+        #    grown enough. With principal protection ON, the seed is a floor the
+        #    reserve is never drawn below, and only profit ABOVE the seed is
+        #    eligible to be reinvested — so your capital, once banked, stays safe.
         if self.cfg.reinvest_enabled and self.seed > 0:
-            trigger = self.cfg.reinvest_multiple * self.seed
-            if self.state.reserve >= trigger:
-                move = self.cfg.reinvest_fraction * self.state.reserve
+            floor = self.seed if self.cfg.protect_principal else 0.0
+            eligible = self.state.reserve - floor
+            if self.cfg.reinvest_trigger_mode == "ratio":
+                threshold = self.cfg.reinvest_ratio * max(pf.equity(price), 1e-9)
+            else:
+                threshold = self.cfg.reinvest_multiple * self.seed
+            if eligible > 0 and eligible >= threshold:
+                move = self.cfg.reinvest_fraction * eligible
                 self.state.reserve -= move
                 pf.cash += move                         # internal transfer into trading
                 self.state.reinvests += 1
