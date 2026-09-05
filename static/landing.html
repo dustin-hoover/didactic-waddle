@@ -198,7 +198,61 @@
         <p>The reserve only ever grows — a market crash can’t claw it back — and it earns yield while it sits
           (a stablecoin lending position, or staking <span class="term">AMPL</span> / <span class="term">SPOT</span>).
           You compound safety, not just exposure.</p></div></div>
+      <div class="step"><div class="num">05</div><div>
+        <h3>Spin the flywheel</h3>
+        <p>Once the banked reserve grows to a multiple of your original seed (default: it <em>triples</em> it),
+          a share of it (default: <span class="term">two-thirds</span>) is injected back into the trading pool —
+          enlarging the base that earns the next round of profit, which refills the reserve faster, which fires
+          the next injection. The machine ratchets itself up, and keeps a third banked, until you stop it.</p></div></div>
     </div>
+  </section>
+
+  <style>
+    .fw{display:grid;grid-template-columns:280px 1fr;gap:24px}
+    .fw .controls{display:flex;flex-direction:column;gap:16px}
+    .fw label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+    .fw label b{color:var(--text);font-family:var(--mono);font-size:13px}
+    .fw input[type=range]{width:100%;accent-color:var(--accent)}
+    .fw .out{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+    .fw .o{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:12px}
+    .fw .o .k{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+    .fw .o .v{font-family:var(--serif);font-size:22px;font-weight:600;margin-top:4px}
+    @media(max-width:720px){.fw{grid-template-columns:1fr}}
+  </style>
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">The flywheel</div>
+      <h2>Watch the two pools compound</h2>
+      <p>Drag the assumptions. This is the <em>compounding math</em> of the two-pool machine — a smoothed model
+        on a steady average return, <b>not</b> a market forecast. Real months are lumpy and some are negative;
+        the point is to see how skimming + reinvesting ratchet the base over time.</p>
+    </div>
+    <div class="board fw">
+      <div class="controls">
+        <label>Starting seed <b><span id="fwSeedV"></span></b>
+          <input type="range" id="fwSeed" min="100" max="10000" step="100" value="1000"></label>
+        <label>Avg return / month <b><span id="fwRetV"></span></b>
+          <input type="range" id="fwRet" min="0" max="12" step="0.5" value="5"></label>
+        <label>Profit skimmed to reserve <b><span id="fwSkimV"></span></b>
+          <input type="range" id="fwSkim" min="10" max="60" step="5" value="30"></label>
+        <label>Reinvest trigger (× seed) <b><span id="fwMultV"></span></b>
+          <input type="range" id="fwMult" min="1.5" max="5" step="0.5" value="3"></label>
+        <label>Horizon <b><span id="fwMonV"></span></b>
+          <input type="range" id="fwMon" min="12" max="60" step="6" value="60"></label>
+      </div>
+      <div>
+        <div class="legend"><span><i class="swatch" style="background:var(--accent)"></i>Trading pool</span>
+          <span><i class="swatch" style="background:var(--up)"></i>Banked reserve</span></div>
+        <svg id="fwChart" viewBox="0 0 620 300" role="img" aria-label="Projected growth of the trading pool and banked reserve over time"></svg>
+        <div class="out">
+          <div class="o"><div class="k">Trading base (end)</div><div class="v gold" id="fwBase">—</div></div>
+          <div class="o"><div class="k">Banked reserve (end)</div><div class="v" style="color:var(--up)" id="fwRes">—</div></div>
+          <div class="o"><div class="k">Total value</div><div class="v" id="fwTot">—</div></div>
+          <div class="o"><div class="k">Flywheel injections</div><div class="v" id="fwInj">—</div></div>
+        </div>
+      </div>
+    </div>
+    <p class="chart-note">Illustrative model · steady return assumption · excludes fees, taxes, and losing streaks · not a forecast or advice.</p>
   </section>
 
   <section>
@@ -325,6 +379,69 @@ document.getElementById('footRange').textContent = DATA.range[0] + '–' + DATA.
   // endpoint dots
   svg.appendChild(el('circle',{cx:X(n-1).toFixed(1),cy:Y(bh[n-1]).toFixed(1),r:3.5,fill:'var(--chart-bh)'}));
   svg.appendChild(el('circle',{cx:X(n-1).toFixed(1),cy:Y(strat[n-1]).toFixed(1),r:4,fill:'var(--accent)'}));
+})();
+
+// ---- flywheel projector (illustrative compounding model) ----
+(function(){
+  const g=id=>document.getElementById(id);
+  const NS='http://www.w3.org/2000/svg';
+  const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
+  const money=x=>'$'+Math.round(x).toLocaleString();
+  const ins=['fwSeed','fwRet','fwSkim','fwMult','fwMon'];
+
+  function simulate(){
+    const seed=+g('fwSeed').value, r=+g('fwRet').value/100, skim=+g('fwSkim').value/100,
+          mult=+g('fwMult').value, months=+g('fwMon').value, apy=0.06;
+    let trading=seed, reserve=0, injections=[];
+    const T=[trading], R=[reserve];
+    for(let m=1;m<=months;m++){
+      const gain=trading*r;                 // trading earns the avg monthly return
+      reserve+=skim*gain; trading+=gain-skim*gain;   // skim a slice, keep the rest
+      reserve*=(1+apy/12);                  // reserve compounds a stable yield
+      if(reserve>=mult*seed){               // flywheel fires: inject 2/3 back
+        const move=(2/3)*reserve; reserve-=move; trading+=move; injections.push(m);
+      }
+      T.push(trading); R.push(reserve);
+    }
+    return {seed,months,T,R,injections};
+  }
+
+  function draw(sim){
+    const W=620,H=300,pL=52,pR=14,pT=14,pB=26;
+    const total=sim.T.map((t,i)=>t+sim.R[i]); const mx=Math.max(...total,1); const n=sim.T.length;
+    const X=i=>pL+i/(n-1)*(W-pL-pR), Y=v=>pT+(1-v/mx)*(H-pT-pB);
+    const svg=g('fwChart'); svg.innerHTML='';
+    for(let i=0;i<=4;i++){const v=mx*i/4,y=Y(v);
+      svg.appendChild(el('line',{x1:pL,y1:y.toFixed(1),x2:W-pR,y2:y.toFixed(1),stroke:'var(--border)','stroke-width':1}));
+      const t=el('text',{x:pL-8,y:(y+4).toFixed(1),'text-anchor':'end','font-family':'var(--mono)','font-size':11,fill:'var(--faint)'});
+      t.textContent=v>=1000?'$'+(v/1000).toFixed(0)+'k':money(v); svg.appendChild(t);}
+    // injection markers
+    sim.injections.forEach(m=>{const x=X(m);
+      svg.appendChild(el('line',{x1:x,y1:pT,x2:x,y2:H-pB,stroke:'var(--accent)','stroke-width':1,'stroke-dasharray':'2 3','stroke-opacity':.5}));});
+    const line=(arr,col,w)=>svg.appendChild(el('path',{d:arr.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join(' '),
+      fill:'none',stroke:col,'stroke-width':w,'stroke-linejoin':'round'}));
+    line(sim.R,'var(--up)',2);        // banked reserve
+    line(sim.T,'var(--accent)',2.6);  // trading pool
+    [[0,'0'],[n-1,'m'+(n-1)]].forEach(([i,lab])=>{const t=el('text',{x:X(i).toFixed(1),y:H-8,
+      'text-anchor':i?'end':'start','font-family':'var(--mono)','font-size':11,fill:'var(--faint)'});t.textContent=i?sim.months+'mo':'now';svg.appendChild(t);});
+  }
+
+  function render(){
+    g('fwSeedV').textContent=money(+g('fwSeed').value);
+    g('fwRetV').textContent=(+g('fwRet').value)+'%/mo';
+    g('fwSkimV').textContent=(+g('fwSkim').value)+'%';
+    g('fwMultV').textContent=(+g('fwMult').value)+'×';
+    g('fwMonV').textContent=(+g('fwMon').value)+' months';
+    const sim=simulate();
+    const trading=sim.T[sim.T.length-1], reserve=sim.R[sim.R.length-1];
+    g('fwBase').textContent=money(trading);
+    g('fwRes').textContent=money(reserve);
+    g('fwTot').textContent=money(trading+reserve);
+    g('fwInj').textContent=sim.injections.length;
+    draw(sim);
+  }
+  ins.forEach(id=>g(id).addEventListener('input',render));
+  render();
 })();
 </script>
 
