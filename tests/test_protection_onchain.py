@@ -48,6 +48,34 @@ def test_reserve_floor_enforced():
     assert res.reserve_frac >= 0.15  # floor roughly enforced
 
 
+def test_flywheel_reinvests_on_strong_uptrend():
+    from tradebot.ohlcv import Bar
+    # steep uptrend so the reserve triples the seed and the flywheel fires
+    bars = [Bar(i, 100 * 1.012 ** i, 100 * 1.012 ** i * 1.01,
+                100 * 1.012 ** i * 0.99, 100 * 1.012 ** i, 100.0) for i in range(400)]
+    res = run_backtest(bars, BotConfig(starting_cash=100.0,
+                                       strategy=StrategyConfig(kind="trend")))
+    assert res.num_reinvests > 0
+    assert res.total_reinvested > 0
+    assert res.trading_base_final > 100.0  # base grew past the seed
+
+
+def test_flywheel_off_and_multiple_knob():
+    from tradebot.ohlcv import Bar
+    bars = [Bar(i, 100 * 1.012 ** i, 100 * 1.012 ** i * 1.01,
+                100 * 1.012 ** i * 0.99, 100 * 1.012 ** i, 100.0) for i in range(400)]
+    off = run_backtest(bars, BotConfig(starting_cash=100.0, strategy=StrategyConfig(kind="trend"),
+                                       protection=ProtectionConfig(reinvest_enabled=False)))
+    assert off.num_reinvests == 0
+    assert off.trading_base_final == 100.0
+    # a lower multiple fires at least as often as a higher one
+    lo = run_backtest(bars, BotConfig(starting_cash=100.0, strategy=StrategyConfig(kind="trend"),
+                                      protection=ProtectionConfig(reinvest_multiple=1.5)))
+    hi = run_backtest(bars, BotConfig(starting_cash=100.0, strategy=StrategyConfig(kind="trend"),
+                                      protection=ProtectionConfig(reinvest_multiple=5.0)))
+    assert lo.num_reinvests >= hi.num_reinvests
+
+
 def test_onchain_regime_rules():
     assert _derive_regime(OnChainMetrics(fear_greed=85)) == "risk_off"   # extreme greed
     assert _derive_regime(OnChainMetrics(fear_greed=15)) == "risk_on"    # extreme fear

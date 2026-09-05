@@ -37,6 +37,9 @@ class BacktestResult:
     reserve_frac: float = 0.0         # reserve as fraction of final total equity
     reserve_yield: float = 0.0        # yield earned on the reserve
     num_skims: int = 0
+    num_reinvests: int = 0            # flywheel firings (reserve -> trading)
+    total_reinvested: float = 0.0     # cumulative reinvested back into trading
+    trading_base_final: float = 0.0   # seed + everything the flywheel injected
 
     def summary(self) -> str:
         s = (
@@ -51,6 +54,10 @@ class BacktestResult:
             s += (f"\nBanked reserve  : ${self.reserve_final:,.0f} "
                   f"({self.reserve_frac:.0%} of equity, +${self.reserve_yield:,.0f} yield, "
                   f"{self.num_skims} skims)")
+        if self.num_reinvests > 0:
+            s += (f"\nFlywheel        : {self.num_reinvests} reinvestments, "
+                  f"${self.total_reinvested:,.0f} recycled into trading "
+                  f"(base ${self.trading_base_final:,.0f})")
         return s
 
 
@@ -89,7 +96,7 @@ def run_backtest(bars: List[Bar], cfg: BotConfig) -> BacktestResult:
     result.bars_per_year = _BARS_PER_YEAR.get(cfg.interval, 365.0)
     exposures: List[float] = []
 
-    protector = ProfitProtector(cfg.protection, execu, result.bars_per_year)
+    protector = ProfitProtector(cfg.protection, execu, result.bars_per_year, seed=cfg.starting_cash)
 
     for i, bar in enumerate(bars):
         price = bar.close
@@ -139,4 +146,7 @@ def run_backtest(bars: List[Bar], cfg: BotConfig) -> BacktestResult:
     result.reserve_frac = protector.state.reserve / final if final > 0 else 0.0
     result.reserve_yield = protector.state.yield_earned
     result.num_skims = protector.state.skims
+    result.num_reinvests = protector.state.reinvests
+    result.total_reinvested = protector.state.total_reinvested
+    result.trading_base_final = protector.state.trading_base
     return result

@@ -18,6 +18,13 @@ trading account:
 
 The strategy only ever trades the *unreserved* book, so as the reserve grows the
 amount at risk shrinks — you compound safety, not just exposure.
+
+FLYWHEEL (reinvestment): the reserve isn't a dead end. Once it grows to a
+multiple of the original seed (default: triples it), a fraction of it (default:
+two-thirds) is injected back into the trading pool, enlarging the base that
+generates future profit — which refills the reserve faster, which triggers the
+next injection. Each cycle ratchets the machine up. The remaining third stays
+banked and compounding, so safety keeps growing too. Runs until you stop it.
 """
 
 from __future__ import annotations
@@ -36,6 +43,10 @@ class ProtectionConfig:
     skim_tier: float = 0.08       # skim fires on each new equity high of +this
     reserve_floor: float = 0.05   # min fraction of total equity kept in reserve
     reserve_apy: float = 0.06     # assumed stable yield on the reserve (accounting)
+    # Flywheel / reinvestment
+    reinvest_enabled: bool = True
+    reinvest_multiple: float = 3.0     # trigger when reserve >= this * seed
+    reinvest_fraction: float = 2 / 3   # portion of reserve injected into trading
 
 
 @dataclass
@@ -44,14 +55,19 @@ class ReserveState:
     hwm: float | None = None      # total-equity high-water at last skim
     skims: int = 0
     yield_earned: float = 0.0
+    reinvests: int = 0            # times the flywheel fired
+    total_reinvested: float = 0.0  # cumulative reserve -> trading injections
+    trading_base: float = 0.0     # seed + everything injected back into trading
 
 
 class ProfitProtector:
-    def __init__(self, cfg: ProtectionConfig, executor: PaperExecutor, bars_per_year: float):
+    def __init__(self, cfg: ProtectionConfig, executor: PaperExecutor, bars_per_year: float,
+                 seed: float = 0.0):
         self.cfg = cfg
         self.execu = executor
         self.bpy = max(bars_per_year, 1.0)
-        self.state = ReserveState()
+        self.seed = seed          # original trading investment; flywheel trigger reference
+        self.state = ReserveState(trading_base=seed)
 
     def total_equity(self, pf: Portfolio, price: float) -> float:
         return self.state.reserve + pf.equity(price)
@@ -104,3 +120,17 @@ class ProfitProtector:
         floor_target = self.cfg.reserve_floor * total
         if self.state.reserve < floor_target - 1e-9:
             self._bank(pf, price, floor_target - self.state.reserve, ts)
+
+        # 4) FLYWHEEL: once the reserve triples the seed, inject 2/3 of it back
+        #    into the trading pool, enlarging the base. The rest stays banked.
+        if self.cfg.reinvest_enabled and self.seed > 0:
+            trigger = self.cfg.reinvest_multiple * self.seed
+            if self.state.reserve >= trigger:
+                move = self.cfg.reinvest_fraction * self.state.reserve
+                self.state.reserve -= move
+                pf.cash += move                         # internal transfer into trading
+                self.state.reinvests += 1
+                self.state.total_reinvested += move
+                self.state.trading_base += move
+                # reset the skim high-water to the new, larger total
+                self.state.hwm = self.total_equity(pf, price)
