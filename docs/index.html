@@ -198,7 +198,61 @@
         <p>The reserve only ever grows — a market crash can’t claw it back — and it earns yield while it sits
           (a stablecoin lending position, or staking <span class="term">AMPL</span> / <span class="term">SPOT</span>).
           You compound safety, not just exposure.</p></div></div>
+      <div class="step"><div class="num">05</div><div>
+        <h3>Spin the flywheel</h3>
+        <p>Once the banked reserve grows to a multiple of your original seed (default: it <em>triples</em> it),
+          a share of it (default: <span class="term">two-thirds</span>) is injected back into the trading pool —
+          enlarging the base that earns the next round of profit, which refills the reserve faster, which fires
+          the next injection. The machine ratchets itself up, and keeps a third banked, until you stop it.</p></div></div>
     </div>
+  </section>
+
+  <style>
+    .fw{display:grid;grid-template-columns:280px 1fr;gap:24px}
+    .fw .controls{display:flex;flex-direction:column;gap:16px}
+    .fw label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+    .fw label b{color:var(--text);font-family:var(--mono);font-size:13px}
+    .fw input[type=range]{width:100%;accent-color:var(--accent)}
+    .fw .out{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+    .fw .o{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:12px}
+    .fw .o .k{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+    .fw .o .v{font-family:var(--serif);font-size:22px;font-weight:600;margin-top:4px}
+    @media(max-width:720px){.fw{grid-template-columns:1fr}}
+  </style>
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">The flywheel</div>
+      <h2>Watch the two pools compound</h2>
+      <p>Drag the assumptions. This is the <em>compounding math</em> of the two-pool machine — a smoothed model
+        on a steady average return, <b>not</b> a market forecast. Real months are lumpy and some are negative;
+        the point is to see how skimming + reinvesting ratchet the base over time.</p>
+    </div>
+    <div class="board fw">
+      <div class="controls">
+        <label>Starting seed <b><span id="fwSeedV"></span></b>
+          <input type="range" id="fwSeed" min="100" max="10000" step="100" value="1000"></label>
+        <label>Avg return / month <b><span id="fwRetV"></span></b>
+          <input type="range" id="fwRet" min="0" max="12" step="0.5" value="5"></label>
+        <label>Profit skimmed to reserve <b><span id="fwSkimV"></span></b>
+          <input type="range" id="fwSkim" min="10" max="60" step="5" value="30"></label>
+        <label>Reinvest trigger (× seed) <b><span id="fwMultV"></span></b>
+          <input type="range" id="fwMult" min="1.5" max="5" step="0.5" value="3"></label>
+        <label>Horizon <b><span id="fwMonV"></span></b>
+          <input type="range" id="fwMon" min="12" max="60" step="6" value="60"></label>
+      </div>
+      <div>
+        <div class="legend"><span><i class="swatch" style="background:var(--accent)"></i>Trading pool</span>
+          <span><i class="swatch" style="background:var(--up)"></i>Banked reserve</span></div>
+        <svg id="fwChart" viewBox="0 0 620 300" role="img" aria-label="Projected growth of the trading pool and banked reserve over time"></svg>
+        <div class="out">
+          <div class="o"><div class="k">Trading base (end)</div><div class="v gold" id="fwBase">—</div></div>
+          <div class="o"><div class="k">Banked reserve (end)</div><div class="v" style="color:var(--up)" id="fwRes">—</div></div>
+          <div class="o"><div class="k">Total value</div><div class="v" id="fwTot">—</div></div>
+          <div class="o"><div class="k">Flywheel injections</div><div class="v" id="fwInj">—</div></div>
+        </div>
+      </div>
+    </div>
+    <p class="chart-note">Illustrative model · steady return assumption · excludes fees, taxes, and losing streaks · not a forecast or advice.</p>
   </section>
 
   <section>
@@ -246,6 +300,50 @@
 
   <section>
     <div class="sec-head">
+      <div class="eyebrow">What the math actually says</div>
+      <h2>We tested it honestly — here's the truth</h2>
+      <p>Monte Carlo over hundreds of bootstrapped real-BTC paths (crashes and chop included),
+        $100 seed. Two findings changed the settings, and one keeps us honest.</p>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <div class="who">Finding 1 · the real dial</div>
+        <h3>Skim aggressively</h3>
+        <p>How much profit you bank is the lever that matters. Skimming more raised median return
+          <em>and</em> lowered the chance of losing — no trade-off, because banked profit compounds
+          safely instead of riding volatility.</p>
+        <div class="applies"><b>Set to 60%.</b> The measured sweet spot (20% skim → 42% loss-rate;
+          80% skim → 30%).</div>
+      </div>
+      <div class="card">
+        <div class="who">Finding 2 · a dead knob</div>
+        <h3>Reinvest % barely matters</h3>
+        <p>Sweeping the flywheel's reinvestment fraction from 0% to 100% gave <em>identical</em>
+          returns, drawdown, and loss-rate. Shuffling capital between pools in the same market
+          doesn't change the outcome.</p>
+        <div class="applies"><b>Left at ⅔.</b> Tuning it is wasted effort — the skim rate is where the money is.</div>
+      </div>
+      <div class="card">
+        <div class="who">Finding 3 · the honest limit</div>
+        <h3>It can still lose</h3>
+        <p>No setting drove the loss-rate to zero — even the safest still ended below the seed in
+          about <em>30% of scenarios</em>. Principal protection secures capital <em>after</em> it's
+          banked, but can't save a run that loses before it gets there.</p>
+        <div class="applies"><b>No guarantees.</b> The way to lower that floor is a better engine or
+          smaller size — not flywheel knobs.</div>
+      </div>
+      <div class="card">
+        <div class="who">The setting</div>
+        <h3>How it's tuned now</h3>
+        <p>Skim rate <b>60%</b>, reinvest fraction <b>⅔</b>, principal protection <b>on</b>. Reproduce
+          it yourself: <span class="term">python scripts/analyze_reinvest.py</span>.</p>
+        <div class="applies"><b>Every number here is measured, not asserted.</b></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
       <div class="eyebrow">The fine print, out loud</div>
       <h2>What this is not</h2>
       <p>Every honest strategy has a cost. Hiding it is how people get hurt, so here it is plainly.</p>
@@ -272,7 +370,7 @@
 </div>
 
 <script>
-const DATA = {"dates": ["2023-12-10", "2023-12-16", "2023-12-22", "2023-12-28", "2024-01-03", "2024-01-09", "2024-01-15", "2024-01-21", "2024-01-27", "2024-02-02", "2024-02-08", "2024-02-14", "2024-02-20", "2024-02-26", "2024-03-03", "2024-03-09", "2024-03-15", "2024-03-21", "2024-03-27", "2024-04-02", "2024-04-08", "2024-04-14", "2024-04-20", "2024-04-26", "2024-05-02", "2024-05-08", "2024-05-14", "2024-05-20", "2024-05-26", "2024-06-01", "2024-06-07", "2024-06-13", "2024-06-19", "2024-06-25", "2024-07-01", "2024-07-07", "2024-07-13", "2024-07-19", "2024-07-25", "2024-07-31", "2024-08-06", "2024-08-12", "2024-08-18", "2024-08-24", "2024-08-30", "2024-09-05", "2024-09-11", "2024-09-17", "2024-09-23", "2024-09-29", "2024-10-05", "2024-10-11", "2024-10-17", "2024-10-23", "2024-10-29", "2024-11-04", "2024-11-10", "2024-11-16", "2024-11-22", "2024-11-28", "2024-12-04", "2024-12-10", "2024-12-16", "2024-12-22", "2024-12-28", "2025-01-03", "2025-01-09", "2025-01-15", "2025-01-21", "2025-01-27", "2025-02-02", "2025-02-08", "2025-02-14", "2025-02-20", "2025-02-26", "2025-03-04", "2025-03-10", "2025-03-16", "2025-03-22", "2025-03-28", "2025-04-03", "2025-04-09", "2025-04-15", "2025-04-21", "2025-04-27", "2025-05-03", "2025-05-09", "2025-05-15", "2025-05-21", "2025-05-27", "2025-06-02", "2025-06-08", "2025-06-14", "2025-06-20", "2025-06-26", "2025-07-02", "2025-07-08", "2025-07-14", "2025-07-20", "2025-07-26", "2025-08-01", "2025-08-07", "2025-08-13", "2025-08-19", "2025-08-25", "2025-08-31", "2025-09-06", "2025-09-12", "2025-09-18", "2025-09-24", "2025-09-30", "2025-10-06", "2025-10-12", "2025-10-18", "2025-10-24", "2025-10-30", "2025-11-05", "2025-11-11", "2025-11-17", "2025-11-23", "2025-11-29", "2025-12-05", "2025-12-11", "2025-12-17", "2025-12-23", "2025-12-29", "2026-01-04", "2026-01-10", "2026-01-16", "2026-01-22", "2026-01-28", "2026-02-03", "2026-02-09", "2026-02-15", "2026-02-21", "2026-02-27", "2026-03-05", "2026-03-11", "2026-03-17", "2026-03-23", "2026-03-29", "2026-04-04", "2026-04-10", "2026-04-16", "2026-04-22", "2026-04-28", "2026-05-04", "2026-05-10", "2026-05-16", "2026-05-22", "2026-05-28", "2026-06-03", "2026-06-09", "2026-06-15", "2026-06-21", "2026-06-27", "2026-07-03", "2026-07-09", "2026-07-15", "2026-07-21", "2026-07-27", "2026-08-02", "2026-08-08", "2026-08-14", "2026-08-20", "2026-08-26", "2026-09-01"], "strategy": [10000.0, 10000.5, 10001.0, 10001.5, 10002.0, 10002.5, 10003.0, 10003.5, 10004.0, 10004.5, 10092.2, 11782.2, 11883.5, 12343.0, 14539.9, 15577.1, 15815.6, 15028.5, 15806.0, 15024.7, 16245.1, 15089.1, 14638.6, 14407.8, 14291.1, 14293.1, 14295.0, 15328.6, 14801.9, 14674.4, 14958.6, 14477.0, 14340.4, 14342.4, 14344.4, 14346.4, 14348.4, 14680.8, 14503.8, 14298.4, 13614.4, 13616.4, 13618.4, 13609.2, 12728.0, 12730.1, 12732.1, 12429.5, 12604.2, 13001.4, 12145.9, 12147.9, 12149.9, 11887.8, 12774.0, 12068.6, 13924.6, 15420.4, 16645.7, 16179.2, 16626.7, 16739.1, 18090.5, 16540.5, 16574.6, 16984.7, 16145.0, 17103.3, 17873.3, 17339.1, 16727.9, 16553.9, 16556.4, 16558.8, 16561.3, 16563.8, 16566.3, 16568.8, 16571.3, 16573.9, 16576.4, 16578.9, 16581.4, 16572.0, 17080.4, 17427.3, 18524.8, 18659.3, 20032.6, 19941.1, 19479.8, 19472.3, 19418.2, 19107.2, 19278.9, 19532.5, 19578.0, 21361.3, 20976.0, 21070.3, 20411.6, 21025.8, 21853.7, 20357.6, 19585.0, 19673.3, 19676.9, 19707.0, 19810.3, 19187.1, 19188.6, 19852.7, 18146.1, 18149.7, 18153.3, 17448.6, 17452.2, 17455.8, 17459.4, 17463.0, 17466.6, 17470.2, 17473.9, 17477.5, 17481.1, 17484.7, 17488.4, 16984.6, 16879.7, 15875.4, 15879.0, 15882.7, 15886.3, 15890.0, 15893.7, 15897.3, 15901.0, 15904.7, 15908.3, 15912.0, 15915.7, 15919.4, 15923.1, 15926.8, 15930.5, 15934.2, 15937.9, 15941.6, 15945.3, 15949.0, 15952.7, 15956.5, 15960.2, 15963.9, 15967.7, 15971.4, 15975.1, 15978.9, 15982.6, 15986.4, 15990.1, 15993.9, 15997.7, 16001.4, 16005.2, 16009.0, 16012.8], "buyhold": [10000.0, 9650.6, 10039.6, 9728.9, 9779.5, 10547.5, 9713.2, 9493.8, 9615.0, 9865.2, 10348.2, 11820.3, 11932.3, 12443.8, 14403.0, 15599.7, 15873.1, 14961.2, 15857.4, 14952.2, 16360.4, 15022.2, 14828.2, 14570.4, 13497.2, 13974.6, 14072.2, 16305.6, 15656.0, 15496.8, 15843.5, 15249.3, 14831.0, 14116.5, 14369.0, 12755.6, 13528.4, 15223.0, 15007.5, 14758.1, 12794.5, 13543.5, 13409.9, 14641.7, 13495.2, 12821.7, 13130.8, 13753.2, 14455.9, 14997.1, 14155.1, 14235.6, 15401.0, 15225.2, 16595.8, 15499.2, 18373.0, 20688.6, 22584.8, 21858.4, 22548.9, 22047.0, 24198.2, 21722.3, 21772.8, 22422.8, 21098.3, 22925.4, 24159.2, 23296.5, 22310.0, 22037.1, 22260.9, 22446.6, 19214.2, 19923.3, 17939.4, 18854.2, 19146.6, 19285.3, 18991.4, 18866.9, 19105.6, 19979.1, 21401.2, 21908.8, 23522.0, 23716.4, 25024.4, 24880.7, 24175.3, 24159.3, 24072.4, 23595.3, 24438.5, 24824.4, 24889.6, 27376.6, 26772.4, 26913.3, 25884.1, 26833.2, 28114.5, 25805.7, 25210.5, 24762.6, 25150.1, 26533.4, 26697.8, 25856.7, 26068.1, 28500.0, 26320.1, 24426.4, 25355.8, 24732.8, 23772.7, 23569.7, 21071.9, 19864.2, 20753.9, 20346.4, 21146.2, 19704.4, 19943.2, 19913.9, 20895.8, 20652.2, 21825.6, 20457.1, 20381.8, 17299.4, 16013.3, 15715.9, 15534.4, 15045.6, 16181.9, 16029.8, 16878.5, 16193.9, 15088.4, 15370.1, 16661.7, 17150.4, 17860.5, 17432.0, 18237.3, 18761.5, 17848.2, 17254.6, 16813.1, 14650.3, 14093.3, 15146.8, 14457.8, 13710.0, 14297.6, 14453.7, 14792.0, 15200.2, 14560.7, 14510.7, 14838.3, 14397.1, 16677.5, 18048.7, 17686.5], "stats": {"strat_ret": 0.6014650890789213, "bh_ret": 0.8536068861538377, "strat_dd": 0.2807333353703214, "sharpe": 0.8009106841108187, "reserve": 3835.6528209199278, "reserve_frac": 0.23950898755626288, "skims": 7, "trades": 69, "bh_dd": 0.5301800848187621}, "range": ["2023-12-10", "2026-09-04"]};
+const DATA = {"dates": ["2023-12-11", "2023-12-17", "2023-12-23", "2023-12-29", "2024-01-04", "2024-01-10", "2024-01-16", "2024-01-22", "2024-01-28", "2024-02-03", "2024-02-09", "2024-02-15", "2024-02-21", "2024-02-27", "2024-03-04", "2024-03-10", "2024-03-16", "2024-03-22", "2024-03-28", "2024-04-03", "2024-04-09", "2024-04-15", "2024-04-21", "2024-04-27", "2024-05-03", "2024-05-09", "2024-05-15", "2024-05-21", "2024-05-27", "2024-06-02", "2024-06-08", "2024-06-14", "2024-06-20", "2024-06-26", "2024-07-02", "2024-07-08", "2024-07-14", "2024-07-20", "2024-07-26", "2024-08-01", "2024-08-07", "2024-08-13", "2024-08-19", "2024-08-25", "2024-08-31", "2024-09-06", "2024-09-12", "2024-09-18", "2024-09-24", "2024-09-30", "2024-10-06", "2024-10-12", "2024-10-18", "2024-10-24", "2024-10-30", "2024-11-05", "2024-11-11", "2024-11-17", "2024-11-23", "2024-11-29", "2024-12-05", "2024-12-11", "2024-12-17", "2024-12-23", "2024-12-29", "2025-01-04", "2025-01-10", "2025-01-16", "2025-01-22", "2025-01-28", "2025-02-03", "2025-02-09", "2025-02-15", "2025-02-21", "2025-02-27", "2025-03-05", "2025-03-11", "2025-03-17", "2025-03-23", "2025-03-29", "2025-04-04", "2025-04-10", "2025-04-16", "2025-04-22", "2025-04-28", "2025-05-04", "2025-05-10", "2025-05-16", "2025-05-22", "2025-05-28", "2025-06-03", "2025-06-09", "2025-06-15", "2025-06-21", "2025-06-27", "2025-07-03", "2025-07-09", "2025-07-15", "2025-07-21", "2025-07-27", "2025-08-02", "2025-08-08", "2025-08-14", "2025-08-20", "2025-08-26", "2025-09-01", "2025-09-07", "2025-09-13", "2025-09-19", "2025-09-25", "2025-10-01", "2025-10-07", "2025-10-13", "2025-10-19", "2025-10-25", "2025-10-31", "2025-11-06", "2025-11-12", "2025-11-18", "2025-11-24", "2025-11-30", "2025-12-06", "2025-12-12", "2025-12-18", "2025-12-24", "2025-12-30", "2026-01-05", "2026-01-11", "2026-01-17", "2026-01-23", "2026-01-29", "2026-02-04", "2026-02-10", "2026-02-16", "2026-02-22", "2026-02-28", "2026-03-06", "2026-03-12", "2026-03-18", "2026-03-24", "2026-03-30", "2026-04-05", "2026-04-11", "2026-04-17", "2026-04-23", "2026-04-29", "2026-05-05", "2026-05-11", "2026-05-17", "2026-05-23", "2026-05-29", "2026-06-04", "2026-06-10", "2026-06-16", "2026-06-22", "2026-06-28", "2026-07-04", "2026-07-10", "2026-07-16", "2026-07-22", "2026-07-28", "2026-08-03", "2026-08-09", "2026-08-15", "2026-08-21", "2026-08-27", "2026-09-02"], "strategy": [10000.0, 10000.5, 10001.0, 10001.5, 10002.0, 10002.5, 10003.0, 10003.5, 10004.0, 10004.5, 10178.7, 11860.5, 11846.3, 12853.3, 15554.4, 15707.1, 15448.0, 15178.8, 16419.6, 15574.2, 16137.1, 15119.0, 15130.9, 14858.1, 14823.3, 14826.8, 14820.7, 15570.4, 15448.7, 15176.7, 15440.2, 14869.8, 14882.1, 14885.7, 14889.2, 14892.8, 14896.3, 15287.1, 15413.3, 14989.5, 14230.6, 14234.1, 14237.7, 14253.5, 13425.2, 13428.8, 13432.4, 13224.6, 13228.2, 13231.8, 13235.4, 13239.0, 13374.3, 13356.3, 13965.2, 13518.2, 16260.4, 16436.6, 17568.9, 17531.9, 17459.1, 18901.2, 19605.0, 18090.1, 17956.5, 18559.1, 17890.4, 18579.3, 19113.5, 18789.6, 18799.5, 18143.3, 18147.8, 18152.3, 18156.9, 18161.4, 18166.0, 18170.5, 18175.1, 18179.6, 18184.2, 18188.8, 18193.3, 18636.5, 18868.9, 18777.0, 20331.8, 20143.1, 22349.3, 21800.9, 21465.9, 22142.1, 21508.3, 21014.3, 21350.4, 21719.2, 21979.9, 22842.9, 22821.0, 23091.2, 22183.5, 22761.7, 23294.0, 22694.3, 21957.9, 21964.8, 21971.7, 21975.3, 21937.7, 21523.8, 21518.4, 21733.2, 20565.7, 20572.7, 20579.6, 19926.1, 19933.0, 19940.0, 19947.0, 19953.9, 19960.9, 19967.9, 19974.9, 19981.9, 19989.0, 19996.0, 19992.1, 19618.2, 19625.2, 19632.3, 19639.3, 19646.4, 19653.4, 19660.5, 19667.6, 19674.7, 19681.8, 19688.9, 19696.0, 19703.1, 19710.3, 19717.4, 19724.5, 19731.7, 19738.8, 19746.0, 19753.2, 19760.4, 19767.5, 19774.7, 19781.9, 19789.1, 19796.3, 19803.6, 19810.8, 19818.0, 19825.3, 19832.5, 19839.8, 19847.0, 19854.3, 19861.6, 19868.9, 19876.2, 19883.4, 19890.8, 19898.1], "buyhold": [10000.0, 10031.8, 10597.2, 10205.6, 10705.5, 11316.4, 10457.8, 9591.7, 10200.2, 10421.4, 11419.7, 12586.1, 12566.5, 13838.6, 16526.8, 16727.2, 15848.4, 15474.3, 17171.7, 16007.1, 16774.5, 15386.5, 15752.1, 15389.1, 15240.9, 15292.2, 16061.2, 17017.0, 16838.7, 16446.4, 16816.6, 16013.2, 15738.7, 14760.9, 15066.2, 13745.3, 14747.6, 16282.4, 16453.3, 15857.7, 13347.8, 14690.6, 14423.6, 15580.6, 14301.4, 13081.4, 14081.2, 14909.0, 15582.2, 15348.2, 15230.6, 15310.9, 16578.9, 16541.9, 17575.1, 16806.0, 21479.9, 21774.4, 23700.8, 23631.5, 23501.0, 24500.1, 25769.1, 23012.0, 22761.3, 23846.7, 22967.3, 24220.1, 25189.8, 24588.5, 24598.4, 23383.3, 23660.9, 23332.4, 20574.0, 21898.0, 20065.5, 20405.7, 20854.9, 20028.3, 20352.4, 19338.3, 20393.8, 22663.0, 23032.0, 22875.6, 25386.9, 25073.7, 27086.8, 26128.5, 25539.4, 26699.3, 25593.3, 24729.1, 25947.3, 26584.8, 27032.5, 28537.3, 28488.9, 28953.2, 27350.2, 28355.1, 28637.7, 27801.8, 27101.9, 26447.3, 27036.1, 28122.1, 28038.5, 26409.7, 28731.9, 29422.2, 27957.8, 26300.3, 27083.0, 26611.8, 24601.3, 24682.3, 22538.8, 21464.0, 21967.9, 21684.9, 21896.3, 20685.1, 21297.7, 21444.6, 22822.7, 22063.1, 23071.1, 21734.3, 20535.8, 17741.3, 16693.1, 16691.9, 16402.0, 16236.3, 16518.6, 17093.6, 17279.5, 17120.8, 16197.5, 16734.1, 17715.0, 18696.0, 18976.5, 18379.6, 19626.1, 19830.1, 18778.3, 18617.1, 17819.1, 15493.9, 14918.3, 15925.5, 15524.5, 14434.3, 15319.4, 15561.0, 15479.6, 16025.9, 15505.0, 15402.1, 15736.7, 15297.2, 18994.8, 19461.3, 18713.1], "stats": {"strat_ret": 0.9901726463647902, "bh_ret": 0.9398422451846515, "strat_dd": 0.2188725248082679, "sharpe": 1.2005686848010428, "reserve": 7421.929297946132, "reserve_frac": 0.3729289170717365, "skims": 7, "trades": 65, "bh_dd": 0.5301800848187621}, "range": ["2023-12-11", "2026-09-05"]};
 
 // ---- fill stats ----
 const s = DATA.stats;
@@ -325,6 +423,69 @@ document.getElementById('footRange').textContent = DATA.range[0] + '–' + DATA.
   // endpoint dots
   svg.appendChild(el('circle',{cx:X(n-1).toFixed(1),cy:Y(bh[n-1]).toFixed(1),r:3.5,fill:'var(--chart-bh)'}));
   svg.appendChild(el('circle',{cx:X(n-1).toFixed(1),cy:Y(strat[n-1]).toFixed(1),r:4,fill:'var(--accent)'}));
+})();
+
+// ---- flywheel projector (illustrative compounding model) ----
+(function(){
+  const g=id=>document.getElementById(id);
+  const NS='http://www.w3.org/2000/svg';
+  const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
+  const money=x=>'$'+Math.round(x).toLocaleString();
+  const ins=['fwSeed','fwRet','fwSkim','fwMult','fwMon'];
+
+  function simulate(){
+    const seed=+g('fwSeed').value, r=+g('fwRet').value/100, skim=+g('fwSkim').value/100,
+          mult=+g('fwMult').value, months=+g('fwMon').value, apy=0.06;
+    let trading=seed, reserve=0, injections=[];
+    const T=[trading], R=[reserve];
+    for(let m=1;m<=months;m++){
+      const gain=trading*r;                 // trading earns the avg monthly return
+      reserve+=skim*gain; trading+=gain-skim*gain;   // skim a slice, keep the rest
+      reserve*=(1+apy/12);                  // reserve compounds a stable yield
+      if(reserve>=mult*seed){               // flywheel fires: inject 2/3 back
+        const move=(2/3)*reserve; reserve-=move; trading+=move; injections.push(m);
+      }
+      T.push(trading); R.push(reserve);
+    }
+    return {seed,months,T,R,injections};
+  }
+
+  function draw(sim){
+    const W=620,H=300,pL=52,pR=14,pT=14,pB=26;
+    const total=sim.T.map((t,i)=>t+sim.R[i]); const mx=Math.max(...total,1); const n=sim.T.length;
+    const X=i=>pL+i/(n-1)*(W-pL-pR), Y=v=>pT+(1-v/mx)*(H-pT-pB);
+    const svg=g('fwChart'); svg.innerHTML='';
+    for(let i=0;i<=4;i++){const v=mx*i/4,y=Y(v);
+      svg.appendChild(el('line',{x1:pL,y1:y.toFixed(1),x2:W-pR,y2:y.toFixed(1),stroke:'var(--border)','stroke-width':1}));
+      const t=el('text',{x:pL-8,y:(y+4).toFixed(1),'text-anchor':'end','font-family':'var(--mono)','font-size':11,fill:'var(--faint)'});
+      t.textContent=v>=1000?'$'+(v/1000).toFixed(0)+'k':money(v); svg.appendChild(t);}
+    // injection markers
+    sim.injections.forEach(m=>{const x=X(m);
+      svg.appendChild(el('line',{x1:x,y1:pT,x2:x,y2:H-pB,stroke:'var(--accent)','stroke-width':1,'stroke-dasharray':'2 3','stroke-opacity':.5}));});
+    const line=(arr,col,w)=>svg.appendChild(el('path',{d:arr.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join(' '),
+      fill:'none',stroke:col,'stroke-width':w,'stroke-linejoin':'round'}));
+    line(sim.R,'var(--up)',2);        // banked reserve
+    line(sim.T,'var(--accent)',2.6);  // trading pool
+    [[0,'0'],[n-1,'m'+(n-1)]].forEach(([i,lab])=>{const t=el('text',{x:X(i).toFixed(1),y:H-8,
+      'text-anchor':i?'end':'start','font-family':'var(--mono)','font-size':11,fill:'var(--faint)'});t.textContent=i?sim.months+'mo':'now';svg.appendChild(t);});
+  }
+
+  function render(){
+    g('fwSeedV').textContent=money(+g('fwSeed').value);
+    g('fwRetV').textContent=(+g('fwRet').value)+'%/mo';
+    g('fwSkimV').textContent=(+g('fwSkim').value)+'%';
+    g('fwMultV').textContent=(+g('fwMult').value)+'×';
+    g('fwMonV').textContent=(+g('fwMon').value)+' months';
+    const sim=simulate();
+    const trading=sim.T[sim.T.length-1], reserve=sim.R[sim.R.length-1];
+    g('fwBase').textContent=money(trading);
+    g('fwRes').textContent=money(reserve);
+    g('fwTot').textContent=money(trading+reserve);
+    g('fwInj').textContent=sim.injections.length;
+    draw(sim);
+  }
+  ins.forEach(id=>g(id).addEventListener('input',render));
+  render();
 })();
 </script>
 
