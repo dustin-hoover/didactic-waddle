@@ -73,23 +73,25 @@ def main():
     P = paths()
     print(f"Monte Carlo: {N_PATHS} bootstrapped BTC paths x {PATH_LEN} days, seed ${SEED:.0f}\n", flush=True)
 
-    print("PART A — REINVEST FRACTION sweep (ratio trigger 0.3, principal protection ON):", flush=True)
+    # Aggressive skim (60%) so the reserve grows big enough for the flywheel to
+    # actually fire — only then does the reinvest fraction have a sweet spot.
+    print("PART A — REINVEST FRACTION sweep (skim 60%, ratio trigger 0.3, protection ON):", flush=True)
     for frac in [0.0, 0.25, 0.5, 0.667, 0.8, 1.0]:
-        line(f"{frac*100:.0f}%", evaluate(P, reinvest_trigger_mode="ratio", reinvest_ratio=0.3,
-                                          reinvest_fraction=frac, protect_principal=True))
+        line(f"{frac*100:.0f}%", evaluate(P, skim_rate=0.6, reinvest_trigger_mode="ratio",
+                                          reinvest_ratio=0.3, reinvest_fraction=frac, protect_principal=True))
 
-    print("\nPART B — trigger RATIO sweep (fraction 2/3, principal protection ON):", flush=True)
-    for ratio in [0.2, 0.3, 0.4, 0.6]:
-        line(f"ratio {ratio}", evaluate(P, reinvest_trigger_mode="ratio", reinvest_ratio=ratio,
-                                        reinvest_fraction=2/3, protect_principal=True))
+    print("\nPART B — SKIM RATE sweep (the real safety dial; fraction 2/3, ratio 0.3):", flush=True)
+    for skim in [0.2, 0.3, 0.45, 0.6, 0.8]:
+        line(f"skim {skim*100:.0f}%", evaluate(P, skim_rate=skim, reinvest_trigger_mode="ratio",
+                                               reinvest_ratio=0.3, reinvest_fraction=2/3, protect_principal=True))
 
-    print("\nPART C — principal protection off vs on (ratio 0.3, fraction 2/3):", flush=True)
-    line("protect off", evaluate(P, reinvest_trigger_mode="ratio", reinvest_ratio=0.3,
+    print("\nPART C — principal protection off vs on (skim 60%, ratio 0.3, fraction 2/3):", flush=True)
+    line("protect off", evaluate(P, skim_rate=0.6, reinvest_trigger_mode="ratio", reinvest_ratio=0.3,
                                  reinvest_fraction=2/3, protect_principal=False))
-    line("protect on", evaluate(P, reinvest_trigger_mode="ratio", reinvest_ratio=0.3,
+    line("protect on", evaluate(P, skim_rate=0.6, reinvest_trigger_mode="ratio", reinvest_ratio=0.3,
                                 reinvest_fraction=2/3, protect_principal=True))
 
-    print("\nBaseline — flywheel OFF:", flush=True)
+    print("\nBaseline — flywheel OFF (skim 30%):", flush=True)
     line("no flywheel", evaluate(P, reinvest_enabled=False))
 
 
