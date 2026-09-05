@@ -39,7 +39,11 @@ if TYPE_CHECKING:  # avoid a circular import (portfolio -> config -> protection)
 @dataclass
 class ProtectionConfig:
     enabled: bool = True
-    skim_rate: float = 0.30       # fraction of each new gain swept to reserve
+    # Skim rate is the real safety/growth dial. Monte Carlo over bootstrapped real
+    # BTC paths found ~0.6 the sweet spot: higher skimming both raised median
+    # return and lowered loss probability (banked profit compounds safely instead
+    # of riding volatility). See scripts/analyze_reinvest.py.
+    skim_rate: float = 0.60       # fraction of each new gain swept to reserve
     skim_tier: float = 0.08       # skim fires on each new equity high of +this
     reserve_floor: float = 0.05   # min fraction of total equity kept in reserve
     reserve_apy: float = 0.06     # assumed stable yield on the reserve (accounting)
