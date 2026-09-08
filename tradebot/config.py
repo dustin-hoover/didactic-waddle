@@ -43,7 +43,9 @@ class BotConfig:
     mode: str = "paper"
     symbol: str = "BTC"
     interval: str = "4h"                # candle size ("1h","4h","1d",...)
-    onchain_gate: bool = False          # scale exposure by the live on-chain risk regime
+    onchain_gate: bool = False          # scale exposure by on-chain regime. Keep OFF:
+                                        # backtests show the contrarian gate hurts
+                                        # (see scripts/signal_test.py). Context only.
     starting_cash: float = 10_000.0
     strategy: StrategyConfig = field(default_factory=StrategyConfig)
     risk: RiskConfig = field(default_factory=RiskConfig)

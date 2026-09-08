@@ -8,10 +8,15 @@ sentiment, liquidity, and where money is hiding. Sources:
   * Stablecoin market cap   (DefiLlama)              — dry powder on the sidelines
   * Ethereum gas price      (JSON-RPC eth_gasPrice)  — network demand / congestion
 
-From these we derive a coarse RISK REGIME (risk_on / neutral / risk_off) that can
-optionally scale the bot's exposure — e.g. trade smaller when the crowd is greedy
-and gas is spiking, lean in when fear is extreme. It is CONTEXT, surfaced for you
-and available as an optional gate; it is not a standalone trading signal.
+From these we derive a coarse RISK REGIME (risk_on / neutral / risk_off) for
+DISPLAY/CONTEXT only.
+
+IMPORTANT — validated finding (scripts/signal_test.py): the popular contrarian
+read of Fear & Greed is BACKWARDS in real BTC data. Extreme greed preceded
+HIGHER forward returns, extreme fear LOWER, and de-risking on greed cut backtest
+returns hard. So this regime is NOT a validated trading signal — keep the
+optional exposure gate (BotConfig.onchain_gate) OFF and treat the regime as
+context you read, not a rule you trade.
 """
 
 from __future__ import annotations
