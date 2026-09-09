@@ -1,11 +1,16 @@
 """On-chain / decentralized price data — no centralized exchange in the path.
 
-For operators who want to stay off CEXs and keep everything on-chain:
-  * LIVE price  -> Chainlink decentralized oracle feeds, read via JSON-RPC
-                   (eth_call). Falls back to DefiLlama's current price for coins
-                   without a verified feed.
+For operators who want to stay off CEXs and keep everything on-chain. Live price
+follows a trustlessness gradient, purest first:
+  * LIVE price  -> DIRECT Uniswap V3 pool read (slot0) via your own RPC — no
+                   aggregator at all — CROSS-CHECKED against the Chainlink oracle
+                   (if the pool spot and the oracle disagree beyond a tolerance,
+                   a sign of a thin/manipulated pool, we fall back to the oracle).
+                   Then Chainlink alone, then DefiLlama's current price.
   * HISTORY     -> DefiLlama's coin price chart, which is sourced from on-chain
                    DEX liquidity (not CEX order books). Daily close granularity.
+                   (Fully trustless history would need your own archive node or a
+                   subgraph; DefiLlama is the practical on-chain-sourced option.)
 
 Honest tradeoffs vs. the CEX feeds:
   * Free on-chain history is DAILY CLOSE only — no intraday OHLC or volume. The
@@ -82,6 +87,87 @@ def _eth_call(to: str, data: str) -> Optional[str]:
     return None
 
 
+# ---- Direct Uniswap V3 pool reads (purest: your RPC, no aggregator) ----------
+# Token decimals for the USD/quote legs we price against.
+_TOKEN_DEC = {
+    "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": 6,   # USDC
+    "0xdac17f958d2ee523a2206206994597c13d831ec7": 6,   # USDT
+    "0x6b175474e89094c44da98b954eedeac495271d0f": 18,  # DAI
+    "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": 18,  # WETH
+    "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599": 8,   # WBTC
+}
+_USD_TOKENS = {"0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+               "0xdac17f958d2ee523a2206206994597c13d831ec7",
+               "0x6b175474e89094c44da98b954eedeac495271d0f"}
+_WETH = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+# Deep, canonical Uniswap V3 pools (verified against Chainlink).
+_V3_POOLS = {
+    "ETH": "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640",  # WETH/USDC 0.05%
+    "BTC": "0x99ac8ca7087fa4a2a1fb6357269965a2014abc35",  # WBTC/USDC 0.3%
+}
+
+
+def _erc20_decimals(addr: str) -> Optional[int]:
+    if addr in _TOKEN_DEC:
+        return _TOKEN_DEC[addr]
+    res = _eth_call(addr, "0x313ce567")  # decimals()
+    return int(res, 16) if res and res != "0x" else None
+
+
+def _v3_pool_price_usd(pool: str) -> Optional[float]:
+    """USD price of the non-quote token in a Uniswap V3 pool, read directly."""
+    t0 = ("0x" + (_eth_call(pool, "0x0dfe1681") or "")[-40:]).lower()  # token0()
+    t1 = ("0x" + (_eth_call(pool, "0xd21220a7") or "")[-40:]).lower()  # token1()
+    res = _eth_call(pool, "0x3850c7bd")  # slot0()
+    if not res or res == "0x" or len(t0) != 42 or len(t1) != 42:
+        return None
+    sqrt_p = int(res[2:66], 16)  # sqrtPriceX96 (first word)
+    d0, d1 = _erc20_decimals(t0), _erc20_decimals(t1)
+    if d0 is None or d1 is None or sqrt_p == 0:
+        return None
+    p = (sqrt_p / 2 ** 96) ** 2                 # token1_raw / token0_raw
+    t0_in_t1 = p * 10 ** (d0 - d1)              # human: 1 token0 in token1
+    if t0_in_t1 == 0:
+        return None
+    t1_in_t0 = 1 / t0_in_t1
+    if t1 in _USD_TOKENS:
+        return t0_in_t1                          # token0 priced in USD stable
+    if t0 in _USD_TOKENS:
+        return t1_in_t0                          # token1 priced in USD stable
+    if t1 == _WETH:
+        eth = v3_price_usd("ETH")
+        return t0_in_t1 * eth if eth else None
+    if t0 == _WETH:
+        eth = v3_price_usd("ETH")
+        return t1_in_t0 * eth if eth else None
+    return None
+
+
+def v3_price_usd(symbol: str) -> Optional[float]:
+    """Live USD price read DIRECTLY from a Uniswap V3 pool (no aggregator)."""
+    pool = _V3_POOLS.get(symbol.upper())
+    if not pool:
+        return None
+    try:
+        return _v3_pool_price_usd(pool)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def trustless_price(symbol: str, tolerance: float = 0.03) -> Optional[float]:
+    """Direct Uniswap V3 pool price, CROSS-CHECKED against the Chainlink oracle.
+
+    If the pool and the oracle agree within ``tolerance`` we trust the direct pool
+    read (most trustless). If they diverge — a sign of a thin/manipulated pool —
+    we fall back to the decentralized oracle. If only one is available, use it.
+    """
+    v3 = v3_price_usd(symbol)
+    cl = chainlink_price(symbol)
+    if v3 and cl:
+        return v3 if abs(v3 - cl) / cl <= tolerance else cl
+    return v3 or cl
+
+
 def chainlink_price(symbol: str) -> Optional[float]:
     """Live USD price from a Chainlink decentralized oracle, or None."""
     addr = CHAINLINK_USD.get(symbol.upper())
@@ -151,7 +237,9 @@ class OnChainFeed:
         return bars
 
     def latest(self, base: str, interval: str = "1d") -> Bar:
-        px = chainlink_price(base) or defillama_current(base)
+        # Purest first: a direct Uniswap V3 pool read cross-checked against the
+        # Chainlink oracle; then oracle alone; then the DefiLlama aggregator.
+        px = trustless_price(base) or defillama_current(base)
         if px is None:
             raise RuntimeError(f"no on-chain price for {base}")
         ts = int(time.time() * 1000)
