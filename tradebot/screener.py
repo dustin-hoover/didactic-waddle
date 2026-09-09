@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 from . import indicators as ind
-from .ohlcv import ExchangeFeed
+from .ohlcv import get_feed
 from .signals import CompositeStrategy, TrendFilterStrategy, _last
 
 DEFAULT_UNIVERSE = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "AVAX", "LINK", "DOGE", "LTC"]
@@ -33,7 +33,7 @@ class ScreenRow:
 
 def screen(universe: List[str], interval: str = "4h", style: str = "swing",
            limit: int = 400, feed: Optional[ExchangeFeed] = None) -> List[ScreenRow]:
-    feed = feed or ExchangeFeed()
+    feed = feed or get_feed()
     comp = CompositeStrategy(style)
     trend = TrendFilterStrategy(style)
     rows: List[ScreenRow] = []

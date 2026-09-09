@@ -64,6 +64,20 @@ Everything is **paper / read-only** — no keys, no real orders anywhere.
 - **Change settings:** edit `.github/workflows/tradebot.yml` right in the GitHub
   app — the `cron` line for frequency, `TB_INTERVAL`/`TB_STYLE` for timeframe.
 
+## Go fully decentralized (no CEX)
+
+To source price data on-chain instead of from exchange APIs, set a repo
+**Variable** (Settings → Secrets and variables → Actions → **Variables** tab →
+New variable): `TB_DATA_SOURCE` = `onchain`. The bot then uses **Chainlink
+oracles** (live prices) and **DefiLlama** (history, sourced from on-chain DEX
+liquidity) — no centralized exchange in the path. Optionally add a secret
+`ETH_RPC_URL` with your own node (e.g. a QuickNode endpoint) for reliable reads.
+
+Honest trade-off: free on-chain data is **daily-close only** (no intraday OHLC or
+volume), so on-chain mode runs the daily strategy — which is the validated one
+anyway. Execution, when you go live, is meant for **non-custodial DEXs**
+(CoW Swap / 1inch / Jupiter) from your own wallet — never a CEX.
+
 ## Honest limits
 - Scheduled runs are **best-effort** — GitHub can delay them a few minutes under
   load. Fine for 4h/daily swing signals; not for fast scalping.

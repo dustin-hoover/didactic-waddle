@@ -14,14 +14,14 @@ import time
 from tradebot.backtest import run_backtest
 from tradebot.config import BotConfig, StrategyConfig
 from tradebot.engine import TradingEngine
-from tradebot.ohlcv import ExchangeFeed
+from tradebot.ohlcv import get_feed
 from tradebot.onchain import fetch as fetch_onchain
 from tradebot.onchain import wallet_balances
 from tradebot.screener import DEFAULT_UNIVERSE, screen
 
 
 def cmd_backtest(a):
-    bars = ExchangeFeed().history(a.symbol, a.interval, a.limit)
+    bars = get_feed().history(a.symbol, a.interval, a.limit)
     cfg = BotConfig(symbol=a.symbol, interval=a.interval,
                     strategy=StrategyConfig(kind=a.kind, style=a.style))
     r = run_backtest(bars, cfg)
@@ -48,7 +48,7 @@ def cmd_paper(a):
     cfg = BotConfig(mode="paper", symbol=a.symbol, interval=a.interval,
                     strategy=StrategyConfig(kind=a.kind, style=a.style))
     engine = TradingEngine(cfg)
-    feed = ExchangeFeed()
+    feed = get_feed()
     print(f"Live PAPER [{a.kind}/{a.style}] on {a.symbol} {a.interval}. Ctrl-C to stop.\n")
     while True:
         try:

@@ -246,6 +246,18 @@ class ExchangeFeed:
         return self.history(base, interval, limit=2)[-1]
 
 
+def get_feed(source: Optional[str] = None):
+    """Return the data feed. source (or TB_DATA_SOURCE env):
+      * "onchain" -> OnChainFeed: Chainlink oracles + DefiLlama, no CEX (daily only).
+      * "cex" / "auto" / None -> ExchangeFeed: Binance.US/Coinbase/OKX + CoinGecko.
+    """
+    src = (source or os.environ.get("TB_DATA_SOURCE", "auto")).lower()
+    if src == "onchain":
+        from .onchain_feed import OnChainFeed
+        return OnChainFeed()
+    return ExchangeFeed()
+
+
 # ---- CSV + synthetic providers (offline) ------------------------------------
 def write_csv(bars: List[Bar], path: str) -> None:
     import csv

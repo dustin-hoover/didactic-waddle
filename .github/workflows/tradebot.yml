@@ -30,6 +30,10 @@ jobs:
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}   # your ntfy topic (optional but recommended)
           COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}  # optional: higher limits / more history
+          # Decentralized mode: set repo VARIABLE TB_DATA_SOURCE=onchain to use
+          # Chainlink oracles + DefiLlama (no CEX). ETH_RPC_URL = your own node.
+          TB_DATA_SOURCE: ${{ vars.TB_DATA_SOURCE }}
+          ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
           TB_INTERVAL: "4h"
           TB_STYLE: "swing"
         run: python scripts/build_site.py

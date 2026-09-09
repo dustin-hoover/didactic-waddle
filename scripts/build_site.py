@@ -22,14 +22,16 @@ sys.path.insert(0, ROOT)
 from tradebot.alerts import push_ntfy  # noqa: E402
 from tradebot.backtest import run_backtest  # noqa: E402
 from tradebot.config import BotConfig, StrategyConfig  # noqa: E402
-from tradebot.ohlcv import ExchangeFeed  # noqa: E402
+from tradebot.ohlcv import get_feed  # noqa: E402
 from tradebot.onchain import fetch as fetch_onchain  # noqa: E402
 from tradebot.screener import DEFAULT_UNIVERSE  # noqa: E402
 from tradebot.signals import CompositeStrategy, TrendFilterStrategy, _last  # noqa: E402
 from tradebot import indicators as ind  # noqa: E402
 
 DOCS = os.path.join(ROOT, "docs")
-INTERVAL = os.environ.get("TB_INTERVAL", "4h")
+# On-chain data is daily-only, so force a 1d screener interval in on-chain mode.
+ONCHAIN = os.environ.get("TB_DATA_SOURCE", "auto").lower() == "onchain"
+INTERVAL = "1d" if ONCHAIN else os.environ.get("TB_INTERVAL", "4h")
 STYLE = os.environ.get("TB_STYLE", "swing")
 NTFY = os.environ.get("NTFY_TOPIC", "").strip()
 
@@ -46,7 +48,7 @@ def load_state():
 
 def build():
     os.makedirs(DOCS, exist_ok=True)
-    feed = ExchangeFeed()
+    feed = get_feed()
     state = load_state()
     rows = []
     alerts = []
