@@ -5,8 +5,11 @@ daily-close feeds can't provide. This module pulls real OHLCV from public
 exchange endpoints, with fallback across venues, and paginates for deep history.
 
 Primary: Binance.US (deep history, standard kline format, paginates cleanly).
-Fallback: Coinbase Exchange, then OKX. Binance.com is geo-blocked (HTTP 451) in
-many regions, so it is not used.
+Fallback: Coinbase Exchange, then OKX, then CoinGecko. Binance.com is geo-blocked
+(HTTP 451) in many regions, so it is not used. CoinGecko widens coverage to
+thousands of coins (including ones not on the exchanges above) and is a safety
+net if an exchange is down; set COINGECKO_API_KEY for higher limits / more
+history (a free demo key works).
 
 Everything is stdlib-only (urllib). Symbols are given as a base asset ("BTC",
 "ETH", "SOL", ...); the venue-specific pair is resolved per exchange.
@@ -15,6 +18,7 @@ Everything is stdlib-only (urllib). Symbols are given as a base asset ("BTC",
 from __future__ import annotations
 
 import json
+import os
 import time
 import urllib.request
 from dataclasses import dataclass
@@ -22,6 +26,69 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional, Protocol
 
 _UA = "Mozilla/5.0 tradebot/0.1"
+
+# CoinGecko symbol -> coin id (curated for the common universe; others resolved
+# live via /search). Kept small and explicit to avoid ambiguous symbol matches.
+_CG_BASE = "https://api.coingecko.com/api/v3"
+_CG_IDS = {
+    "BTC": "bitcoin", "ETH": "ethereum", "BNB": "binancecoin", "XRP": "ripple",
+    "ADA": "cardano", "LINK": "chainlink", "LTC": "litecoin", "SOL": "solana",
+    "AVAX": "avalanche-2", "DOGE": "dogecoin", "AMPL": "ampleforth", "SPOT": "spot",
+    "DOT": "polkadot", "MATIC": "matic-network", "UNI": "uniswap", "ATOM": "cosmos",
+    "TRX": "tron", "BCH": "bitcoin-cash", "NEAR": "near", "APT": "aptos",
+    "ARB": "arbitrum", "OP": "optimism", "SUI": "sui", "TIA": "celestia",
+}
+_cg_id_cache: Dict[str, Optional[str]] = {}
+
+
+def _cg_get(path: str, params: dict):
+    q = dict(params)
+    key = os.environ.get("COINGECKO_API_KEY", "").strip()
+    if key:
+        q["x_cg_demo_api_key"] = key
+    url = _CG_BASE + path + "?" + "&".join(f"{k}={v}" for k, v in q.items())
+    return _http_json(url)
+
+
+def cg_resolve_id(base: str) -> Optional[str]:
+    """Symbol -> CoinGecko coin id (curated map, then a live /search fallback)."""
+    b = base.upper()
+    if b in _CG_IDS:
+        return _CG_IDS[b]
+    if b in _cg_id_cache:
+        return _cg_id_cache[b]
+    cid = None
+    try:
+        for c in _cg_get("/search", {"query": base}).get("coins", []):
+            if c.get("symbol", "").upper() == b:
+                cid = c["id"]
+                break
+    except Exception:  # noqa: BLE001
+        cid = None
+    _cg_id_cache[b] = cid
+    return cid
+
+
+def coingecko_markets(symbols: List[str]) -> Dict[str, dict]:
+    """Rich market context for a set of symbols in ONE call: price, market cap,
+    rank, 24h volume and change. Useful for the screener/dashboard. {} on failure.
+    """
+    ids = [cg_resolve_id(s) for s in symbols]
+    idmap = {cg_resolve_id(s): s.upper() for s in symbols if cg_resolve_id(s)}
+    ids = [i for i in ids if i]
+    if not ids:
+        return {}
+    try:
+        rows = _cg_get("/coins/markets", {"vs_currency": "usd", "ids": ",".join(ids), "per_page": len(ids)})
+    except Exception:  # noqa: BLE001
+        return {}
+    out: Dict[str, dict] = {}
+    for r in rows:
+        sym = idmap.get(r.get("id"), (r.get("symbol") or "").upper())
+        out[sym] = {"price": r.get("current_price"), "market_cap": r.get("market_cap"),
+                    "rank": r.get("market_cap_rank"), "volume_24h": r.get("total_volume"),
+                    "change_24h": r.get("price_change_percentage_24h")}
+    return out
 
 # Interval -> milliseconds, and the label each venue uses.
 _INTERVAL_MS = {
@@ -104,6 +171,35 @@ class ExchangeFeed:
         bars = [Bar(int(r[0]), float(r[1]), float(r[2]), float(r[3]), float(r[4]), float(r[5])) for r in data]
         return sorted(bars, key=lambda b: b.ts)
 
+    def _coingecko(self, base: str, interval: str, limit: int, start_ms: Optional[int]) -> List[Bar]:
+        """CoinGecko fallback — widens coverage to thousands of coins. Daily uses
+        market_chart (close + real volume, high=low=close); intraday uses the OHLC
+        endpoint (true OHLC, volume 0). Honors COINGECKO_API_KEY if set.
+        """
+        cid = cg_resolve_id(base)
+        if not cid:
+            return []
+        if interval == "1d":
+            try:
+                mc = _cg_get(f"/coins/{cid}/market_chart", {"vs_currency": "usd", "days": 365})
+            except Exception:  # noqa: BLE001
+                return []
+            day_ms = 86_400_000
+            vols = {int(t // day_ms): float(v) for t, v in mc.get("total_volumes", [])}
+            by_day = {}
+            for t, p in mc.get("prices", []):
+                by_day[int(t // day_ms)] = float(p)  # keep last obs per day
+            bars = [Bar(d * day_ms, p, p, p, p, vols.get(d, 0.0)) for d, p in sorted(by_day.items())]
+            return bars[-limit:]
+        # intraday: OHLC endpoint (keyless supports up to ~30 days at 4h/30m)
+        days = min(30, max(1, (limit * _INTERVAL_MS[interval]) // 86_400_000 + 1))
+        try:
+            rows = _cg_get(f"/coins/{cid}/ohlc", {"vs_currency": "usd", "days": days})
+        except Exception:  # noqa: BLE001
+            return []
+        bars = [Bar(int(r[0]), float(r[1]), float(r[2]), float(r[3]), float(r[4]), 0.0) for r in rows]
+        return bars[-limit:]
+
     # -- public API -------------------------------------------------------
     def history(self, base: str, interval: str = "4h", limit: int = 1000) -> List[Bar]:
         """Return up to ``limit`` most-recent bars, paginating Binance.US as needed."""
@@ -139,8 +235,8 @@ class ExchangeFeed:
         if bars:
             return bars[-limit:]
 
-        # Fallbacks (single page each).
-        for fetch in (self._coinbase, self._okx):
+        # Fallbacks (single page each). CoinGecko last: widest coverage, tightest limits.
+        for fetch in (self._coinbase, self._okx, self._coingecko):
             bars = fetch(base, interval, limit, None)
             if bars:
                 return bars[-limit:]

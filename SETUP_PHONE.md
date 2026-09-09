@@ -29,6 +29,10 @@ Everything is **paper / read-only** — no keys, no real orders anywhere.
   New repository secret**.
 - Name: `NTFY_TOPIC` · Value: the topic from step 2 → **Add secret**.
 - (Skip this and the dashboard still works — you just won't get pushes.)
+- **Optional — CoinGecko:** add another secret `COINGECKO_API_KEY` with a free
+  CoinGecko *demo* key for higher rate limits and more history. The bot works
+  without it (CoinGecko is only a fallback source); the key just makes that
+  fallback faster and deeper.
 
 ### 4. Turn on the dashboard (GitHub Pages)
 - Repo → **Settings → Pages**.

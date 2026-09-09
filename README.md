@@ -121,7 +121,7 @@ Python 3.10+, standard library only. `pytest` is only needed for the tests.
 
 | Module | Responsibility |
 | --- | --- |
-| `tradebot/ohlcv.py` | Real OHLCV with volume; multi-venue fallback + pagination. |
+| `tradebot/ohlcv.py` | Real OHLCV; Binance.US/Coinbase/OKX + **CoinGecko** fallback (thousands of coins); market-cap context. |
 | `tradebot/indicators.py` | The technical-indicator library (pure functions). |
 | `tradebot/signals.py` | Votes → `TrendFilterStrategy` (default) and `CompositeStrategy`. |
 | `tradebot/risk.py` | ATR stop-loss, position caps, liquidate-and-re-enter breaker. |
