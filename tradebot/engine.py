@@ -1,27 +1,40 @@
-"""Live paper-trading engine: one candle at a time, real signals, simulated fills.
+"""Live paper-trading engine — the full machine, one candle at a time.
 
-Paper-only by default (mirrors the original project's stance). State persists so
-the process can restart. Scheduling (poll each candle close) is left to a caller.
+Each new closed candle: read the trend, manage risk (ATR stop + drawdown
+breaker), fill, then run the capital-preservation layer (skim profit into the
+protected reserve, and spin the flywheel when it's grown enough). ALL state —
+portfolio, reserve, risk, and the last processed bar — persists to disk, so a
+scheduled runner (e.g. GitHub Actions every few hours) advances one real paper
+portfolio across runs instead of starting fresh each time.
+
+Paper-only. No live-order or key-custody path.
 """
 
 from __future__ import annotations
 
+import json
 import os
-from dataclasses import dataclass
-from typing import List
+from dataclasses import asdict, dataclass
+from typing import List, Optional
 
 from .config import BotConfig
 from .ohlcv import Bar
-from .portfolio import PaperExecutor, Portfolio, load_portfolio, save_portfolio
+from .portfolio import Fill, PaperExecutor, Portfolio
+from .protection import ProfitProtector, ReserveState
 from .risk import RiskManager, RiskState
 from .signals import build_strategy
+
+_BARS_PER_YEAR = {"1m": 525600, "5m": 105120, "15m": 35040, "30m": 17520, "1h": 8760,
+                  "2h": 4380, "4h": 2190, "6h": 1460, "12h": 730, "1d": 365}
 
 
 @dataclass
 class TickReport:
     ts: int
     price: float
-    equity: float
+    equity: float          # trading pool
+    reserve: float         # banked, protected
+    total: float           # trading + reserve
     exposure: float
     action: str
     halted: bool
@@ -36,33 +49,58 @@ class TradingEngine:
         self.strategy = build_strategy(cfg.strategy)
         self.risk = RiskManager(cfg.risk)
         self.execu = PaperExecutor(cfg.costs)
-        if os.path.exists(cfg.state_path):
-            self.pf = load_portfolio(cfg.state_path)
+        bpy = _BARS_PER_YEAR.get(cfg.interval, 365)
+        self.protector = ProfitProtector(cfg.protection, self.execu, bpy, seed=cfg.starting_cash)
+        self.last_ts = 0
+        self.started_ts = 0
+
+        st = self._load()
+        if st:
+            self.pf = Portfolio(cash=st["cash"], units=st.get("units", 0.0))
+            self.pf.fills = [Fill(**x) for x in st.get("fills", [])]
+            self.rstate = RiskState(**st["risk"])
+            self.protector.state = ReserveState(**st["reserve"])
+            self.last_ts = st.get("last_ts", 0)
+            self.started_ts = st.get("started_ts", 0)
         else:
             self.pf = Portfolio(cash=cfg.starting_cash)
-        self.rstate = RiskState(peak_equity=max(self.pf.cash, cfg.starting_cash))
+            self.rstate = RiskState(peak_equity=cfg.starting_cash)
 
-    def step(self, bars: List[Bar]) -> TickReport:
-        bar = bars[-1]
+    # ---- persistence -----------------------------------------------------
+    def _load(self) -> Optional[dict]:
+        p = self.cfg.state_path
+        if os.path.exists(p):
+            try:
+                return json.load(open(p))
+            except Exception:  # noqa: BLE001
+                return None
+        return None
+
+    def _save(self) -> None:
+        p = self.cfg.state_path
+        os.makedirs(os.path.dirname(p) or ".", exist_ok=True)
+        json.dump({
+            "cash": self.pf.cash, "units": self.pf.units,
+            "fills": [asdict(f) for f in self.pf.fills[-200:]],
+            "risk": asdict(self.rstate),
+            "reserve": asdict(self.protector.state),
+            "last_ts": self.last_ts, "started_ts": self.started_ts,
+        }, open(p, "w"), indent=1)
+
+    # ---- stepping --------------------------------------------------------
+    def _step(self, window: List[Bar]) -> TickReport:
+        bar = window[-1]
         price = bar.close
         self.rstate = self.risk.update_and_check(self.rstate, self.pf.equity(price), price)
 
         action = "hold"
-        sig = self.strategy.generate(bars)
+        sig = self.strategy.generate(window)
         if self.rstate.halted:
             self.execu.rebalance_to(self.pf, 0.0, price, bar.ts)
             self.rstate.entry_price = self.rstate.stop_price = None
             action = "HALT -> cash (drawdown breaker)"
         else:
             target = self.risk.clamp_exposure(sig.target_exposure)
-            # Optional on-chain regime gate: trim exposure when the market is
-            # frothy/risk-off (extreme greed, gas spikes). Context, not a signal.
-            if self.cfg.onchain_gate and target > 0:
-                try:
-                    from .onchain import fetch as _fetch_oc
-                    target *= _fetch_oc().exposure_scale()
-                except Exception:  # noqa: BLE001 — never let context break trading
-                    pass
             if self.risk.stop_triggered(self.rstate, bar.low) and self.pf.units > 0:
                 self.execu.rebalance_to(self.pf, 0.0, price, bar.ts)
                 self.rstate.entry_price = self.rstate.stop_price = None
@@ -73,12 +111,59 @@ class TradingEngine:
                 target = current + self.risk.limit_trade_size(target - current)
                 fill = self.execu.rebalance_to(self.pf, target, price, bar.ts)
                 if fill is not None:
-                    action = f"{fill.side} {fill.units:.4f} @ {fill.price:.4f}"
+                    action = f"{fill.side} {fill.units:.6f} @ {fill.price:.4f}"
                     if fill.side == "buy" and self.rstate.entry_price is None:
                         self.risk.set_stop(self.rstate, price, sig.atr_pct)
             if self.pf.units <= 1e-12:
                 self.rstate.entry_price = self.rstate.stop_price = None
 
-        save_portfolio(self.pf, self.cfg.state_path)
-        return TickReport(bar.ts, price, self.pf.equity(price), self.pf.exposure(price),
+        # capital-preservation layer: skim to reserve + flywheel reinvest
+        reinvests_before = self.protector.state.reinvests
+        self.protector.step(self.pf, price, bar.ts)
+        if self.protector.state.reinvests > reinvests_before:
+            action += " | flywheel: reinvested reserve -> trading"
+
+        return TickReport(bar.ts, price, self.pf.equity(price), self.protector.state.reserve,
+                          self.protector.total_equity(self.pf, price), self.pf.exposure(price),
                           action, self.rstate.halted, sig.reason)
+
+    def advance(self, bars: List[Bar]) -> List[TickReport]:
+        """Process every new candle since the last run, then persist once.
+
+        Fresh start = forward from NOW: on the first run we take only the current
+        candle's position (not a replay of history — that would be a backtest, not
+        paper trading), then advance one candle per run thereafter.
+        """
+        if self.last_ts == 0 and len(bars) >= 2:
+            self.last_ts = bars[-2].ts        # only the latest candle counts as "new"
+            self.started_ts = bars[-1].ts
+        reports: List[TickReport] = []
+        for i, b in enumerate(bars):
+            if b.ts > self.last_ts:
+                reports.append(self._step(bars[: i + 1]))
+                self.last_ts = b.ts
+        self._save()
+        return reports
+
+    def step(self, bars: List[Bar]) -> TickReport:
+        """Process the latest candle (compat helper); no-op returns last state."""
+        reps = self.advance(bars)
+        if reps:
+            return reps[-1]
+        price = bars[-1].close
+        return TickReport(bars[-1].ts, price, self.pf.equity(price), self.protector.state.reserve,
+                          self.protector.total_equity(self.pf, price), self.pf.exposure(price),
+                          "no new candle", self.rstate.halted, "")
+
+    def snapshot(self, price: float) -> dict:
+        s = self.protector.state
+        return {
+            "symbol": self.cfg.symbol, "interval": self.cfg.interval,
+            "price": price, "trading_equity": self.pf.equity(price),
+            "reserve": s.reserve, "total": self.protector.total_equity(self.pf, price),
+            "exposure": self.pf.exposure(price), "start": self.cfg.starting_cash,
+            "total_return": self.protector.total_equity(self.pf, price) / self.cfg.starting_cash - 1.0,
+            "skims": s.skims, "reinvests": s.reinvests, "trading_base": s.trading_base,
+            "halted": self.rstate.halted, "trades": len(self.pf.fills),
+            "started_ts": self.started_ts,
+        }

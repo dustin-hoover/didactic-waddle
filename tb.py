@@ -54,8 +54,9 @@ def cmd_paper(a):
         try:
             bars = feed.history(a.symbol, a.interval, 400)
             rep = engine.step(bars)
-            print(f"{rep.ts}  ${rep.price:,.4f}  equity ${rep.equity:,.2f}  "
-                  f"expo {rep.exposure:>4.0%}  {rep.action}  | {rep.reason}")
+            print(f"{rep.ts}  ${rep.price:,.4f}  trading ${rep.equity:,.2f}  "
+                  f"reserve ${rep.reserve:,.2f}  total ${rep.total:,.2f}  "
+                  f"expo {rep.exposure:>4.0%}  {rep.action}")
         except Exception as e:  # noqa: BLE001
             print(f"tick error: {e}")
         if a.once:

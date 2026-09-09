@@ -61,6 +61,12 @@
     <div class="updated" id="updated">loading…</div>
   </header>
 
+  <div class="panel" id="paperPanel" hidden>
+    <h2>Your paper portfolio <span class="badge" id="paperSince"></span></h2>
+    <div class="grid" id="paper"></div>
+    <div class="note" id="paperNote"></div>
+  </div>
+
   <div class="panel">
     <h2>Market context</h2>
     <div class="grid" id="onchain"></div>
@@ -88,6 +94,21 @@ const pctv=x=>(x>=0?'+':'')+(x*100).toFixed(0)+'%';
 const b9=x=>x?('$'+(x/1e9).toFixed(1)+'B'):'–';
 fetch('./data.json?t='+Date.now()).then(r=>r.json()).then(d=>{
   document.getElementById('updated').textContent='updated '+d.generated_at.replace('T',' ')+' UTC · '+d.interval+' '+d.style;
+
+  const pp=d.paper;
+  if(pp && !pp.error){
+    document.getElementById('paperPanel').hidden=false;
+    const since=pp.started_ts?new Date(pp.started_ts).toISOString().slice(0,10):'—';
+    document.getElementById('paperSince').textContent='since '+since;
+    const rc=pp.total_return>=0?'up':'down';
+    document.getElementById('paper').innerHTML=`
+      <div class="stat"><div class="k">Total value</div><div class="v ${rc}">$${pp.total.toLocaleString(undefined,{maximumFractionDigits:0})}</div><div class="n">${pctv(pp.total_return)} on $${pp.start.toLocaleString()}</div></div>
+      <div class="stat"><div class="k">Trading pool</div><div class="v">$${pp.trading_equity.toLocaleString(undefined,{maximumFractionDigits:0})}</div><div class="n">${(pp.exposure*100).toFixed(0)}% in ${pp.symbol}</div></div>
+      <div class="stat"><div class="k">Banked reserve 🔒</div><div class="v gold">$${pp.reserve.toLocaleString(undefined,{maximumFractionDigits:0})}</div><div class="n">protected</div></div>
+      <div class="stat"><div class="k">Machine</div><div class="v">${pp.skims}·${pp.reinvests}</div><div class="n">skims · flywheel spins</div></div>`;
+    document.getElementById('paperNote').textContent=
+      `Paper only, no real orders. ${pp.halted?'Circuit breaker HALTED (in cash). ':''}Last: ${pp.last_action||'—'}. Advances one candle per scheduled run.`;
+  }
 
   const m=d.onchain||{};
   const rc={risk_on:'var(--up)',neutral:'var(--accent)',risk_off:'var(--down)'}[m.risk_regime]||'var(--muted)';

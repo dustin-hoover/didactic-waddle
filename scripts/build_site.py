@@ -108,9 +108,26 @@ def build():
     except Exception as e:  # noqa: BLE001
         featured = {"error": str(e)[:80]}
 
+    # LIVE PAPER PORTFOLIO — advance the real machine (trade + skim + flywheel).
+    # State persists in docs/paper_state.json (committed) across scheduled runs.
+    paper = {}
+    try:
+        from tradebot.engine import TradingEngine
+        pcfg = BotConfig(mode="paper", symbol="BTC", interval="1d", starting_cash=1000.0,
+                         strategy=StrategyConfig(kind="trend", style="swing"),
+                         state_path=os.path.join(DOCS, "paper_state.json"))
+        eng = TradingEngine(pcfg)
+        pbars = feed.history("BTC", "1d", 400)
+        reps = eng.advance(pbars)
+        paper = eng.snapshot(pbars[-1].close)
+        paper["new_steps"] = len(reps)
+        paper["last_action"] = reps[-1].action if reps else "no new candle"
+    except Exception as e:  # noqa: BLE001
+        paper = {"error": str(e)[:80]}
+
     data = {"generated_at": datetime.now(timezone.utc).isoformat(timespec="minutes"),
             "interval": INTERVAL, "style": STYLE, "onchain": onchain,
-            "rows": rows, "featured": featured}
+            "rows": rows, "featured": featured, "paper": paper}
     json.dump(data, open(os.path.join(DOCS, "data.json"), "w"), indent=1)
     json.dump(state, open(os.path.join(DOCS, "alert_state.json"), "w"))
 
