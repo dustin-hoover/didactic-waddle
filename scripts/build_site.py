@@ -127,9 +127,30 @@ def build():
     except Exception as e:  # noqa: BLE001
         paper = {"error": str(e)[:80]}
 
+    # ON-CHAIN TAPE — strongest block-order flow of the day. Gated behind TB_TAPE=1
+    # because reading a day of Uniswap V3 swaps across the universe is heavy on
+    # public RPC; keep it off for fast/reliable default runs. Set your own
+    # ETH_RPC_URL and TB_TAPE=1 to enable. It ranks/reads flow; it does NOT trade.
+    tape = {}
+    if os.environ.get("TB_TAPE", "").strip() in ("1", "true", "on"):
+        try:
+            from tradebot.tape import rank_universe
+            blk = int(os.environ.get("TB_TAPE_BLOCKS", "3600"))  # ~12h default
+            tape = {"blocks": blk, "rows": [
+                {"symbol": t.symbol, "score": round(t.score, 3), "bias": t.bias,
+                 "net_usd": round(t.net_usd), "buy_usd": round(t.buy_usd),
+                 "sell_usd": round(t.sell_usd), "whale_share": round(t.whale_share, 3),
+                 "n_prints": t.n_prints, "price": t.price,
+                 "largest": ({"side": t.largest.side, "usd": round(t.largest.usd_size),
+                              "price": t.largest.price} if t.largest else None),
+                 "error": t.error}
+                for t in rank_universe(blocks=blk, top=10)]}
+        except Exception as e:  # noqa: BLE001
+            tape = {"error": str(e)[:80]}
+
     data = {"generated_at": datetime.now(timezone.utc).isoformat(timespec="minutes"),
             "interval": INTERVAL, "style": STYLE, "onchain": onchain,
-            "rows": rows, "featured": featured, "paper": paper}
+            "rows": rows, "featured": featured, "paper": paper, "tape": tape}
     json.dump(data, open(os.path.join(DOCS, "data.json"), "w"), indent=1)
     json.dump(state, open(os.path.join(DOCS, "alert_state.json"), "w"))
 

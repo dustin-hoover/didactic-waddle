@@ -72,6 +72,19 @@ is not an improvement.
 > No edge is promised. TA is hard, fees are real, and every number here moves
 > with the sample. Backtest your own symbols/timeframes before trusting anything.
 
+**On-chain tape / order-flow (`tradebot/tape.py`).** Every DEX swap is a public
+block-order print, so we decode them straight from Uniswap V3 pools (size,
+direction, price, realized impact), compute net flow (CVD) and whale
+participation, and rank the strongest opportunities of the day. That reading and
+ranking is real and useful. But `scripts/tape_backtest.py` asks the harder
+question — *does today's flow predict tomorrow's return?* — and on the recent
+window it could pull, **naive flow-following showed no forward edge (in fact a
+mild contrarian tilt) and underperformed buy-and-hold.** Sample sizes on free RPC
+are tiny, so that's "no evidence to trade it," not a proof either way. Verdict:
+**the tape is a ranking/context tool, not (yet) a position-sizer** — consistent
+with the rule that the book should never lose money in total. Execution stays
+paper; flow only earns a sizing role after it passes validation on a deep window.
+
 ## Quick start
 
 ```bash
@@ -92,6 +105,12 @@ python tb.py wallet 0xYourAddress
 # or change the sell tax? proxy? renounced? how old? (needs ETHERSCAN_API_KEY)
 python tb.py safety --symbol PEPE
 python tb.py safety --gas            # Ethereum gas oracle
+
+# Read the ON-CHAIN TAPE: decode every DEX block order, score buy/sell flow, and
+# rank the strongest opportunities (whale accumulation vs distribution). No CEX.
+python tb.py tape                    # rank the universe, top 10
+python tb.py tape --symbol LINK      # one symbol, detailed flow
+python scripts/tape_backtest.py --symbol ETH --days 10   # does flow predict? (validate)
 
 # Never miss a move: check for signal flips, optionally push to your phone
 python tb.py alert --interval 4h --ntfy your-secret-topic
@@ -137,6 +156,7 @@ Python 3.10+, standard library only. `pytest` is only needed for the tests.
 | `tradebot/onchain.py` | On-chain metrics, risk regime, read-only wallet balances. |
 | `tradebot/onchain_feed.py` | Decentralized price feed: direct Uniswap V3 read + Chainlink + DefiLlama (no CEX). |
 | `tradebot/safety.py` | Token safety / rug-screen from Etherscan free-tier contract facts. |
+| `tradebot/tape.py` | On-chain tape: decode/score/rank Uniswap V3 block-order flow (no CEX). |
 | `tradebot/alerts.py` | Signal-flip alerts + free phone push (ntfy.sh). |
 | `tradebot/screener.py` | Rank a coin universe by trend + conviction. |
 | `tradebot/server.py` | Dashboard: strategy explainer (`/`) + app (`/app`). |

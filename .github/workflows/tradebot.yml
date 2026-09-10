@@ -37,6 +37,10 @@ jobs:
           # Optional: enables the token safety / rug-screen (verified source, owner
           # powers, proxy, age) via Etherscan's free tier. Not needed for prices.
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+          # Optional: set repo VARIABLE TB_TAPE=1 to rank the on-chain "tape"
+          # (strongest DEX block-order flow) on the dashboard. Heavy on public RPC,
+          # so pair it with your own ETH_RPC_URL. Reads/ranks flow; does not trade.
+          TB_TAPE: ${{ vars.TB_TAPE }}
           TB_INTERVAL: "4h"
           TB_STYLE: "swing"
         run: python scripts/build_site.py

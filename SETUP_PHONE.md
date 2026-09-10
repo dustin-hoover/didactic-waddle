@@ -84,6 +84,16 @@ volume), so on-chain mode runs the daily strategy — which is the validated one
 anyway. Execution, when you go live, is meant for **non-custodial DEXs**
 (CoW Swap / 1inch / Jupiter) from your own wallet — never a CEX.
 
+### On-chain tape (whale block-order flow) on the dashboard
+
+Set a repo **Variable** `TB_TAPE` = `1` to add a **"strongest on-chain flow"**
+panel: it decodes every Uniswap V3 swap across the universe, scores net buy/sell
+flow and whale participation, and ranks the top 10 (accumulation vs distribution).
+This is heavy on public RPC, so pair it with your own `ETH_RPC_URL` secret. It
+**reads and ranks** the tape — it does not place trades, and naive flow-following
+did **not** beat buy-and-hold in validation (`scripts/tape_backtest.py`), so treat
+it as a scouting tool, not an auto-trader.
+
 ## Honest limits
 - Scheduled runs are **best-effort** — GitHub can delay them a few minutes under
   load. Fine for 4h/daily swing signals; not for fast scalping.

@@ -6,6 +6,8 @@
     python tb.py paper   --symbol BTC --interval 1h --once
     python tb.py safety  --symbol PEPE                 # rug-screen a token
     python tb.py safety  --gas                          # Ethereum gas oracle
+    python tb.py tape                                   # rank on-chain block-order flow
+    python tb.py tape    --symbol LINK                  # one symbol, detailed flow
 
 Long/flat spot, paper only. Data comes from public exchange OHLCV (no key).
 The safety screen reads free-tier Etherscan contract facts (ETHERSCAN_API_KEY).
@@ -90,6 +92,35 @@ def cmd_onchain(a):
         print("  notes:", m.notes)
 
 
+def cmd_tape(a):
+    from tradebot.tape import DEFAULT_WHALE_USD, rank_universe, read_tape
+    whale = a.whale if a.whale else DEFAULT_WHALE_USD
+    if a.symbol:
+        s = read_tape(a.symbol, blocks=a.blocks, whale_usd=whale)
+        if s.error:
+            print(f"{s.symbol}: {s.error}")
+            return
+        print(f"On-chain tape — {s.symbol}  (~{a.blocks} blocks, whale ≥ ${whale:,.0f})\n")
+        print(f"  prints        : {s.n_prints}")
+        print(f"  buy / sell    : ${s.buy_usd:,.0f} / ${s.sell_usd:,.0f}")
+        print(f"  net (CVD)     : ${s.net_usd:,.0f}")
+        print(f"  whale share   : {s.whale_share:.0%}  (${s.whale_usd:,.0f})")
+        print(f"  tape score    : {s.score:+.3f}  -> {s.bias}")
+        if s.largest:
+            print(f"  largest print : {s.largest.side} ${s.largest.usd_size:,.0f} @ ${s.largest.price:,.4f}")
+        return
+    syms = a.symbols.split(",") if a.symbols else None
+    print(f"Strongest on-chain opportunities (~{a.blocks} blocks) — ranked by flow conviction\n")
+    print(f"{'sym':<6}{'score':>8}{'bias':>15}{'net USD':>16}{'whale%':>8}{'prints':>8}")
+    print("-" * 61)
+    for r in rank_universe(syms, blocks=a.blocks, whale_usd=whale, top=a.top):
+        if r.error:
+            print(f"{r.symbol:<6} ERROR {r.error[:40]}")
+            continue
+        print(f"{r.symbol:<6}{r.score:>+8.3f}{r.bias:>15}{r.net_usd:>16,.0f}"
+              f"{r.whale_share:>7.0%}{r.n_prints:>8}")
+
+
 def cmd_safety(a):
     from tradebot.safety import check, gas_oracle, resolve
     if a.gas:
@@ -153,6 +184,14 @@ def main():
 
     oc = sub.add_parser("onchain")
     oc.set_defaults(fn=cmd_onchain)
+
+    tp = sub.add_parser("tape")
+    tp.add_argument("--symbol", default="", help="one symbol for detail; omit to rank the universe")
+    tp.add_argument("--symbols", default="", help="comma-separated universe to rank")
+    tp.add_argument("--blocks", type=int, default=7200, help="lookback in blocks (~7200 = 1 day)")
+    tp.add_argument("--whale", type=float, default=0.0, help="whale-size print threshold in USD")
+    tp.add_argument("--top", type=int, default=10)
+    tp.set_defaults(fn=cmd_tape)
 
     sf = sub.add_parser("safety")
     sf.add_argument("--symbol", default="PEPE", help="token symbol or 0x… address")
