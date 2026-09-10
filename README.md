@@ -85,6 +85,14 @@ are tiny, so that's "no evidence to trade it," not a proof either way. Verdict:
 with the rule that the book should never lose money in total. Execution stays
 paper; flow only earns a sizing role after it passes validation on a deep window.
 
+Because deep flow *history* isn't purchasable on a free tier, `tradebot/tape_journal.py`
+solves it the honest way: the scheduled runner logs each day's flow and, once the
+next day's price is in, measures whether it predicted — accumulating a real
+out-of-sample dataset in `docs/tape_journal.json` over weeks. A cross-symbol seed
+(ETH+LINK, measured live) already shows the pattern: pooled corr ≈ +0.27, but the
+verdict stays "don't size on it" until the sample passes a 30-pair / corr-0.2 /
+55%-hit gate. Prove it, then trade it — never the other way round.
+
 ## Quick start
 
 ```bash
@@ -111,6 +119,7 @@ python tb.py safety --gas            # Ethereum gas oracle
 python tb.py tape                    # rank the universe, top 10
 python tb.py tape --symbol LINK      # one symbol, detailed flow
 python scripts/tape_backtest.py --symbol ETH --days 10   # does flow predict? (validate)
+python scripts/tape_backtest.py --journal docs/tape_journal.json   # edge over the accrued sample
 
 # Never miss a move: check for signal flips, optionally push to your phone
 python tb.py alert --interval 4h --ntfy your-secret-topic

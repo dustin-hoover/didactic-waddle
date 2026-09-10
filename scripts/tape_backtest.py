@@ -140,12 +140,33 @@ def analyze(symbol, series):
         "context tool; do not let it size positions yet."))
 
 
+def _run_journal(path):
+    from tradebot import tape_journal as tj
+    j = tj.load(path)
+    r = tj.analyze(j)
+    print(f"=== accumulated flow journal: {path} ===")
+    print(f"  days {r['n_days']}  symbols {r['n_symbols']}  usable pairs {r['n_pairs']}")
+    if r.get("corr") is not None:
+        print(f"  corr(imbalance_t, return_t+1) : {r['corr']:+.3f}")
+        print(f"  directional hit-rate          : {r['hit_rate']:.0%}")
+        if r.get("mean_fwd_accumulation") is not None:
+            print(f"  mean fwd | accumulation       : {r['mean_fwd_accumulation']:+.2%}")
+        if r.get("mean_fwd_distribution") is not None:
+            print(f"  mean fwd | distribution       : {r['mean_fwd_distribution']:+.2%}")
+        print(f"  flow-following / buy&hold     : {r['flow_following_return']:+.2%} / {r['buyhold_return']:+.2%}")
+    print(f"  VERDICT: {r['verdict']}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--symbol", default="ETH")
     ap.add_argument("--days", type=int, default=10)
     ap.add_argument("--max-swaps", type=int, default=2000, dest="max_swaps")
+    ap.add_argument("--journal", default="", help="analyze an accumulated tape_journal.json instead of live pulls")
     a = ap.parse_args()
+    if a.journal:
+        _run_journal(a.journal)
+        return
     print(f"Pulling ~{a.days} days of on-chain flow for {a.symbol} "
           f"(≤{a.max_swaps} prints/day)…", flush=True)
     series = daily_flow(a.symbol, a.days, a.max_swaps)

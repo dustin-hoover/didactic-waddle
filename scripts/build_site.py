@@ -147,6 +147,17 @@ def build():
                 for t in rank_universe(blocks=blk, top=10)]}
         except Exception as e:  # noqa: BLE001
             tape = {"error": str(e)[:80]}
+        # Accumulate the forward-validation sample: log today's flow, then measure
+        # whether past flow predicted realized returns. Grows over weeks.
+        if tape.get("rows"):
+            try:
+                from tradebot import tape_journal as tj
+                jpath = os.path.join(DOCS, "tape_journal.json")
+                journal = tj.record(tj.load(jpath), tape["rows"])
+                tj.save(jpath, journal)
+                tape["edge"] = tj.analyze(journal)
+            except Exception as e:  # noqa: BLE001
+                tape["edge"] = {"error": str(e)[:80]}
 
     data = {"generated_at": datetime.now(timezone.utc).isoformat(timespec="minutes"),
             "interval": INTERVAL, "style": STYLE, "onchain": onchain,
