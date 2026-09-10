@@ -51,7 +51,8 @@ def cmd_screen(a):
 
 def cmd_paper(a):
     cfg = BotConfig(mode="paper", symbol=a.symbol, interval=a.interval,
-                    strategy=StrategyConfig(kind=a.kind, style=a.style))
+                    strategy=StrategyConfig(kind=a.kind, style=a.style,
+                                            flow_confirm=a.flow_confirm, flow_mode=a.flow_mode))
     engine = TradingEngine(cfg)
     feed = get_feed()
     print(f"Live PAPER [{a.kind}/{a.style}] on {a.symbol} {a.interval}. Ctrl-C to stop.\n")
@@ -173,6 +174,9 @@ def main():
     pa.add_argument("--style", choices=["swing", "day"], default="swing")
     pa.add_argument("--once", action="store_true")
     pa.add_argument("--interval-seconds", type=int, default=3600, dest="interval_seconds")
+    pa.add_argument("--flow-confirm", action="store_true", dest="flow_confirm",
+                    help="EXPERIMENTAL: only hold trend-longs the on-chain tape confirms")
+    pa.add_argument("--flow-mode", default="accum", choices=["accum", "distexit"], dest="flow_mode")
     pa.set_defaults(fn=cmd_paper)
 
     al = sub.add_parser("alert")

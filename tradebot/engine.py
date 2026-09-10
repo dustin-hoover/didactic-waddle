@@ -87,6 +87,30 @@ class TradingEngine:
             "last_ts": self.last_ts, "started_ts": self.started_ts,
         }, open(p, "w"), indent=1)
 
+    # ---- flow confirmation (experimental, opt-in) ------------------------
+    def _flow_gate(self, target: float, price: float):
+        """When enabled, only permit a trend-long if the on-chain tape confirms.
+
+        Reads the live tape score for this symbol. "accum" mode requires net
+        buying (score > 0); "distexit" only stands aside on strong distribution.
+        DEFENSIVE: any flow-fetch failure permits the trade — we never block the
+        validated trend strategy on a flaky RPC read.
+        """
+        fc = self.cfg.strategy
+        if not fc.flow_confirm or target <= 0:
+            return target, ""
+        try:
+            from .tape import read_tape
+            score = read_tape(self.cfg.symbol, blocks=fc.flow_blocks).score
+        except Exception:  # noqa: BLE001
+            return target, ""
+        if fc.flow_mode == "distexit":
+            if score < -fc.flow_dist_thr:
+                return 0.0, " | flow: distribution -> stand aside"
+        elif score <= 0:
+            return 0.0, " | flow: no accumulation -> stay flat"
+        return target, ""
+
     # ---- stepping --------------------------------------------------------
     def _step(self, window: List[Bar]) -> TickReport:
         bar = window[-1]
@@ -106,6 +130,9 @@ class TradingEngine:
                 self.rstate.entry_price = self.rstate.stop_price = None
                 action = "stop-loss -> cash"
                 target = 0.0
+            target, flow_note = self._flow_gate(target, price)
+            if flow_note:
+                action += flow_note
             current = self.pf.exposure(price)
             if not (target > 0 and abs(target - current) < self.cfg.strategy.rebalance_band):
                 target = current + self.risk.limit_trade_size(target - current)

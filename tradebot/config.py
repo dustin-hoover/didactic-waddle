@@ -36,6 +36,15 @@ class StrategyConfig:
     min_long_exposure: float = 0.6      # exposure floor when bullish (keep beta, don't be timid)
     rebalance_band: float = 0.12        # skip rebalances smaller than this (cut fee churn)
     weights: Optional[Dict[str, float]] = None  # override preset weights
+    # EXPERIMENTAL on-chain flow confirmation (paper only, OFF by default). In a
+    # 60-day/one-regime test the trend+accumulation overlay beat trend-only on
+    # return, Sharpe and drawdown across EMA spans (scripts/trend_flow_test.py) —
+    # promising but NOT out-of-sample validated across a down market. When on, the
+    # live engine only holds a trend-long if the on-chain tape confirms.
+    flow_confirm: bool = False
+    flow_mode: str = "accum"            # "accum": require net buying; "distexit": flat only on strong distribution
+    flow_dist_thr: float = 0.15         # distexit: stand aside when tape score < -this
+    flow_blocks: int = 900             # tape lookback per decision (~3h)
 
 
 @dataclass

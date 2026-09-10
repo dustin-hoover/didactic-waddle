@@ -93,6 +93,15 @@ out-of-sample dataset in `docs/tape_journal.json` over weeks. A cross-symbol see
 verdict stays "don't size on it" until the sample passes a 30-pair / corr-0.2 /
 55%-hit gate. Prove it, then trade it — never the other way round.
 
+**Where flow DID help: as a confirmation filter on trend** (`scripts/trend_flow_test.py`).
+Standalone flow can't time the market, but requiring the tape to *confirm* a
+trend-long — "only go long when trend and flow agree" — beat trend-only on return,
+Sharpe and drawdown across every EMA span tested. It's the one tape result that
+survived a parameter sweep. Caveat, loudly: ~60 days of one (up) regime, symbols
+not independent — a hint, not a validation. It's wired as an **opt-in, paper-only,
+OFF-by-default** engine option (`StrategyConfig.flow_confirm`; `tb.py paper
+--flow-confirm`), so it can be paper-forward-tested, never silently switched on.
+
 ## Quick start
 
 ```bash
