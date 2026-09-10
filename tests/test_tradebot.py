@@ -132,15 +132,3 @@ def test_ohlcv_csv_roundtrip(tmp_path):
     back = read_csv(str(p))
     assert [b.close for b in back] == [1.0, 2.0, 3.0]
     assert back[0].volume == 100.0
-
-
-# ---- ampl plugin ----
-def test_ampl_plugin_trims_in_expansion():
-    from tradebot.plugins.ampl import AmplTrendStrategy
-    # Uptrend that pushes far above the ~1.02 CPI target -> should trim vs base.
-    closes = [float(1.0 + 0.02 * i) for i in range(80)]  # ends ~2.58, deep expansion
-    bars = bars_from_closes(closes)
-    base = TrendFilterStrategy("swing").generate(bars).target_exposure
-    trimmed = AmplTrendStrategy("swing").generate(bars).target_exposure
-    assert base == 1.0
-    assert trimmed < base

@@ -186,7 +186,6 @@ Python 3.10+, standard library only. `pytest` is only needed for the tests.
 | `tradebot/screener.py` | Rank a coin universe by trend + conviction. |
 | `tradebot/server.py` | Dashboard: strategy explainer (`/`) + app (`/app`). |
 | `static/landing.html` | The strategy explainer / landing page. |
-| `tradebot/plugins/ampl.py` | AMPL rebase specialization (see below). |
 
 ## Risk & safety model
 
@@ -260,17 +259,9 @@ discussion; the short version:
   a small, capped trading slice (or use propose-and-sign, where you approve each
   order). This repo ships **none** of that enabled by choice.
 
-## AMPL plugin (the original project)
-
-The original rebase-aware AMPL bot lives on in `ampl_bot/` and as
-`tradebot/plugins/ampl.py`. AMPL is special — its supply rebases daily toward a
-CPI target, so price mean-reverts and a holder's *units* change with the rebase.
-The plugin overlays that on the trend filter (trimming exposure deep in the
-"expansion" zone). The full rebase-aware backtester, its real 2019→present data
-(via DefiLlama), and the findings — including that pure mean-reversion beat
-buy-and-hold *through AMPL's real 2020–22 crash* while a fixed CPI target makes
-full-cycle absolute returns unreliable — are documented in `ampl_bot/` and its
-scripts (`scripts/regime_test.py`, `scripts/compare_strategies.py`).
+> **History:** this project began as a rebase-aware AMPL bot (V1). That work was
+> retired once the generic, multi-crypto `tradebot/` framework proved the more
+> durable design; the codebase is now `tradebot/`-only.
 
 ## Disclaimer
 
