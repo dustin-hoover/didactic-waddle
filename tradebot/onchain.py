@@ -14,9 +14,9 @@ DISPLAY/CONTEXT only.
 IMPORTANT — validated finding (scripts/signal_test.py): the popular contrarian
 read of Fear & Greed is BACKWARDS in real BTC data. Extreme greed preceded
 HIGHER forward returns, extreme fear LOWER, and de-risking on greed cut backtest
-returns hard. So this regime is NOT a validated trading signal — keep the
-optional exposure gate (BotConfig.onchain_gate) OFF and treat the regime as
-context you read, not a rule you trade.
+returns hard. So this regime is NOT a validated trading signal — treat it as
+context you read, not a rule you trade. (An earlier `onchain_gate` config knob was
+removed after this finding: it was never wired into any trading path.)
 """
 
 from __future__ import annotations
@@ -27,8 +27,9 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Dict, Optional
 
+from .onchain_feed import _rpc_urls  # single source of RPC endpoints (honors ETH_RPC_URL)
+
 _UA = "Mozilla/5.0 tradebot/0.2"
-_RPCS = ["https://ethereum-rpc.publicnode.com", "https://eth.drpc.org"]
 
 
 def _get(url: str, tries: int = 3, timeout: int = 20):
@@ -82,7 +83,7 @@ def _stablecoin_mcap():
 
 def _eth_gas_gwei():
     body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "eth_gasPrice", "params": []}).encode()
-    for url in _RPCS:
+    for url in _rpc_urls():
         try:
             req = urllib.request.Request(url, data=body,
                                          headers={"Content-Type": "application/json", "User-Agent": _UA})
@@ -126,7 +127,7 @@ _ERC20 = {  # symbol: (address, decimals)
 
 def _rpc(method: str, params: list):
     body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode()
-    for url in _RPCS:
+    for url in _rpc_urls():
         try:
             req = urllib.request.Request(url, data=body,
                                          headers={"Content-Type": "application/json", "User-Agent": _UA})

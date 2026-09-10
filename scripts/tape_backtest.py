@@ -32,6 +32,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tradebot.onchain_feed import v3_price_usd
 from tradebot.tape import (_SECS_PER_BLOCK, _TAPE_POOLS, decode_swap, latest_block,
                            pool_meta, _rpc, SWAP_TOPIC)
+from tradebot.tape_journal import _pearson  # single canonical implementation
 
 _DAY = 86_400
 
@@ -107,15 +108,6 @@ def daily_flow(symbol: str, days: int, max_swaps: int, sample_blocks: int = 900)
     return out
 
 
-def _pearson(xs, ys):
-    n = len(xs)
-    if n < 3:
-        return None
-    mx, my = sum(xs) / n, sum(ys) / n
-    cov = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
-    vx = sum((x - mx) ** 2 for x in xs) ** 0.5
-    vy = sum((y - my) ** 2 for y in ys) ** 0.5
-    return cov / (vx * vy) if vx and vy else None
 
 
 def analyze(symbol, series):

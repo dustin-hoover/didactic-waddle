@@ -37,9 +37,10 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
+from .onchain_feed import _rpc_urls  # single source of RPC endpoints (honors ETH_RPC_URL)
+
 _UA = "Mozilla/5.0 tradebot-safety/0.1"
 _ETHERSCAN_V2 = "https://api.etherscan.io/v2/api"
-_RPCS = ["https://ethereum-rpc.publicnode.com", "https://eth.drpc.org"]
 _ZERO = "0x0000000000000000000000000000000000000000"
 _DEAD = "0x000000000000000000000000000000000000dead"
 
@@ -97,7 +98,7 @@ def _etherscan(params: Dict[str, str]) -> Optional[dict]:
 def _eth_call(to: str, data: str) -> Optional[str]:
     body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "eth_call",
                        "params": [{"to": to, "data": data}, "latest"]}).encode()
-    for url in _RPCS:
+    for url in _rpc_urls():
         try:
             req = urllib.request.Request(url, data=body,
                                          headers={"Content-Type": "application/json", "User-Agent": _UA})
@@ -280,7 +281,7 @@ def gas_oracle() -> Dict[str, Optional[float]]:
         return out
     # Fallback: raw RPC gas price (no key needed).
     body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "eth_gasPrice", "params": []}).encode()
-    for url in _RPCS:
+    for url in _rpc_urls():
         try:
             req = urllib.request.Request(url, data=body,
                                          headers={"Content-Type": "application/json", "User-Agent": _UA})
