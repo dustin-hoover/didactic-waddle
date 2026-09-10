@@ -58,6 +58,28 @@ def test_analyze_does_not_overclaim_on_tiny_positive_sample():
     assert "do not size positions" in r["verdict"]   # still gated on sample size
 
 
+def test_whale_analysis_runs_when_present():
+    # journal with both aggregate (imb) and whale (wimb) flow
+    wvals = [0.4, -0.3, 0.5, -0.2, 0.1, -0.5, 0.2, -0.1]
+    prices = [100, 103, 101, 106, 104, 102, 108, 105]
+    days = {}
+    for d in range(8):
+        date = f"2026-02-0{d+1}"
+        days[date] = {"ETH": {"imb": 0.3, "wimb": wvals[d], "price": float(prices[d]), "wn": 6}}
+    r = tj.analyze({"days": days})
+    assert "whale" in r and r["whale"]["n_pairs"] >= 3
+    # whale analysis produced its own edge stats (varying signal -> defined corr)
+    assert r["whale"]["corr"] is not None
+    assert r["whale"]["has_edge"] in (True, False)
+
+
+def test_whale_absent_is_backward_compatible():
+    days = {"2026-02-01": {"ETH": {"imb": 0.3, "price": 100.0}},
+            "2026-02-02": {"ETH": {"imb": -0.3, "price": 110.0}}}
+    r = tj.analyze({"days": days})
+    assert "whale" not in r          # no wimb -> no whale section, no crash
+
+
 def test_date_days_ago():
     assert tj.date_days_ago(0, base="2026-09-10") == "2026-09-10"
     assert tj.date_days_ago(1, base="2026-09-10") == "2026-09-09"

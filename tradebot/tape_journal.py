@@ -82,8 +82,13 @@ def _pearson(xs: List[float], ys: List[float]) -> Optional[float]:
     return cov / (vx * vy) if vx and vy else None
 
 
-def _pairs(journal: dict) -> Dict[str, List]:
-    """Per-symbol list of (date, imbalance, forward_return) from consecutive days."""
+def _pairs(journal: dict, field: str = "imb") -> Dict[str, List]:
+    """Per-symbol list of (date, signal, forward_return) from consecutive days.
+
+    ``field`` selects which flow signal to pair with tomorrow's return — "imb"
+    (aggregate flow) or "wimb" (whale/strong-hands-only flow). Records missing the
+    field are skipped, so a whale analysis simply ignores older aggregate-only days.
+    """
     days = sorted(journal.get("days", {}).keys())
     by_sym: Dict[str, List] = {}
     for i in range(len(days) - 1):
@@ -91,20 +96,56 @@ def _pairs(journal: dict) -> Dict[str, List]:
         snap0, snap1 = journal["days"][d0], journal["days"][d1]
         for sym, rec in snap0.items():
             nxt = snap1.get(sym)
-            if not nxt or not rec.get("price") or not nxt.get("price"):
+            if not nxt or not rec.get("price") or not nxt.get("price") or field not in rec:
                 continue
             fwd = nxt["price"] / rec["price"] - 1
-            by_sym.setdefault(sym, []).append((d0, rec["imb"], fwd))
+            by_sym.setdefault(sym, []).append((d0, rec[field], fwd))
     return by_sym
 
 
+def _edge(imb: List[float], fwd: List[float]) -> dict:
+    """Shared edge stats for a signal vs. forward returns."""
+    n = len(imb)
+    corr = _pearson(imb, fwd)
+    hits = sum(1 for i, r in zip(imb, fwd) if (i > 0) == (r > 0))
+    acc = [r for i, r in zip(imb, fwd) if i > 0]
+    dist = [r for i, r in zip(imb, fwd) if i <= 0]
+    eq_flow = eq_hold = 1.0
+    for i, r in zip(imb, fwd):
+        eq_hold *= (1 + r)
+        if i > 0:
+            eq_flow *= (1 + r)
+    strong = (corr or 0) > 0.2 and hits / n > 0.55 and n >= 30
+    return {
+        "n_pairs": n,
+        "corr": round(corr, 3) if corr is not None else None,
+        "hit_rate": round(hits / n, 3),
+        "mean_fwd_accumulation": round(sum(acc) / len(acc), 4) if acc else None,
+        "mean_fwd_distribution": round(sum(dist) / len(dist), 4) if dist else None,
+        "flow_following_return": round(eq_flow - 1, 4),
+        "buyhold_return": round(eq_hold - 1, 4),
+        "has_edge": bool(strong),
+    }
+
+
 def analyze(journal: dict) -> dict:
-    """Pool all (imbalance, next-day return) pairs and measure forward edge."""
+    """Pool all (imbalance, next-day return) pairs and measure forward edge.
+
+    Reports two signals side by side: aggregate flow ("imb") and whale/strong-hands
+    flow ("wimb", where recorded). Neither is called tradeable unless it clears the
+    gate (>=30 pairs, corr>0.2, >55% hit).
+    """
     by_sym = _pairs(journal)
     imb = [p[1] for lst in by_sym.values() for p in lst]
     fwd = [p[2] for lst in by_sym.values() for p in lst]
     n = len(imb)
     out = {"n_pairs": n, "n_symbols": len(by_sym), "n_days": len(journal.get("days", {}))}
+    # Whale-specific analysis, if the journal carries whale flow.
+    wby = _pairs(journal, field="wimb")
+    wimb = [p[1] for lst in wby.values() for p in lst]
+    wfwd = [p[2] for lst in wby.values() for p in lst]
+    if len(wimb) >= 3:
+        out["whale"] = _edge(wimb, wfwd)
     if n < 3:
         out["verdict"] = "not enough data yet — keep the journal running"
         return out

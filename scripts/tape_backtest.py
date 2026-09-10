@@ -89,11 +89,21 @@ def daily_flow(symbol: str, days: int, max_swaps: int, sample_blocks: int = 900)
         buy = sum(b.usd_size for b in prints if b.side == "BUY")
         sell = sum(b.usd_size for b in prints if b.side == "SELL")
         tot = buy + sell
+        # "Strong hands" cohort: the largest prints of the slice (top decile, >=5),
+        # a scale-free proxy so ETH and a thin alt are treated comparably. This is
+        # the whale-specific test — does the BIGGEST money predict, even if
+        # aggregate (retail-dominated) flow doesn't?
+        by_size = sorted(prints, key=lambda b: b.usd_size, reverse=True)
+        k = max(5, len(by_size) // 10)
+        whales = by_size[:k]
+        w_gross = sum(b.usd_size for b in whales)
+        w_net = sum(b.signed_usd for b in whales)
         prints.sort(key=lambda b: b.block)
         out.append({"imbalance": (buy - sell) / tot if tot else 0.0,
-                    "net_usd": buy - sell, "close": prints[-1].price, "n": len(prints)})
+                    "net_usd": buy - sell, "close": prints[-1].price, "n": len(prints),
+                    "wimb": (w_net / w_gross) if w_gross else 0.0, "wn": len(whales)})
         print(f"  day -{d}: {len(prints)} prints  imb {out[-1]['imbalance']:+.3f}  "
-              f"close ${out[-1]['close']:,.4f}", flush=True)
+              f"whale {out[-1]['wimb']:+.3f}  close ${out[-1]['close']:,.4f}", flush=True)
     return out
 
 
@@ -162,6 +172,16 @@ def _run_journal(path):
         if r.get("mean_fwd_distribution") is not None:
             print(f"  mean fwd | distribution       : {r['mean_fwd_distribution']:+.2%}")
         print(f"  flow-following / buy&hold     : {r['flow_following_return']:+.2%} / {r['buyhold_return']:+.2%}")
+    w = r.get("whale")
+    if w and w.get("corr") is not None:
+        print(f"  -- WHALE-only (strong hands), {w['n_pairs']} pairs --")
+        print(f"  corr(whale_t, return_t+1)     : {w['corr']:+.3f}")
+        print(f"  directional hit-rate          : {w['hit_rate']:.0%}")
+        if w.get("mean_fwd_accumulation") is not None:
+            print(f"  mean fwd | whale accumulation : {w['mean_fwd_accumulation']:+.2%}")
+        if w.get("mean_fwd_distribution") is not None:
+            print(f"  mean fwd | whale distribution : {w['mean_fwd_distribution']:+.2%}")
+        print(f"  whale-following / buy&hold    : {w['flow_following_return']:+.2%} / {w['buyhold_return']:+.2%}")
     print(f"  VERDICT: {r['verdict']}")
 
 
@@ -184,7 +204,8 @@ def _run_backfill(path, symbols, days, max_swaps, sample_blocks=900):
             date = tj.date_days_ago(d - 1)     # day 1 == today
             journal.setdefault("days", {}).setdefault(date, {})[sym.upper()] = {
                 "imb": round(entry["imbalance"], 4), "net": round(entry["net_usd"]),
-                "price": entry["close"]}
+                "price": entry["close"], "wimb": round(entry.get("wimb", 0.0), 4),
+                "wn": entry.get("wn", 0)}
         tj.save(path, journal)
     print(f"\nwrote {path}\n")
     _run_journal(path)
