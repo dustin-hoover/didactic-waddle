@@ -1,0 +1,13 @@
+{
+ "bags": [
+  {
+   "id": "b1",
+   "scenario": "steady",
+   "seed": 1000.0,
+   "wallet": null,
+   "parent": null,
+   "created_ts": 1789083249
+  }
+ ],
+ "spawns": []
+}

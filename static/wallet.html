@@ -108,6 +108,15 @@
     <p class="muted" id="bhline" style="margin:8px 2px 0"></p>
   </div>
 
+  <div class="panel">
+    <div class="row" style="align-items:baseline">
+      <b style="font-size:15px">Fractal bag tree</b>
+      <span class="muted">— the live paper tree. A bag spawns a smaller child when it multiplies.</span>
+    </div>
+    <div id="treeTotals" class="muted" style="margin:8px 2px"></div>
+    <div id="tree"></div>
+  </div>
+
   <div id="rebPanel" class="panel hide">
     <b style="font-size:15px">Rebalance <span class="muted" id="rebFor"></span></b>
     <p class="muted">Reallocate this bag across scenarios — like reallocating a 401k between funds.
@@ -270,6 +279,33 @@ function renderScenarios(){
   body.querySelectorAll("[data-assign]").forEach(el=>el.onclick=()=>assignScenario(el.dataset.assign));
 }
 
+function renderTree(tree){
+  const host=$("#tree"); const tot=$("#treeTotals");
+  if(!tree || tree.error || !(tree.bags||[]).length){
+    tot.textContent=""; host.innerHTML=`<span class="muted">No paper tree yet — it seeds on the next scheduled run.</span>`; return;
+  }
+  const t=tree.totals||{};
+  const grow = t.external_seed ? (t.total/t.external_seed-1) : 0;
+  tot.innerHTML = `${t.bags} bags · ${t.spawns} spawns · external capital in
+    <b>$${Math.round(t.external_seed).toLocaleString()}</b> → total value
+    <b class="${grow>=0?'pos':'neg'}">$${Math.round(t.total).toLocaleString()} (${pct(grow)})</b>`;
+  // order: roots first, children indented under parents
+  const byParent={}; tree.bags.forEach(b=>{ (byParent[b.parent||"_"]=byParent[b.parent||"_"]||[]).push(b); });
+  const rows=[];
+  (function walk(pid,depth){ (byParent[pid]||[]).forEach(b=>{ rows.push([b,depth]); walk(b.id,depth+1); }); })("_",0);
+  host.innerHTML = `<div style="overflow-x:auto"><table>
+    <thead><tr><th>Bag</th><th>Scenario</th><th>Seed</th><th>Trading</th><th>Reserve</th><th>Total</th><th>Return</th></tr></thead>
+    <tbody>${rows.map(([b,d])=>`<tr>
+      <td>${'&nbsp;'.repeat(d*3)}${d?'└ ':''}${b.id}</td>
+      <td>${b.scenario_name||b.scenario}</td>
+      <td>$${Math.round(b.seed).toLocaleString()}</td>
+      <td>$${Math.round(b.trading).toLocaleString()}</td>
+      <td>$${Math.round(b.reserve).toLocaleString()}</td>
+      <td>$${Math.round(b.total).toLocaleString()}</td>
+      <td class="${b.total_return>=0?'pos':'neg'}">${pct(b.total_return)}</td>
+    </tr>`).join("")}</tbody></table></div>`;
+}
+
 function firstBagKey(){
   const bags=store.load(); const ks=Object.keys(bags); return ks[0]||null;
 }
@@ -327,6 +363,7 @@ fetch("data.json",{cache:"no-store"}).then(r=>r.json()).then(d=>{
   if(sc.span){ $("#scnMeta").textContent = `— ${sc.symbol} ${sc.interval}, ${sc.span}. Same real data, different dials.`; }
   if(SCN.length){ $("#bhline").textContent = `Buy & hold over the same window: ${pct(SCN[0].buyhold_return)}. All figures are paper, on real data.`; }
   if(d.generated_at){ $("#gen").textContent = " · data refreshed "+d.generated_at.replace("T"," ")+" UTC"; }
+  renderTree(d.bag_tree);
   renderScenarios(); render();
 }).catch(()=>{ renderScenarios(); render(); });
 </script>

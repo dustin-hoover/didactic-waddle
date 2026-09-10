@@ -110,22 +110,31 @@ def build():
     except Exception as e:  # noqa: BLE001
         featured = {"error": str(e)[:80]}
 
-    # LIVE PAPER PORTFOLIO — advance the real machine (trade + skim + flywheel).
-    # State persists in docs/paper_state.json (committed) across scheduled runs.
-    paper = {}
+    # LIVE PAPER BAGS — one supervised tree of stashes (the root bag IS the paper
+    # portfolio). Each run advances every bag and lets the tree spawn fractally.
+    # State persists under docs/bags/ (committed) across scheduled runs.
+    paper, bag_tree = {}, {}
     try:
-        from tradebot.engine import TradingEngine
-        pcfg = BotConfig(mode="paper", symbol="BTC", interval="1d", starting_cash=1000.0,
-                         strategy=StrategyConfig(kind="trend", style="swing"),
-                         state_path=os.path.join(DOCS, "paper_state.json"))
-        eng = TradingEngine(pcfg)
-        pbars = feed.history("BTC", "1d", 400)
-        reps = eng.advance(pbars)
-        paper = eng.snapshot(pbars[-1].close)
-        paper["new_steps"] = len(reps)
-        paper["last_action"] = reps[-1].action if reps else "no new candle"
+        from tradebot.bags import Supervisor, SpawnPolicy
+        bars_cache = {}
+        def bars_for(sym, interval):
+            k = f"{sym}:{interval}"
+            if k not in bars_cache:
+                bars_cache[k] = feed.history(sym, interval, 400)
+            return bars_cache[k]
+        sup = Supervisor(os.path.join(DOCS, "bags"), SpawnPolicy(trigger_multiple=2.0))
+        if not sup.specs:
+            sup.add_bag("steady", seed=1000.0)      # root bag = the paper portfolio
+        bag_tree = sup.advance(bars_for)
+        root = next((b for b in bag_tree["bags"] if b["parent"] is None), None)
+        if root:                                     # map root -> the existing paper panel
+            paper = {"symbol": "BTC", "interval": "1d", "trading_equity": root["trading"],
+                     "reserve": root["reserve"], "total": root["total"],
+                     "exposure": root["exposure"], "total_return": root["total_return"],
+                     "start": root["seed"], "trades": root["trades"],
+                     "reinvests": 0, "skims": 0}
     except Exception as e:  # noqa: BLE001
-        paper = {"error": str(e)[:80]}
+        paper = bag_tree = {"error": str(e)[:80]}
 
     # ON-CHAIN TAPE — strongest block-order flow of the day. Gated behind TB_TAPE=1
     # because reading a day of Uniswap V3 swaps across the universe is heavy on
@@ -174,7 +183,7 @@ def build():
     data = {"generated_at": datetime.now(timezone.utc).isoformat(timespec="minutes"),
             "interval": INTERVAL, "style": STYLE, "onchain": onchain,
             "rows": rows, "featured": featured, "paper": paper, "tape": tape,
-            "scenarios": scenarios}
+            "scenarios": scenarios, "bag_tree": bag_tree}
     json.dump(data, open(os.path.join(DOCS, "data.json"), "w"), indent=1)
     json.dump(state, open(os.path.join(DOCS, "alert_state.json"), "w"))
 
