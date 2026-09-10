@@ -93,6 +93,47 @@ def cmd_onchain(a):
         print("  notes:", m.notes)
 
 
+def cmd_bags(a):
+    import tempfile
+    from tradebot import scenarios as sc
+    from tradebot.bags import Supervisor, SpawnPolicy
+    if a.demo:
+        bars = get_feed().history(a.symbol, "1d", a.limit)
+        warm = max(60, len(bars) - a.window)
+        root = tempfile.mkdtemp(prefix="bags_demo_")
+        sup = Supervisor(root, SpawnPolicy(trigger_multiple=a.trigger, fraction=a.fraction,
+                                           child_scenario=a.child or None))
+        sup.add_bag(a.scenario, seed=a.seed, wallet="0xDEMO")
+        for k in range(warm, len(bars) + 1):     # replay one candle at a time
+            sup.advance(lambda s, i, kk=k: bars[:kk])
+        snap = sup.snapshot(lambda s, i: bars)
+        span = f"{bars[warm-1].date[:10]} -> {bars[-1].date[:10]}"
+        print(f"Fractal bags demo — seed ${a.seed:,.0f} in '{a.scenario}', {a.symbol} 1d ({span})")
+        print(f"spawn rule: bag total >= {a.trigger}x seed -> carve {a.fraction:.0%} of reserve into a child\n")
+        print(f"{'bag':<8}{'parent':<8}{'scenario':<12}{'seed$':>9}{'trading$':>11}{'reserve$':>11}{'total$':>11}")
+        print("-" * 70)
+        for b in snap["bags"]:
+            print(f"{b['id']:<8}{(b['parent'] or '-'):<8}{b['scenario']:<12}{b['seed']:>9,.0f}"
+                  f"{b['trading']:>11,.0f}{b['reserve']:>11,.0f}{b['total']:>11,.0f}")
+        t = snap["totals"]
+        print("-" * 70)
+        print(f"{'TOTAL':<28}{t['external_seed']:>9,.0f}{t['trading']:>11,.0f}{t['reserve']:>11,.0f}{t['total']:>11,.0f}")
+        print(f"\n{t['bags']} bags, {t['spawns']} spawns. External capital in: ${t['external_seed']:,.0f} "
+              f"-> total value: ${t['total']:,.0f} ({t['total']/t['external_seed']-1:+.0%}).")
+        return
+    # read the live tree
+    root = a.dir
+    sup = Supervisor(root)
+    if not sup.specs:
+        print(f"No bags in {root}. Try: python tb.py bags --demo")
+        return
+    snap = sup.snapshot()
+    print(f"Bags in {root}: {snap['totals']['bags']} bags, {snap['totals']['spawns']} spawns")
+    for b in snap["bags"]:
+        print(f"  {b['id']:<8} {b['scenario_name']:<20} seed ${b['seed']:,.0f}  "
+              f"wallet {b['wallet'] or '-'}  parent {b['parent'] or '-'}")
+
+
 def cmd_scenarios(a):
     from tradebot import scenarios as sc
     bars = get_feed().history(a.symbol, a.interval, a.limit)
@@ -202,6 +243,19 @@ def main():
 
     oc = sub.add_parser("onchain")
     oc.set_defaults(fn=cmd_onchain)
+
+    bg = sub.add_parser("bags")
+    bg.add_argument("--demo", action="store_true", help="replay real history to show a bag tree multiply")
+    bg.add_argument("--symbol", default="BTC")
+    bg.add_argument("--scenario", default="compounder")
+    bg.add_argument("--seed", type=float, default=1000.0)
+    bg.add_argument("--trigger", type=float, default=2.0, help="spawn when bag total >= N x seed")
+    bg.add_argument("--fraction", type=float, default=0.5, help="fraction of reserve moved to the child")
+    bg.add_argument("--child", default="", help="child scenario key (default: inherit parent)")
+    bg.add_argument("--window", type=int, default=500, help="candles to replay in --demo")
+    bg.add_argument("--limit", type=int, default=1000)
+    bg.add_argument("--dir", default="docs/bags", help="tree dir to inspect (non-demo)")
+    bg.set_defaults(fn=cmd_bags)
 
     sc_p = sub.add_parser("scenarios")
     sc_p.add_argument("--symbol", default="BTC")
