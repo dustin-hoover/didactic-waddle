@@ -58,6 +58,12 @@ def test_analyze_does_not_overclaim_on_tiny_positive_sample():
     assert "do not size positions" in r["verdict"]   # still gated on sample size
 
 
+def test_date_days_ago():
+    assert tj.date_days_ago(0, base="2026-09-10") == "2026-09-10"
+    assert tj.date_days_ago(1, base="2026-09-10") == "2026-09-09"
+    assert tj.date_days_ago(8, base="2026-09-10") == "2026-09-02"
+
+
 def test_roundtrip_save_load(tmp_path):
     p = str(tmp_path / "journal.json")
     j = tj.record(tj.load(p), [_row("ETH", 300, 100, 2000.0)], date="2026-01-01")

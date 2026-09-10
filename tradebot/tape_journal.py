@@ -45,6 +45,13 @@ def today_utc() -> str:
     return datetime.now(timezone.utc).date().isoformat()
 
 
+def date_days_ago(days_ago: int, base: Optional[str] = None) -> str:
+    """Calendar date ``days_ago`` before ``base`` (default today), ISO yyyy-mm-dd."""
+    from datetime import date, timedelta
+    b = date.fromisoformat(base) if base else datetime.now(timezone.utc).date()
+    return (b - timedelta(days=days_ago)).isoformat()
+
+
 def record(journal: dict, rows: List[dict], date: Optional[str] = None) -> dict:
     """Store today's flow snapshot for each ranked symbol (later runs overwrite it).
 

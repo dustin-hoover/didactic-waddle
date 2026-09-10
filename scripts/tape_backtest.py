@@ -157,15 +157,46 @@ def _run_journal(path):
     print(f"  VERDICT: {r['verdict']}")
 
 
+def _run_backfill(path, symbols, days, max_swaps):
+    """Pull ``days`` of history for each symbol and write it into the journal.
+
+    Lets a keyed archive RPC (repo secret ETH_RPC_URL) populate weeks of real
+    flow in one run — the key never leaves the repo. Dates are calendar days
+    counted back from today (day 1 = most recent full window).
+    """
+    from tradebot import tape_journal as tj
+    journal = tj.load(path)
+    for sym in symbols:
+        print(f"backfilling {sym} ({days}d)…", flush=True)
+        series = daily_flow(sym, days, max_swaps)
+        for j, entry in enumerate(series):
+            if not entry:
+                continue
+            d = days - j                       # oldest-first -> day index
+            date = tj.date_days_ago(d - 1)     # day 1 == today
+            journal.setdefault("days", {}).setdefault(date, {})[sym.upper()] = {
+                "imb": round(entry["imbalance"], 4), "net": round(entry["net_usd"]),
+                "price": entry["close"]}
+        tj.save(path, journal)
+    print(f"\nwrote {path}\n")
+    _run_journal(path)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--symbol", default="ETH")
+    ap.add_argument("--symbols", default="", help="comma-separated (backfill mode)")
     ap.add_argument("--days", type=int, default=10)
     ap.add_argument("--max-swaps", type=int, default=2000, dest="max_swaps")
     ap.add_argument("--journal", default="", help="analyze an accumulated tape_journal.json instead of live pulls")
+    ap.add_argument("--backfill", default="", help="path to write: pull history into a journal for many symbols")
     a = ap.parse_args()
     if a.journal:
         _run_journal(a.journal)
+        return
+    if a.backfill:
+        syms = a.symbols.split(",") if a.symbols else [a.symbol]
+        _run_backfill(a.backfill, syms, a.days, a.max_swaps)
         return
     print(f"Pulling ~{a.days} days of on-chain flow for {a.symbol} "
           f"(≤{a.max_swaps} prints/day)…", flush=True)

@@ -91,8 +91,16 @@ panel: it decodes every Uniswap V3 swap across the universe, scores net buy/sell
 flow and whale participation, and ranks the top 10 (accumulation vs distribution).
 This is heavy on public RPC, so pair it with your own `ETH_RPC_URL` secret. It
 **reads and ranks** the tape — it does not place trades, and naive flow-following
-did **not** beat buy-and-hold in validation (`scripts/tape_backtest.py`), so treat
-it as a scouting tool, not an auto-trader.
+did **not** reliably beat buy-and-hold in validation (`scripts/tape_backtest.py`),
+so treat it as a scouting tool, not an auto-trader.
+
+**Prove it before trusting it.** With `TB_TAPE=1`, each run logs flow to
+`docs/tape_journal.json` and measures whether past flow predicted returns — a real
+out-of-sample sample that grows over weeks. To get a verdict *now* instead of
+waiting: add your `ETH_RPC_URL` secret, then run **Actions → tape-backfill → Run
+workflow** (defaults to 60 days across the majors). It pulls the history using your
+node and commits the journal — your RPC key never leaves the repo. The tape only
+earns a position-sizing role once the accrued sample clears the edge gate.
 
 ## Honest limits
 - Scheduled runs are **best-effort** — GitHub can delay them a few minutes under

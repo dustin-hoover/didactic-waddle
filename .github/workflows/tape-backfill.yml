@@ -1,0 +1,50 @@
+name: tape-backfill
+
+# One-shot: populate the on-chain flow journal with weeks of history using YOUR
+# archive RPC (repo secret ETH_RPC_URL) — the key never leaves the repo. Run it
+# from the GitHub app: Actions -> tape-backfill -> Run workflow. Then the tape's
+# forward-edge verdict has a real sample immediately instead of accruing for weeks.
+
+on:
+  workflow_dispatch:
+    inputs:
+      symbols:
+        description: "Comma-separated symbols (from the tape universe)"
+        default: "ETH,BTC,LINK,UNI,AAVE"
+      days:
+        description: "How many days of history to pull"
+        default: "60"
+      max_swaps:
+        description: "Max prints sampled per day (higher = more accurate, slower)"
+        default: "2000"
+
+permissions:
+  contents: write
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Backfill the flow journal
+        env:
+          ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}   # your archive node — required for depth
+        run: |
+          python scripts/tape_backtest.py --backfill docs/tape_journal.json \
+            --symbols "${{ inputs.symbols }}" --days "${{ inputs.days }}" \
+            --max-swaps "${{ inputs.max_swaps }}"
+      - name: Commit the journal
+        run: |
+          git config user.name "tradebot"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs/tape_journal.json
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git commit -m "tape: backfill flow journal [skip ci]"
+          for i in 1 2 3 4; do
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || true
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then echo pushed; break; fi
+            sleep $((2**i))
+          done
