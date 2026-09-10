@@ -184,6 +184,9 @@ def build():
     # copy the static dashboard template -> docs/app.html
     app = open(os.path.join(ROOT, "static", "app_static.html")).read()
     open(os.path.join(DOCS, "app.html"), "w").write(app)
+    # copy the wallet control panel -> docs/wallet.html (reads docs/data.json)
+    wallet = open(os.path.join(ROOT, "static", "wallet.html")).read()
+    open(os.path.join(DOCS, "wallet.html"), "w").write(wallet)
     open(os.path.join(DOCS, ".nojekyll"), "w").write("")
 
     # push phone alerts

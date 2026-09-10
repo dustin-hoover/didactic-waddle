@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bags — control panel</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --panel:#ffffff; --ink:#0f1523; --muted:#5b6577; --line:#e6e9ef;
+    --accent:#2f6df6; --good:#128a5b; --bad:#c0392b; --warn:#b8860b;
+    --chip:#eef2fb; --shadow:0 1px 3px rgba(16,22,38,.08);
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0c0f16; --panel:#141926; --ink:#e8ecf4; --muted:#95a0b5; --line:#232a3a;
+    --accent:#5b8cff; --good:#3ecf8e; --bad:#ff6b6b; --warn:#e0b341;
+    --chip:#1b2233; --shadow:0 1px 3px rgba(0,0,0,.4);
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0c0f16; --panel:#141926; --ink:#e8ecf4; --muted:#95a0b5; --line:#232a3a;
+    --accent:#5b8cff; --good:#3ecf8e; --bad:#ff6b6b; --warn:#e0b341;
+    --chip:#1b2233; --shadow:0 1px 3px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);margin:0;
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:960px;margin:0 auto;padding-block:20px;padding-left:16px;padding-right:16px}
+  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+  h1{font-size:19px;margin:0;letter-spacing:-.02em}
+  h1 .dot{color:var(--accent)}
+  .grow{flex:1}
+  .muted{color:var(--muted)}
+  button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);
+    padding:9px 14px;border-radius:10px;cursor:pointer;transition:.15s}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  button.small{padding:5px 9px;border-radius:8px;font-size:12px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:16px;box-shadow:var(--shadow);margin-bottom:14px}
+  .sec{display:flex;gap:10px;align-items:flex-start;background:var(--chip);
+    border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13px}
+  .sec b{color:var(--good)}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .card{flex:1;min-width:240px;background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;padding:14px}
+  .addr{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+  .kv{display:flex;justify-content:space-between;gap:8px;margin:3px 0}
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;
+    background:var(--chip);border:1px solid var(--line)}
+  .lvl-low{color:var(--good)} .lvl-medium{color:var(--warn)} .lvl-high{color:var(--bad)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:right;padding:8px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  .pos{color:var(--good)} .neg{color:var(--bad)}
+  .pick{cursor:pointer}
+  .pick.sel{outline:2px solid var(--accent);border-radius:8px}
+  input[type=range]{width:100%}
+  .alloc{display:flex;align-items:center;gap:10px;margin:6px 0}
+  .alloc .name{width:150px}
+  .alloc .pct{width:44px;text-align:right;font-variant-numeric:tabular-nums}
+  .foot{color:var(--muted);font-size:12px;margin-top:18px;line-height:1.6}
+  a{color:var(--accent)}
+  .hide{display:none}
+  .pill{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line)}
+  .ok{color:var(--good)} .no{color:var(--bad)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span class="dot">◆</span> Bags <span class="muted" style="font-weight:400">· control panel</span></h1>
+    <div class="grow"></div>
+    <span id="net" class="badge hide"></span>
+    <button id="connect" class="primary">Connect wallet</button>
+  </header>
+
+  <div class="sec">
+    <span>🔒</span>
+    <div><b>Non-custodial by design.</b> This app never sees or holds your private keys.
+      Connecting only <i>reads</i> your public address and asks your wallet to <i>sign</i> a
+      message to prove it's yours. Any future live trade is <b>propose-and-sign</b> — your
+      wallet (MetaMask / Coinbase / Base) approves each transaction. Everything here today is
+      <b>paper</b>: no funds move.</div>
+  </div>
+
+  <div id="empty" class="panel">
+    <b>Connect a wallet to begin.</b>
+    <p class="muted">Open this page inside your wallet's browser (MetaMask, Coinbase Wallet, Base)
+      or use the extension, then tap <b>Connect wallet</b>. You can also
+      <a href="#" id="addwatch">track an address read-only</a> without connecting.</p>
+  </div>
+
+  <div id="bags"></div>
+
+  <div class="panel">
+    <div class="row" style="align-items:baseline">
+      <b style="font-size:15px">Scenario board</b>
+      <span class="muted" id="scnMeta">— the same real data, different dials. Pick one for your bag, or blend them.</span>
+    </div>
+    <div style="overflow-x:auto;margin-top:10px">
+      <table id="scnTable">
+        <thead><tr>
+          <th>Scenario</th><th>Risk</th><th>Return</th><th>Sharpe</th>
+          <th>Max DD</th><th>Reserve</th><th>$1,000→</th><th></th>
+        </tr></thead>
+        <tbody id="scnBody"><tr><td colspan="8" class="muted">Loading real-data results…</td></tr></tbody>
+      </table>
+    </div>
+    <p class="muted" id="bhline" style="margin:8px 2px 0"></p>
+  </div>
+
+  <div id="rebPanel" class="panel hide">
+    <b style="font-size:15px">Rebalance <span class="muted" id="rebFor"></span></b>
+    <p class="muted">Reallocate this bag across scenarios — like reallocating a 401k between funds.
+      Paper only; it records the mix you'd run.</p>
+    <div id="allocRows"></div>
+    <div class="alloc"><div class="name"><b>Total</b></div>
+      <div class="grow"></div><div class="pct"><b id="allocTotal">0%</b></div></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="primary" id="applyReb">Apply (paper)</button>
+      <button id="closeReb">Close</button>
+      <span id="rebMsg" class="muted" style="align-self:center"></span>
+    </div>
+  </div>
+
+  <div class="foot">
+    Bags run the validated trend + capital-preservation model; scenarios are the same model at
+    different dial settings, scored on real market data. This is educational software and paper
+    only — not financial advice, and no guarantee of future results.
+    <span id="gen"></span>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const short = a => a ? a.slice(0,6)+"…"+a.slice(-4) : "";
+const pct = x => (x>=0?"+":"") + (x*100).toFixed(1) + "%";
+const NETS = {"0x1":"Ethereum","0x2105":"Base","0xa":"Optimism","0x89":"Polygon","0xa4b1":"Arbitrum"};
+
+let SCN = [];                         // scenario rows from data.json
+const store = {
+  load(){ try{ return JSON.parse(localStorage.getItem("bags")||"{}"); }catch(e){ return {}; } },
+  save(b){ try{ localStorage.setItem("bags", JSON.stringify(b)); }catch(e){} },
+};
+
+async function rpc(method, params){
+  if(!window.ethereum) throw new Error("no wallet");
+  return window.ethereum.request({method, params});
+}
+
+async function connect(){
+  if(!window.ethereum){
+    alert("No wallet detected. Open this page inside MetaMask / Coinbase Wallet, or install the extension.");
+    return;
+  }
+  try{
+    const accts = await rpc("eth_requestAccounts", []);
+    const chain = await rpc("eth_chainId", []);
+    const addr = accts[0];
+    // Sign-In-With-Ethereum (lite): prove ownership with a signature. No keys leave the wallet.
+    const nonce = Math.random().toString(36).slice(2);
+    const msg = `Sign in to Bags control panel.\nAddress: ${addr}\nNonce: ${nonce}\nThis does not authorize any transaction.`;
+    let verified = false;
+    try{ await rpc("personal_sign", [msg, addr]); verified = true; }catch(e){ verified = false; }
+    const bags = store.load();
+    bags[addr.toLowerCase()] = Object.assign({address:addr, verified, chain, watch:false,
+      allocations:{steady:100}}, bags[addr.toLowerCase()]||{});
+    bags[addr.toLowerCase()].verified = verified; bags[addr.toLowerCase()].chain = chain;
+    store.save(bags);
+    setNet(chain);
+    render();
+  }catch(e){ console.warn(e); }
+}
+
+function setNet(chain){
+  const el = $("#net");
+  el.textContent = NETS[chain] || ("chain "+chain);
+  el.classList.remove("hide");
+}
+
+function addWatch(){
+  const a = prompt("Enter a 0x… address to track read-only:");
+  if(!a) return;
+  if(!/^0x[0-9a-fA-F]{40}$/.test(a.trim())){ alert("That doesn't look like a 0x address."); return; }
+  const bags = store.load();
+  bags[a.trim().toLowerCase()] = {address:a.trim(), verified:false, watch:true, allocations:{steady:100}};
+  store.save(bags); render();
+}
+
+async function nativeBalance(addr){
+  try{
+    const hex = await rpc("eth_getBalance", [addr, "latest"]);
+    return Number(BigInt(hex)) / 1e18;
+  }catch(e){ return null; }
+}
+
+function scnByKey(k){ return SCN.find(s => s.key===k); }
+
+// Blended shadow return for a bag's allocation across scenarios.
+function blendedReturn(alloc){
+  let tot=0, r=0;
+  for(const [k,p] of Object.entries(alloc||{})){ const s=scnByKey(k); if(s){ tot+=p; r+=p*s.return; } }
+  return tot>0 ? r/tot : 0;
+}
+function allocSummary(alloc){
+  const parts = Object.entries(alloc||{}).filter(([k,p])=>p>0)
+    .map(([k,p])=>`${(scnByKey(k)?.name)||k} ${p}%`);
+  return parts.length ? parts.join(" · ") : "unassigned";
+}
+
+async function render(){
+  const bags = store.load();
+  const keys = Object.keys(bags);
+  $("#empty").classList.toggle("hide", keys.length>0);
+  const host = $("#bags"); host.innerHTML = "";
+  for(const k of keys){
+    const b = bags[k];
+    const card = document.createElement("div"); card.className="panel";
+    const bret = blendedReturn(b.allocations);
+    card.innerHTML = `
+      <div class="row" style="align-items:center">
+        <div>
+          <div class="addr">${short(b.address)}
+            <span class="pill ${b.verified?'ok':''}">${b.verified?'✓ signed-in':(b.watch?'watch-only':'not verified')}</span></div>
+          <div class="muted" style="font-size:12px">${NETS[b.chain]||''}</div>
+        </div>
+        <div class="grow"></div>
+        <div style="text-align:right">
+          <div class="muted" style="font-size:12px">bag balance</div>
+          <div class="bal" data-a="${b.address}">…</div>
+        </div>
+      </div>
+      <div class="kv" style="margin-top:10px"><span class="muted">Scenario mix</span><span>${allocSummary(b.allocations)}</span></div>
+      <div class="kv"><span class="muted">Blended shadow return (real data)</span>
+        <span class="${bret>=0?'pos':'neg'}">${pct(bret)}</span></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="small" data-reb="${k}">Rebalance</button>
+        <button class="small" data-rm="${k}">Remove</button>
+      </div>`;
+    host.appendChild(card);
+  }
+  // wire buttons
+  host.querySelectorAll("[data-reb]").forEach(el=>el.onclick=()=>openRebalance(el.dataset.reb));
+  host.querySelectorAll("[data-rm]").forEach(el=>el.onclick=()=>{
+    const bags=store.load(); delete bags[el.dataset.rm]; store.save(bags); render();
+  });
+  // fill balances (read-only)
+  host.querySelectorAll(".bal").forEach(async el=>{
+    const v = await nativeBalance(el.dataset.a);
+    el.textContent = v==null ? "—" : (v.toFixed(4)+" native");
+  });
+}
+
+function renderScenarios(){
+  const body = $("#scnBody"); body.innerHTML="";
+  if(!SCN.length){ body.innerHTML=`<tr><td colspan="8" class="muted">No scenario data yet.</td></tr>`; return; }
+  for(const s of SCN){
+    const tr=document.createElement("tr");
+    tr.innerHTML = `
+      <td>${s.name}</td>
+      <td class="lvl-${s.risk_level}">${s.risk_level}</td>
+      <td class="${s.return>=0?'pos':'neg'}">${pct(s.return)}</td>
+      <td>${s.sharpe.toFixed(2)}</td>
+      <td>${(Math.abs(s.max_drawdown)*100).toFixed(1)}%</td>
+      <td>${Math.round(s.reserve_frac*100)}%</td>
+      <td>$${Math.round(s.final_total).toLocaleString()}</td>
+      <td><button class="small" data-assign="${s.key}">Use</button></td>`;
+    body.appendChild(tr);
+  }
+  body.querySelectorAll("[data-assign]").forEach(el=>el.onclick=()=>assignScenario(el.dataset.assign));
+}
+
+function firstBagKey(){
+  const bags=store.load(); const ks=Object.keys(bags); return ks[0]||null;
+}
+function assignScenario(key){
+  const bk = firstBagKey();
+  if(!bk){ alert("Connect or track a wallet first, then assign a scenario to its bag."); return; }
+  const bags=store.load(); bags[bk].allocations = {[key]:100}; store.save(bags);
+  render();
+}
+
+// ---- rebalance ----
+let rebKey=null;
+function openRebalance(k){
+  rebKey=k; const bags=store.load(); const b=bags[k];
+  $("#rebFor").textContent = "· "+short(b.address);
+  const host=$("#allocRows"); host.innerHTML="";
+  for(const s of SCN){
+    const cur = (b.allocations&&b.allocations[s.key])||0;
+    const row=document.createElement("div"); row.className="alloc";
+    row.innerHTML = `<div class="name">${s.name} <span class="muted lvl-${s.risk_level}">${s.risk_level}</span></div>
+      <input type="range" min="0" max="100" step="5" value="${cur}" data-k="${s.key}">
+      <div class="pct" data-p="${s.key}">${cur}%</div>`;
+    host.appendChild(row);
+  }
+  const upd=()=>{
+    let tot=0; host.querySelectorAll("input").forEach(i=>{ tot+=Number(i.value);
+      host.querySelector(`[data-p="${i.dataset.k}"]`).textContent=i.value+"%"; });
+    $("#allocTotal").textContent = tot+"%";
+    $("#allocTotal").style.color = tot===100 ? "var(--good)" : "var(--warn)";
+  };
+  host.querySelectorAll("input").forEach(i=>i.oninput=upd); upd();
+  $("#rebPanel").classList.remove("hide");
+  $("#rebMsg").textContent="";
+  $("#rebPanel").scrollIntoView({behavior:"smooth"});
+}
+$("#applyReb").onclick=()=>{
+  const host=$("#allocRows"); const alloc={}; let tot=0;
+  host.querySelectorAll("input").forEach(i=>{ const v=Number(i.value); if(v>0)alloc[i.dataset.k]=v; tot+=v; });
+  if(tot!==100){ $("#rebMsg").textContent="Allocations must total 100%."; return; }
+  const bags=store.load(); bags[rebKey].allocations=alloc; store.save(bags);
+  $("#rebMsg").textContent="Saved."; render();
+};
+$("#closeReb").onclick=()=>$("#rebPanel").classList.add("hide");
+
+// ---- boot ----
+$("#connect").onclick=connect;
+$("#addwatch").onclick=e=>{e.preventDefault();addWatch();};
+if(window.ethereum){
+  window.ethereum.on && window.ethereum.on("accountsChanged", ()=>render());
+  window.ethereum.on && window.ethereum.on("chainChanged", c=>{setNet(c);render();});
+}
+fetch("data.json",{cache:"no-store"}).then(r=>r.json()).then(d=>{
+  const sc=d.scenarios||{};
+  SCN = sc.rows||[];
+  if(sc.span){ $("#scnMeta").textContent = `— ${sc.symbol} ${sc.interval}, ${sc.span}. Same real data, different dials.`; }
+  if(SCN.length){ $("#bhline").textContent = `Buy & hold over the same window: ${pct(SCN[0].buyhold_return)}. All figures are paper, on real data.`; }
+  if(d.generated_at){ $("#gen").textContent = " · data refreshed "+d.generated_at.replace("T"," ")+" UTC"; }
+  renderScenarios(); render();
+}).catch(()=>{ renderScenarios(); render(); });
+</script>
+</body>
+</html>
