@@ -15,8 +15,11 @@ on:
         description: "How many days of history to pull"
         default: "60"
       max_swaps:
-        description: "Max prints sampled per day (higher = more accurate, slower)"
-        default: "2000"
+        description: "Max prints sampled per day (safety cap)"
+        default: "1500"
+      sample_blocks:
+        description: "Block-slice sampled per day (~900 ≈ 3h; consistent across days)"
+        default: "900"
 
 permissions:
   contents: write
@@ -24,6 +27,7 @@ permissions:
 jobs:
   backfill:
     runs-on: ubuntu-latest
+    timeout-minutes: 25   # a bounded sampler finishes in minutes; never run away again
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -35,7 +39,8 @@ jobs:
         run: |
           python scripts/tape_backtest.py --backfill docs/tape_journal.json \
             --symbols "${{ inputs.symbols }}" --days "${{ inputs.days }}" \
-            --max-swaps "${{ inputs.max_swaps }}"
+            --max-swaps "${{ inputs.max_swaps }}" \
+            --sample-blocks "${{ inputs.sample_blocks }}"
       - name: Commit the journal
         run: |
           git config user.name "tradebot"

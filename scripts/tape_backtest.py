@@ -58,8 +58,16 @@ def _fetch_range(pool, meta, eth_price, lo, hi, span, max_swaps):
     return prints
 
 
-def daily_flow(symbol: str, days: int, max_swaps: int):
-    """Return a list of per-day dicts: {imbalance, net_usd, close} oldest-first."""
+def daily_flow(symbol: str, days: int, max_swaps: int, sample_blocks: int = 900):
+    """Return a list of per-day dicts: {imbalance, net_usd, close} oldest-first.
+
+    We do NOT scan whole days — busy pools (e.g. ETH/USDC) emit tens of thousands
+    of swaps a day and blow past RPC result caps, which is slow and flaky. Instead
+    we sample a fixed ``sample_blocks`` slice ending at each day's boundary (~900
+    blocks ≈ ~3h ≈ a few hundred prints). The slice is the SAME size and time-of-
+    day offset every day, so the imbalance and the forward return are comparable
+    across days — a consistent estimator, at a tiny fraction of the RPC cost.
+    """
     pool = _TAPE_POOLS.get(symbol.upper())
     if not pool:
         raise SystemExit(f"no configured pool for {symbol}")
@@ -68,15 +76,15 @@ def daily_flow(symbol: str, days: int, max_swaps: int):
         raise SystemExit(f"could not resolve pool metadata for {symbol}")
     eth_price = (v3_price_usd("ETH") or 0.0) if meta.quote == "WETH" else 0.0
     tip = latest_block()
-    now = time.time()
     blocks_per_day = int(_DAY / _SECS_PER_BLOCK)
     out = []
     for d in range(days, 0, -1):
         hi = tip - (d - 1) * blocks_per_day
-        lo = hi - blocks_per_day + 1
-        prints = _fetch_range(pool, meta, eth_price, max(0, lo), hi, 800, max_swaps)
+        lo = hi - sample_blocks + 1
+        prints = _fetch_range(pool, meta, eth_price, max(0, lo), hi, sample_blocks, max_swaps)
         if not prints:
             out.append(None)
+            print(f"  day -{d}: no prints", flush=True)
             continue
         buy = sum(b.usd_size for b in prints if b.side == "BUY")
         sell = sum(b.usd_size for b in prints if b.side == "SELL")
@@ -157,7 +165,7 @@ def _run_journal(path):
     print(f"  VERDICT: {r['verdict']}")
 
 
-def _run_backfill(path, symbols, days, max_swaps):
+def _run_backfill(path, symbols, days, max_swaps, sample_blocks=900):
     """Pull ``days`` of history for each symbol and write it into the journal.
 
     Lets a keyed archive RPC (repo secret ETH_RPC_URL) populate weeks of real
@@ -168,7 +176,7 @@ def _run_backfill(path, symbols, days, max_swaps):
     journal = tj.load(path)
     for sym in symbols:
         print(f"backfilling {sym} ({days}d)…", flush=True)
-        series = daily_flow(sym, days, max_swaps)
+        series = daily_flow(sym, days, max_swaps, sample_blocks=sample_blocks)
         for j, entry in enumerate(series):
             if not entry:
                 continue
@@ -187,7 +195,9 @@ def main():
     ap.add_argument("--symbol", default="ETH")
     ap.add_argument("--symbols", default="", help="comma-separated (backfill mode)")
     ap.add_argument("--days", type=int, default=10)
-    ap.add_argument("--max-swaps", type=int, default=2000, dest="max_swaps")
+    ap.add_argument("--max-swaps", type=int, default=1500, dest="max_swaps")
+    ap.add_argument("--sample-blocks", type=int, default=900, dest="sample_blocks",
+                    help="block-slice sampled per day (consistent estimator; ~900≈3h)")
     ap.add_argument("--journal", default="", help="analyze an accumulated tape_journal.json instead of live pulls")
     ap.add_argument("--backfill", default="", help="path to write: pull history into a journal for many symbols")
     a = ap.parse_args()
@@ -196,11 +206,11 @@ def main():
         return
     if a.backfill:
         syms = a.symbols.split(",") if a.symbols else [a.symbol]
-        _run_backfill(a.backfill, syms, a.days, a.max_swaps)
+        _run_backfill(a.backfill, syms, a.days, a.max_swaps, a.sample_blocks)
         return
     print(f"Pulling ~{a.days} days of on-chain flow for {a.symbol} "
           f"(≤{a.max_swaps} prints/day)…", flush=True)
-    series = daily_flow(a.symbol, a.days, a.max_swaps)
+    series = daily_flow(a.symbol, a.days, a.max_swaps, sample_blocks=a.sample_blocks)
     analyze(a.symbol.upper(), series)
 
 
