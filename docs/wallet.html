@@ -279,31 +279,59 @@ function renderScenarios(){
   body.querySelectorAll("[data-assign]").forEach(el=>el.onclick=()=>assignScenario(el.dataset.assign));
 }
 
+const fmt$ = x => "$"+Math.round(x).toLocaleString();
+const day = ts => ts ? new Date(ts*1000).toISOString().slice(0,10) : "";
+
 function renderTree(tree){
   const host=$("#tree"); const tot=$("#treeTotals");
   if(!tree || tree.error || !(tree.bags||[]).length){
     tot.textContent=""; host.innerHTML=`<span class="muted">No paper tree yet — it seeds on the next scheduled run.</span>`; return;
   }
-  const t=tree.totals||{};
+  const t=tree.totals||{}, pol=tree.policy||{};
   const grow = t.external_seed ? (t.total/t.external_seed-1) : 0;
+  const childScn = pol.child_scenario ? `a <b>${pol.child_scenario}</b>` : "the same-model";
   tot.innerHTML = `${t.bags} bags · ${t.spawns} spawns · external capital in
-    <b>$${Math.round(t.external_seed).toLocaleString()}</b> → total value
-    <b class="${grow>=0?'pos':'neg'}">$${Math.round(t.total).toLocaleString()} (${pct(grow)})</b>`;
+    <b>${fmt$(t.external_seed)}</b> → total value
+    <b class="${grow>=0?'pos':'neg'}">${fmt$(t.total)} (${pct(grow)})</b>
+    <div class="muted" style="font-size:12px;margin-top:4px">Spawn rule: a bag’s
+    ${pol.trigger_on==='reserve'?'reserve':'total'} ≥ <b>${pol.trigger_multiple}×</b> its seed →
+    carve <b>${Math.round((pol.fraction||0.5)*100)}%</b> of reserve into ${childScn} child. Tap a bag for detail.</div>`;
   // order: roots first, children indented under parents
   const byParent={}; tree.bags.forEach(b=>{ (byParent[b.parent||"_"]=byParent[b.parent||"_"]||[]).push(b); });
   const rows=[];
   (function walk(pid,depth){ (byParent[pid]||[]).forEach(b=>{ rows.push([b,depth]); walk(b.id,depth+1); }); })("_",0);
   host.innerHTML = `<div style="overflow-x:auto"><table>
     <thead><tr><th>Bag</th><th>Scenario</th><th>Seed</th><th>Trading</th><th>Reserve</th><th>Total</th><th>Return</th></tr></thead>
-    <tbody>${rows.map(([b,d])=>`<tr>
-      <td>${'&nbsp;'.repeat(d*3)}${d?'└ ':''}${b.id}</td>
-      <td>${b.scenario_name||b.scenario}</td>
-      <td>$${Math.round(b.seed).toLocaleString()}</td>
-      <td>$${Math.round(b.trading).toLocaleString()}</td>
-      <td>$${Math.round(b.reserve).toLocaleString()}</td>
-      <td>$${Math.round(b.total).toLocaleString()}</td>
-      <td class="${b.total_return>=0?'pos':'neg'}">${pct(b.total_return)}</td>
-    </tr>`).join("")}</tbody></table></div>`;
+    <tbody>${rows.map(([b,d])=>`
+      <tr class="pick" data-bag="${b.id}">
+        <td>${'&nbsp;'.repeat(d*3)}${d?'└ ':''}${b.id}${b.halted?' <span class="pill no">halted</span>':''}</td>
+        <td>${b.scenario_name||b.scenario}</td>
+        <td>${fmt$(b.seed)}</td><td>${fmt$(b.trading)}</td><td>${fmt$(b.reserve)}</td>
+        <td>${fmt$(b.total)}</td>
+        <td class="${b.total_return>=0?'pos':'neg'}">${pct(b.total_return)}</td>
+      </tr>
+      <tr class="detail hide" data-detail="${b.id}"><td colspan="7">
+        <span class="muted">asset</span> ${b.symbol||'BTC'} ·
+        <span class="muted">exposure</span> ${Math.round((b.exposure||0)*100)}% ·
+        <span class="muted">trades</span> ${b.trades} ·
+        <span class="muted">skims</span> ${b.skims} ·
+        <span class="muted">reinvests</span> ${b.reinvests} ·
+        <span class="muted">seeded</span> ${day(b.created_ts)||'—'}
+        ${b.parent?` · <span class="muted">child of</span> ${b.parent}`:` · <span class="muted">root</span>`}
+      </td></tr>`).join("")}</tbody></table></div>`;
+  host.querySelectorAll("[data-bag]").forEach(r=>r.onclick=()=>{
+    const d=host.querySelector(`[data-detail="${r.dataset.bag}"]`); if(d) d.classList.toggle("hide");
+  });
+  // spawn timeline
+  const sp=(tree.spawns||[]).slice().reverse();
+  if(sp.length){
+    const tl=document.createElement("div"); tl.style.marginTop="12px";
+    tl.innerHTML = `<div class="muted" style="font-size:12px;margin-bottom:4px">Spawn history</div>` +
+      sp.map(s=>`<div class="kv" style="border-bottom:1px solid var(--line);padding:4px 0">
+        <span>${day(s.ts)} · <b>${s.parent}</b> → <b>${s.child}</b></span>
+        <span class="muted">seeded ${fmt$(s.amount)}</span></div>`).join("");
+    host.appendChild(tl);
+  }
 }
 
 function firstBagKey(){

@@ -122,7 +122,13 @@ def build():
             if k not in bars_cache:
                 bars_cache[k] = feed.history(sym, interval, 400)
             return bars_cache[k]
-        sup = Supervisor(os.path.join(DOCS, "bags"), SpawnPolicy(trigger_multiple=2.0))
+        # Spawn policy is operator-set (envs): how much a bag must multiply before it
+        # spins off a child, and which scenario that child runs (default: inherit).
+        policy = SpawnPolicy(
+            trigger_multiple=float(os.environ.get("TB_SPAWN_TRIGGER", "2.0")),
+            fraction=float(os.environ.get("TB_SPAWN_FRACTION", "0.5")),
+            child_scenario=(os.environ.get("TB_SPAWN_CHILD", "").strip() or None))
+        sup = Supervisor(os.path.join(DOCS, "bags"), policy)
         if not sup.specs:
             sup.add_bag("steady", seed=1000.0)      # root bag = the paper portfolio
         bag_tree = sup.advance(bars_for)

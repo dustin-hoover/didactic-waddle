@@ -175,9 +175,11 @@ class Supervisor:
             snap = eng.snapshot(price)
             row = {"id": spec.id, "scenario": spec.scenario, "scenario_name": scn.name,
                    "wallet": spec.wallet, "parent": spec.parent, "seed": spec.seed,
+                   "symbol": scn.symbol, "created_ts": spec.created_ts,
                    "trading": round(snap["trading_equity"], 2), "reserve": round(snap["reserve"], 2),
                    "total": round(snap["total"], 2), "exposure": snap["exposure"],
-                   "total_return": round(snap["total_return"], 4), "trades": snap["trades"]}
+                   "total_return": round(snap["total_return"], 4), "trades": snap["trades"],
+                   "skims": snap["skims"], "reinvests": snap["reinvests"], "halted": snap["halted"]}
             bags.append(row)
             tot_trading += snap["trading_equity"]
             tot_reserve += snap["reserve"]
@@ -185,4 +187,7 @@ class Supervisor:
         totals = {"bags": len(bags), "spawns": len(self.spawns),
                   "trading": round(tot_trading, 2), "reserve": round(tot_reserve, 2),
                   "total": round(tot_trading + tot_reserve, 2), "external_seed": round(tot_seed, 2)}
-        return {"bags": bags, "spawns": self.spawns[-50:], "totals": totals}
+        policy = {"enabled": self.policy.enabled, "trigger_multiple": self.policy.trigger_multiple,
+                  "trigger_on": self.policy.trigger_on, "fraction": self.policy.fraction,
+                  "child_scenario": self.policy.child_scenario}
+        return {"bags": bags, "spawns": self.spawns[-50:], "totals": totals, "policy": policy}
