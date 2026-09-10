@@ -34,6 +34,9 @@ jobs:
           # Chainlink oracles + DefiLlama (no CEX). ETH_RPC_URL = your own node.
           TB_DATA_SOURCE: ${{ vars.TB_DATA_SOURCE }}
           ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
+          # Optional: enables the token safety / rug-screen (verified source, owner
+          # powers, proxy, age) via Etherscan's free tier. Not needed for prices.
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
           TB_INTERVAL: "4h"
           TB_STYLE: "swing"
         run: python scripts/build_site.py

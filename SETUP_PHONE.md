@@ -33,6 +33,12 @@ Everything is **paper / read-only** — no keys, no real orders anywhere.
   CoinGecko *demo* key for higher rate limits and more history. The bot works
   without it (CoinGecko is only a fallback source); the key just makes that
   fallback faster and deeper.
+- **Optional — Etherscan:** add a secret `ETHERSCAN_API_KEY` (free key from
+  etherscan.io) to enable the **token safety / rug-screen** — before you hold a
+  new token, `python tb.py safety --symbol <SYM>` reports whether its contract is
+  verified, whether the owner can blacklist you or change the sell tax, whether
+  it's an upgradeable proxy, whether ownership is renounced, and how old it is.
+  Not needed for prices; majors are always fine.
 
 ### 4. Turn on the dashboard (GitHub Pages)
 - Repo → **Settings → Pages**.

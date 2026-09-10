@@ -4,8 +4,11 @@
     python tb.py backtest --symbol ETH --interval 1d --kind composite   # experimental
     python tb.py screen  --interval 4h --style swing
     python tb.py paper   --symbol BTC --interval 1h --once
+    python tb.py safety  --symbol PEPE                 # rug-screen a token
+    python tb.py safety  --gas                          # Ethereum gas oracle
 
 Long/flat spot, paper only. Data comes from public exchange OHLCV (no key).
+The safety screen reads free-tier Etherscan contract facts (ETHERSCAN_API_KEY).
 """
 
 import argparse
@@ -87,6 +90,26 @@ def cmd_onchain(a):
         print("  notes:", m.notes)
 
 
+def cmd_safety(a):
+    from tradebot.safety import check, gas_oracle, resolve
+    if a.gas:
+        g = gas_oracle()
+        gw = lambda x: f"{x:.2f} gwei" if x is not None else "n/a"
+        print("Ethereum gas (Etherscan gas oracle, RPC fallback):\n")
+        print(f"  safe {gw(g['safe'])}   propose {gw(g['propose'])}   "
+              f"fast {gw(g['fast'])}   base {gw(g['base'])}")
+        return
+    syms = a.symbols.split(",") if a.symbols else [a.symbol]
+    print("Token safety / rug-screen (Etherscan free-tier contract facts):\n")
+    for i, s in enumerate(syms):
+        try:
+            print(check(resolve(s)).summary())
+        except Exception as e:  # noqa: BLE001
+            print(f"{s}: error — {str(e)[:80]}")
+        if i < len(syms) - 1:
+            print()
+
+
 def cmd_wallet(a):
     print(f"Read-only balances for {a.address} (no keys, public chain state):\n")
     for sym, amt in wallet_balances(a.address).items():
@@ -130,6 +153,12 @@ def main():
 
     oc = sub.add_parser("onchain")
     oc.set_defaults(fn=cmd_onchain)
+
+    sf = sub.add_parser("safety")
+    sf.add_argument("--symbol", default="PEPE", help="token symbol or 0x… address")
+    sf.add_argument("--symbols", default="", help="comma-separated symbols/addresses")
+    sf.add_argument("--gas", action="store_true", help="show the gas oracle instead")
+    sf.set_defaults(fn=cmd_safety)
 
     wa = sub.add_parser("wallet")
     wa.add_argument("address")

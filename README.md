@@ -88,6 +88,11 @@ python tb.py onchain
 # Read-only wallet balances (self-custody view — no keys, public chain state)
 python tb.py wallet 0xYourAddress
 
+# Token safety / rug-screen: is the contract verified? can the owner blacklist you
+# or change the sell tax? proxy? renounced? how old? (needs ETHERSCAN_API_KEY)
+python tb.py safety --symbol PEPE
+python tb.py safety --gas            # Ethereum gas oracle
+
 # Never miss a move: check for signal flips, optionally push to your phone
 python tb.py alert --interval 4h --ntfy your-secret-topic
 
@@ -130,6 +135,8 @@ Python 3.10+, standard library only. `pytest` is only needed for the tests.
 | `tradebot/engine.py` | Live paper loop, one candle at a time. |
 | `tradebot/protection.py` | Bag protection: profit skim → stable reserve + yield. |
 | `tradebot/onchain.py` | On-chain metrics, risk regime, read-only wallet balances. |
+| `tradebot/onchain_feed.py` | Decentralized price feed: direct Uniswap V3 read + Chainlink + DefiLlama (no CEX). |
+| `tradebot/safety.py` | Token safety / rug-screen from Etherscan free-tier contract facts. |
 | `tradebot/alerts.py` | Signal-flip alerts + free phone push (ntfy.sh). |
 | `tradebot/screener.py` | Rank a coin universe by trend + conviction. |
 | `tradebot/server.py` | Dashboard: strategy explainer (`/`) + app (`/app`). |
