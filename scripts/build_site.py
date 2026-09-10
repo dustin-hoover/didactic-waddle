@@ -159,9 +159,22 @@ def build():
             except Exception as e:  # noqa: BLE001
                 tape["edge"] = {"error": str(e)[:80]}
 
+    # SCENARIO BOARD — the 401k-style comparison: each scenario's realized paper
+    # return on the same real data, so a wallet can pick or rebalance between them.
+    scenarios = {}
+    try:
+        from tradebot import scenarios as sc
+        sbars = feed.history("BTC", "1d", 1000)
+        scenarios = {"symbol": "BTC", "interval": "1d", "cash": 1000,
+                     "span": f"{sbars[0].date[:10]} -> {sbars[-1].date[:10]}",
+                     "rows": sc.compare(sbars, starting_cash=1000)}
+    except Exception as e:  # noqa: BLE001
+        scenarios = {"error": str(e)[:80]}
+
     data = {"generated_at": datetime.now(timezone.utc).isoformat(timespec="minutes"),
             "interval": INTERVAL, "style": STYLE, "onchain": onchain,
-            "rows": rows, "featured": featured, "paper": paper, "tape": tape}
+            "rows": rows, "featured": featured, "paper": paper, "tape": tape,
+            "scenarios": scenarios}
     json.dump(data, open(os.path.join(DOCS, "data.json"), "w"), indent=1)
     json.dump(state, open(os.path.join(DOCS, "alert_state.json"), "w"))
 

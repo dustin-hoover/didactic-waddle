@@ -93,6 +93,20 @@ def cmd_onchain(a):
         print("  notes:", m.notes)
 
 
+def cmd_scenarios(a):
+    from tradebot import scenarios as sc
+    bars = get_feed().history(a.symbol, a.interval, a.limit)
+    rows = sc.compare(bars, starting_cash=a.cash)
+    span = f"{bars[0].date[:10]} -> {bars[-1].date[:10]}"
+    print(f"Scenario board — ${a.cash:,.0f} in each, {a.symbol} {a.interval} ({span})\n")
+    print(f"{'scenario':<22}{'risk':>7}{'return':>9}{'sharpe':>8}{'maxDD':>8}{'resv%':>7}{'worth$':>10}")
+    print("-" * 71)
+    for r in rows:
+        print(f"{r['name']:<22}{r['risk_level']:>7}{r['return']:>+8.1%}{r['sharpe']:>8.2f}"
+              f"{abs(r['max_drawdown']):>7.1%}{r['reserve_frac']:>6.0%}{r['final_total']:>10,.0f}")
+    print(f"\nbuy & hold: {rows[0]['buyhold_return']:+.1%}  ·  all scenarios on the same real data")
+
+
 def cmd_tape(a):
     from tradebot.tape import DEFAULT_WHALE_USD, rank_universe, read_tape
     whale = a.whale if a.whale else DEFAULT_WHALE_USD
@@ -188,6 +202,13 @@ def main():
 
     oc = sub.add_parser("onchain")
     oc.set_defaults(fn=cmd_onchain)
+
+    sc_p = sub.add_parser("scenarios")
+    sc_p.add_argument("--symbol", default="BTC")
+    sc_p.add_argument("--interval", default="1d")
+    sc_p.add_argument("--limit", type=int, default=1000)
+    sc_p.add_argument("--cash", type=float, default=1000.0)
+    sc_p.set_defaults(fn=cmd_scenarios)
 
     tp = sub.add_parser("tape")
     tp.add_argument("--symbol", default="", help="one symbol for detail; omit to rank the universe")
