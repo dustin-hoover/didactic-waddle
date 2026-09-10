@@ -93,14 +93,21 @@ out-of-sample dataset in `docs/tape_journal.json` over weeks. A cross-symbol see
 verdict stays "don't size on it" until the sample passes a 30-pair / corr-0.2 /
 55%-hit gate. Prove it, then trade it — never the other way round.
 
-**Where flow DID help: as a confirmation filter on trend** (`scripts/trend_flow_test.py`).
+**Where flow DID help: as a de-risking filter on trend** (`scripts/trend_flow_test.py`).
 Standalone flow can't time the market, but requiring the tape to *confirm* a
-trend-long — "only go long when trend and flow agree" — beat trend-only on return,
-Sharpe and drawdown across every EMA span tested. It's the one tape result that
-survived a parameter sweep. Caveat, loudly: ~60 days of one (up) regime, symbols
-not independent — a hint, not a validation. It's wired as an **opt-in, paper-only,
-OFF-by-default** engine option (`StrategyConfig.flow_confirm`; `tb.py paper
---flow-confirm`), so it can be paper-forward-tested, never silently switched on.
+trend-long — "only stay long when trend and flow agree" — robustly improves
+RISK-ADJUSTED performance: on a clean 60-day archive-node sample it lifted Sharpe
+and roughly HALVED max drawdown across every EMA span tested (e.g. EMA10:
+Sharpe 1.73→2.05, maxDD −19.8%→−10.2%). It is NOT a free return boost — it often
+gives up some upside and trades far less (~32% vs ~56% time in market); it buys
+lower drawdown by sitting out unconfirmed longs. (An earlier, noisier whole-day
+sampler overstated it as beating trend on return too — the clean data corrected
+that.) Caveat, loudly: ~60 days of one (up) regime, symbols not independent — a
+hint, not a validation, and a down market is exactly where it still must prove
+itself. Wired as an **opt-in, paper-only, OFF-by-default** engine option
+(`StrategyConfig.flow_confirm`; `tb.py paper --flow-confirm`, plus a lighter
+`--flow-mode distexit` that only exits on strong distribution), so it can be
+paper-forward-tested, never silently switched on.
 
 ## Quick start
 
