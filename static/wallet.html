@@ -484,6 +484,7 @@ async function exApprove(){
   }catch(e){ st.innerHTML=`<span class="no">Approve failed: ${e.message||e}</span>`; }
 }
 
+let _pending=null;   // staged order awaiting an in-page confirm (native confirm() is unreliable in wallet browsers)
 async function exPlace(){
   const st=$("#exStatus"); const acct=connectedAddr();
   if(!armed()){ st.innerHTML='<span class="no">Tick the box above to arm the canary.</span>'; return; }
@@ -499,7 +500,25 @@ async function exPlace(){
       sellAmount:q.sellAmount,buyAmount:minBuy,validTo:q.validTo,appData:q.appData,
       feeAmount:q.feeAmount,kind:"sell",partiallyFillable:false,
       sellTokenBalance:"erc20",buyTokenBalance:"erc20"};
-    if(!confirm(`Sign this order?\n\nSell ${fromRaw(q.sellAmount,sd).toFixed(6)} ${sell} (+fee ${fromRaw(q.feeAmount,sd).toFixed(6)})\nReceive at least ${fromRaw(minBuy,bd).toFixed(6)} ${buy}\nvia CoW on Base.\n\nYou sign in your wallet; CoW settles it gaslessly.`)) { st.textContent="Cancelled."; return; }
+    _pending={order, acct};
+    // In-page review (works in every wallet browser, unlike window.confirm)
+    st.innerHTML = `<div class="card" style="margin-top:6px">
+      <div class="kv"><span>Sell</span><b>${fromRaw(q.sellAmount,sd).toFixed(6)} ${sell}</b></div>
+      <div class="kv"><span>+ network fee</span><span>${fromRaw(q.feeAmount,sd).toFixed(6)} ${sell}</span></div>
+      <div class="kv"><span>Receive at least</span><b class="pos">${fromRaw(minBuy,bd).toFixed(6)} ${buy}</b></div>
+      <div class="muted" style="font-size:12px;margin:6px 0">CoW · Base · gasless signature · you can't be filled below the minimum.</div>
+      <div style="display:flex;gap:8px"><button id="exConfirmSign" class="primary small">Confirm &amp; sign in wallet</button>
+      <button id="exCancelSign" class="small">Cancel</button></div></div>`;
+    $("#exConfirmSign").onclick=exSign;
+    $("#exCancelSign").onclick=()=>{ _pending=null; st.textContent="Cancelled."; };
+  }catch(e){ st.innerHTML=`<span class="no">Could not build order: ${e.message||e}</span>`; }
+}
+
+async function exSign(){
+  const st=$("#exStatus");
+  if(!_pending){ st.textContent="Nothing to sign — tap Review again."; return; }
+  const {order, acct}=_pending;
+  try{
     const typedData={types:{EIP712Domain:[{name:"name",type:"string"},{name:"version",type:"string"},{name:"chainId",type:"uint256"},{name:"verifyingContract",type:"address"}],
       Order:[{name:"sellToken",type:"address"},{name:"buyToken",type:"address"},{name:"receiver",type:"address"},{name:"sellAmount",type:"uint256"},{name:"buyAmount",type:"uint256"},{name:"validTo",type:"uint32"},{name:"appData",type:"bytes32"},{name:"feeAmount",type:"uint256"},{name:"kind",type:"string"},{name:"partiallyFillable",type:"bool"},{name:"sellTokenBalance",type:"string"},{name:"buyTokenBalance",type:"string"}]},
       primaryType:"Order",domain:{name:"Gnosis Protocol",version:"v2",chainId:BASE_ID,verifyingContract:COW_SETTLEMENT},message:order};
@@ -511,6 +530,7 @@ async function exPlace(){
     const d=await r.json();
     if(!r.ok){ st.innerHTML=`<span class="no">Order rejected: ${(d&&(d.description||d.errorType))||("HTTP "+r.status)}</span>`; return; }
     const uid=typeof d==="string"?d:(d.uid||d);
+    _pending=null;
     st.innerHTML=`<span class="ok">Order placed! </span><a href="https://explorer.cow.fi/base/orders/${uid}" target="_blank">track it on CoW explorer ↗</a>`;
   }catch(e){ st.innerHTML=`<span class="no">Could not place order: ${e.message||e}</span>`; }
 }
