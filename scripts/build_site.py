@@ -110,6 +110,35 @@ def build():
     except Exception as e:  # noqa: BLE001
         featured = {"error": str(e)[:80]}
 
+    # REGIME GATE — the BTC-primary bull-market master switch. Computed at build time
+    # off BTC daily; REGIME_MODE (auto|on|off) is the manual override. When the gate
+    # is OFF the engine holds flat (no new longs); de-risking is always allowed.
+    regime = {}
+    try:
+        from tradebot.regime import RegimeConfig, detect, sweep
+        rmode = os.environ.get("REGIME_MODE", "auto").strip().lower()
+        rmode = rmode if rmode in ("auto", "on", "off") else "auto"
+        rb = feed.history("BTC", "1d", 400)
+        rcloses = [b.close for b in rb]
+        st = detect(rcloses, RegimeConfig(mode=rmode))
+        market = detect(rcloses, RegimeConfig(mode="auto"))   # the market's own read, ignoring override
+        states = sweep(rcloses)
+        last_switch = None
+        for i in range(len(states) - 1, 0, -1):
+            if states[i] != states[i - 1]:
+                last_switch = {"date": rb[i].date[:10], "to": "ON" if states[i] else "OFF",
+                               "price": round(rb[i].close, 2)}
+                break
+        regime = {"on": st.on, "regime": st.regime, "mode": rmode,
+                  "auto_on": market.on, "confirmed": st.confirmed,
+                  "price": st.price, "pct_above_long": st.pct_above_long,
+                  "sma_long": st.sma_long, "sma_short": st.sma_short,
+                  "golden_cross": st.golden_cross, "long_rising": st.long_rising,
+                  "days_in_regime": st.days_in_regime, "reason": st.reason,
+                  "last_switch": last_switch}
+    except Exception as e:  # noqa: BLE001
+        regime = {"error": str(e)[:80]}
+
     # LIVE PAPER BAGS — one supervised tree of stashes (the root bag IS the paper
     # portfolio). Each run advances every bag and lets the tree spawn fractally.
     # State persists under docs/bags/ (committed) across scheduled runs.
@@ -187,7 +216,7 @@ def build():
         scenarios = {"error": str(e)[:80]}
 
     data = {"generated_at": datetime.now(timezone.utc).isoformat(timespec="minutes"),
-            "interval": INTERVAL, "style": STYLE, "onchain": onchain,
+            "interval": INTERVAL, "style": STYLE, "onchain": onchain, "regime": regime,
             "rows": rows, "featured": featured, "paper": paper, "tape": tape,
             "scenarios": scenarios, "bag_tree": bag_tree}
     json.dump(data, open(os.path.join(DOCS, "data.json"), "w"), indent=1)
@@ -211,8 +240,10 @@ def build():
             if push_ntfy(NTFY, f"{action} {sym}", msg, priority="high"):
                 pushed += 1
 
+    gate = ("?" if regime.get("on") is None else ("ON" if regime["on"] else "OFF"))
     print(f"built docs/ · {len([r for r in rows if 'error' not in r])} coins · "
-          f"{len(alerts)} flips · {pushed} pushed · regime {onchain.get('risk_regime')}")
+          f"{len(alerts)} flips · {pushed} pushed · risk {onchain.get('risk_regime')} · "
+          f"bull-gate {gate} ({regime.get('mode','?')})")
 
 
 if __name__ == "__main__":

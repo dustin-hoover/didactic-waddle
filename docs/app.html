@@ -46,6 +46,17 @@
   .legend{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-bottom:6px}
   .sw{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
   .err{color:var(--down);font-size:13px}
+  /* Bull-market regime gate banner */
+  .regime{border-width:2px}
+  .regime.on{border-color:var(--up);background:linear-gradient(180deg,rgba(132,171,65,.10),var(--surface))}
+  .regime.off{border-color:var(--down);background:linear-gradient(180deg,rgba(195,58,43,.10),var(--surface))}
+  .regime-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .regime-dot{width:14px;height:14px;border-radius:50%;flex:none;box-shadow:0 0 12px currentColor}
+  .regime.on .regime-dot{background:var(--up);color:var(--up)}
+  .regime.off .regime-dot{background:var(--down);color:var(--down)}
+  .regime-title{font-family:var(--serif);font-weight:600;font-size:20px}
+  .regime.on .regime-title{color:var(--up)}.regime.off .regime-title{color:var(--down)}
+  .regime-reason{font-family:var(--mono);font-size:12px;color:var(--muted);margin:8px 0 12px}
   @media(max-width:560px){th.hide,td.hide{display:none}}
 </style>
 </head>
@@ -56,6 +67,17 @@
     <a href="index.html">← Strategy</a>
     <div class="updated" id="updated">loading…</div>
   </header>
+
+  <div class="panel regime" id="regimePanel" hidden>
+    <div class="regime-head">
+      <span class="regime-dot" id="regimeDot"></span>
+      <span class="regime-title" id="regimeTitle">—</span>
+      <span class="badge" id="regimeMode"></span>
+    </div>
+    <div class="regime-reason" id="regimeReason"></div>
+    <div class="grid" id="regimeStats"></div>
+    <div class="note" id="regimeNote"></div>
+  </div>
 
   <div class="panel" id="paperPanel" hidden>
     <h2>Your paper portfolio <span class="badge" id="paperSince"></span></h2>
@@ -90,6 +112,27 @@ const pctv=x=>(x>=0?'+':'')+(x*100).toFixed(0)+'%';
 const b9=x=>x?('$'+(x/1e9).toFixed(1)+'B'):'–';
 fetch('./data.json?t='+Date.now()).then(r=>r.json()).then(d=>{
   document.getElementById('updated').textContent='updated '+d.generated_at.replace('T',' ')+' UTC · '+d.interval+' '+d.style;
+
+  const rg=d.regime;
+  if(rg && !rg.error){
+    const p=document.getElementById('regimePanel'); p.hidden=false;
+    p.classList.add(rg.on?'on':'off');
+    document.getElementById('regimeTitle').textContent=rg.on?'BULL — engine ON':'BEAR — engine flat';
+    const modeTxt=rg.mode==='auto'?'AUTO':('FORCED '+rg.mode.toUpperCase());
+    document.getElementById('regimeMode').textContent=modeTxt;
+    document.getElementById('regimeReason').textContent=rg.reason||'';
+    const ls=rg.last_switch;
+    const pa=(rg.pct_above_long!=null)?((rg.pct_above_long>=0?'+':'')+(rg.pct_above_long*100).toFixed(1)+'%'):'–';
+    document.getElementById('regimeStats').innerHTML=`
+      <div class="stat"><div class="k">BTC price</div><div class="v">$${(rg.price||0).toLocaleString(undefined,{maximumFractionDigits:0})}</div><div class="n">primary indicator</div></div>
+      <div class="stat"><div class="k">BTC vs 200d</div><div class="v ${rg.pct_above_long>=0?'up':'down'}">${pa}</div><div class="n">${rg.golden_cross?rg.sma_short+'d>200d':rg.sma_short+'d<200d'}</div></div>
+      <div class="stat"><div class="k">In this regime</div><div class="v">${rg.days_in_regime||0}d</div><div class="n">${rg.confirmed?'confirmed':'limited history'}</div></div>
+      <div class="stat"><div class="k">Last switch</div><div class="v" style="font-size:16px">${ls?ls.to:'—'}</div><div class="n">${ls?ls.date+' · $'+Math.round(ls.price).toLocaleString():''}</div></div>`;
+    let note;
+    if(rg.mode!=='auto') note=`Manual override active (REGIME_MODE=${rg.mode}). The market's own read is ${rg.auto_on?'BULL':'BEAR'}. Set REGIME_MODE=auto to hand control back to the gate.`;
+    else note=`Auto gate: turns ON only when a bull is confirmed off BTC (above 200d, ${rg.sma_short}d>200d, rising), OFF when that breaks. It blocks new longs while OFF; de-risking to cash is always allowed. Override by setting the REGIME_MODE variable to on/off.`;
+    document.getElementById('regimeNote').textContent=note;
+  }
 
   const pp=d.paper;
   if(pp && !pp.error){
