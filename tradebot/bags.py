@@ -173,7 +173,11 @@ class Supervisor:
                 price = bars[-1].close if bars else 0.0
             eng = self._engine(spec)
             snap = eng.snapshot(price)
+            from . import tax as _tax
+            _summ = _tax.summarize(_tax.compute_realized(_tax.trades_from_fills(eng.pf.fills, scn.symbol)))
+            _est = _tax.estimate_tax(_summ)
             row = {"id": spec.id, "scenario": spec.scenario, "scenario_name": scn.name,
+                   "realized_gain": round(_summ.realized_gain_usd, 2), "est_tax": _est["total_tax"],
                    "wallet": spec.wallet, "parent": spec.parent, "seed": spec.seed,
                    "symbol": scn.symbol, "created_ts": spec.created_ts,
                    "trading": round(snap["trading_equity"], 2), "reserve": round(snap["reserve"], 2),
@@ -186,7 +190,9 @@ class Supervisor:
             tot_seed += spec.seed if spec.parent is None else 0.0   # only root seeds are external capital
         totals = {"bags": len(bags), "spawns": len(self.spawns),
                   "trading": round(tot_trading, 2), "reserve": round(tot_reserve, 2),
-                  "total": round(tot_trading + tot_reserve, 2), "external_seed": round(tot_seed, 2)}
+                  "total": round(tot_trading + tot_reserve, 2), "external_seed": round(tot_seed, 2),
+                  "realized_gain": round(sum(b.get("realized_gain", 0.0) for b in bags), 2),
+                  "est_tax": round(sum(b.get("est_tax", 0.0) for b in bags), 2)}
         policy = {"enabled": self.policy.enabled, "trigger_multiple": self.policy.trigger_multiple,
                   "trigger_on": self.policy.trigger_on, "fraction": self.policy.fraction,
                   "child_scenario": self.policy.child_scenario}

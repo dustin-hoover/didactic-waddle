@@ -93,6 +93,35 @@ def cmd_onchain(a):
         print("  notes:", m.notes)
 
 
+def cmd_tax(a):
+    import json as _json
+    from tradebot import tax
+    if a.bag:
+        st = _json.load(open(a.bag))
+        trades = tax.trades_from_fills(st.get("fills", []), a.symbol)
+    else:  # demo: run a backtest-style engine over history to generate real trades
+        from tradebot.bags import Supervisor, SpawnPolicy
+        import tempfile
+        bars = get_feed().history(a.symbol, "1d", a.limit)
+        d = tempfile.mkdtemp(prefix="tax_demo_")
+        sup = Supervisor(d, SpawnPolicy(enabled=False)); spec = sup.add_bag("steady", 1000.0)
+        for k in range(max(60, len(bars) - a.window), len(bars) + 1):
+            sup.advance(lambda s, i, kk=k: bars[:kk])
+        eng = sup._engine(spec)
+        trades = tax.trades_from_fills(eng.pf.fills, a.symbol)
+    disp = tax.compute_realized(trades, a.method)
+    s = tax.summarize(disp)
+    est = tax.estimate_tax(s, a.short_rate, a.long_rate)
+    print(f"Tax report — {a.symbol} · {a.method.upper()} · {len(disp)} disposals\n")
+    print(f"  proceeds        : ${s.proceeds_usd:,.2f}")
+    print(f"  cost basis      : ${s.cost_basis_usd:,.2f}")
+    print(f"  realized gain   : ${s.realized_gain_usd:,.2f}  "
+          f"(short ${s.short_gain_usd:,.2f}, long ${s.long_gain_usd:,.2f})")
+    print(f"  est. tax        : ${est['total_tax']:,.2f}  "
+          f"(short @{est['short_rate']:.0%}, long @{est['long_rate']:.0%})")
+    print("\n  This is an estimate, not tax advice. Set your own rates with --short-rate/--long-rate.")
+
+
 def cmd_bags(a):
     import tempfile
     from tradebot import scenarios as sc
@@ -243,6 +272,16 @@ def main():
 
     oc = sub.add_parser("onchain")
     oc.set_defaults(fn=cmd_onchain)
+
+    tx = sub.add_parser("tax")
+    tx.add_argument("--bag", default="", help="path to a bag state json (docs/bags/b1.json); omit for a demo")
+    tx.add_argument("--symbol", default="BTC")
+    tx.add_argument("--method", choices=["fifo", "hifo"], default="fifo")
+    tx.add_argument("--short-rate", type=float, default=0.35, dest="short_rate")
+    tx.add_argument("--long-rate", type=float, default=0.15, dest="long_rate")
+    tx.add_argument("--window", type=int, default=500)
+    tx.add_argument("--limit", type=int, default=1000)
+    tx.set_defaults(fn=cmd_tax)
 
     bg = sub.add_parser("bags")
     bg.add_argument("--demo", action="store_true", help="replay real history to show a bag tree multiply")
