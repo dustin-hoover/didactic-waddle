@@ -3,41 +3,46 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bags — control panel</title>
+<title>Saatgut</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>">
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&family=Grenze+Gotisch:wght@400;600;700&display=swap');
+  /* Saatgut — Bavarian harvest: gold, brown, field-green, red, black. */
   :root{
-    --bg:#f6f7f9; --panel:#ffffff; --ink:#0f1523; --muted:#5b6577; --line:#e6e9ef;
-    --accent:#2f6df6; --good:#128a5b; --bad:#c0392b; --warn:#b8860b;
-    --chip:#eef2fb; --shadow:0 1px 3px rgba(16,22,38,.08);
-  }
-  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-    --bg:#0c0f16; --panel:#141926; --ink:#e8ecf4; --muted:#95a0b5; --line:#232a3a;
-    --accent:#5b8cff; --good:#3ecf8e; --bad:#ff6b6b; --warn:#e0b341;
-    --chip:#1b2233; --shadow:0 1px 3px rgba(0,0,0,.4);
-  }}
-  :root[data-theme="dark"]{
-    --bg:#0c0f16; --panel:#141926; --ink:#e8ecf4; --muted:#95a0b5; --line:#232a3a;
-    --accent:#5b8cff; --good:#3ecf8e; --bad:#ff6b6b; --warn:#e0b341;
-    --chip:#1b2233; --shadow:0 1px 3px rgba(0,0,0,.4);
+    --bg:#14100a; --panel:#1f180f; --ink:#f2e7cf; --muted:#b3a07d; --line:#3b2d1a;
+    --accent:#e3b23c; --gold:#e3b23c; --brown:#7a5230; --good:#84ab41; --bad:#c33a2b;
+    --warn:#e3b23c; --chip:#251c11; --shadow:0 2px 6px rgba(0,0,0,.55);
   }
   *{box-sizing:border-box}
-  body{background:var(--bg);color:var(--ink);margin:0;
+  body{background:
+      radial-gradient(1200px 500px at 50% -10%, #201811 0%, var(--bg) 60%) fixed,
+      var(--bg);
+    color:var(--ink);margin:0;
     font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
   .wrap{max-width:960px;margin:0 auto;padding-block:20px;padding-left:16px;padding-right:16px}
-  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
-  h1{font-size:19px;margin:0;letter-spacing:-.02em}
-  h1 .dot{color:var(--accent)}
+  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;
+    border-bottom:2px solid var(--brown);padding-bottom:12px}
+  h1{font-family:'UnifrakturCook','Grenze Gotisch',serif;font-size:38px;margin:0;
+    color:var(--gold);line-height:.95;text-shadow:0 2px 0 #000,0 0 18px rgba(227,178,60,.25)}
+  h1 small{display:block;font-family:-apple-system,system-ui,sans-serif;font-size:10px;
+    letter-spacing:.32em;text-transform:uppercase;color:var(--muted);margin-top:6px;font-weight:700}
+  /* Blackletter section headers (existing inline-styled titles get restyled here) */
+  b[style*="font-size:15px"]{font-family:'Grenze Gotisch',serif !important;
+    font-weight:700;font-size:20px !important;color:var(--gold);letter-spacing:.01em}
   .grow{flex:1}
   .muted{color:var(--muted)}
-  button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  button{font:inherit;border:1px solid var(--line);background:var(--chip);color:var(--ink);
     padding:9px 14px;border-radius:10px;cursor:pointer;transition:.15s}
-  button:hover{border-color:var(--accent)}
-  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  button:hover{border-color:var(--gold)}
+  button.primary{background:linear-gradient(180deg,#efc257,#d69f2c);color:#241804;
+    border-color:#b9861f;font-weight:700}
   button.small{padding:5px 9px;border-radius:8px;font-size:12px}
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;
     padding:16px;box-shadow:var(--shadow);margin-bottom:14px}
+  .panel{background:linear-gradient(180deg,#221a10,#1c1509);border-top:2px solid #2e2415}
   .sec{display:flex;gap:10px;align-items:flex-start;background:var(--chip);
-    border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13px}
+    border:1px solid var(--line);border-left:3px solid var(--good);border-radius:12px;
+    padding:12px 14px;margin-bottom:14px;font-size:13px}
   .sec b{color:var(--good)}
   .row{display:flex;gap:12px;flex-wrap:wrap}
   .card{flex:1;min-width:240px;background:var(--panel);border:1px solid var(--line);
@@ -67,7 +72,7 @@
 <body>
 <div class="wrap">
   <header>
-    <h1><span class="dot">◆</span> Bags <span class="muted" style="font-weight:400">· control panel</span></h1>
+    <h1>🌾 Saatgut<small>sow · cultivate · multiply</small></h1>
     <div class="grow"></div>
     <span id="net" class="badge hide"></span>
     <button id="connect" class="primary">Connect wallet</button>
