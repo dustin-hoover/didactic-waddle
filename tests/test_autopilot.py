@@ -82,3 +82,13 @@ def test_day_rolls_over_resets_budget(tmp_path):
     d_next = ap.decide("b1", "0xabc", 1.0, 0.0, 100, "WETH", PRICES, NOW + 2 * 86400)  # 2 days later
     assert ap.state.spent_usd == 0.0            # budget reset on the new day
     assert d_next.action == "buy"
+
+
+def test_regime_gate_blocks_new_longs_but_allows_selling(tmp_path):
+    ap = _ap(tmp_path, enabled=True, live=False)
+    # Bull gate OFF: a buy (increasing exposure) is blocked...
+    d_buy = ap.decide("b1", "0xabc", 1.0, 0.0, 100, "WETH", PRICES, NOW, regime_on=False)
+    assert d_buy.action == "hold" and d_buy.blocked == "regime"
+    # ...but de-risking (selling toward cash) is still allowed.
+    d_sell = ap.decide("b1", "0xabc", 0.0, 1.0, 100, "WETH", PRICES, NOW, regime_on=False)
+    assert d_sell.action == "sell" and d_sell.proposal is not None

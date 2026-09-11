@@ -92,8 +92,14 @@ class Autopilot:
             self.state.trades_today = 0
 
     def decide(self, bag_id: str, wallet: str, target_exposure: float, current_exposure: float,
-               equity_usd: float, base_symbol: str, price_usd: dict, now_ts: int) -> Decision:
-        """Pure decision: what (if anything) to trade now, within all guardrails."""
+               equity_usd: float, base_symbol: str, price_usd: dict, now_ts: int,
+               regime_on: bool = True) -> Decision:
+        """Pure decision: what (if anything) to trade now, within all guardrails.
+
+        ``regime_on`` is the master bull-market gate (see tradebot.regime). When it is
+        False the engine will not open or add to a long — but it ALWAYS allows
+        de-risking (selling toward cash), so a bear turning on never traps a position.
+        """
         c = self.cfg
         if not c.enabled:
             return Decision("hold", 0.0, c.live, "autopilot disabled")
@@ -105,6 +111,12 @@ class Autopilot:
             return Decision("hold", 0.0, c.live, "no material change (below min move)")
 
         side = "buy" if delta > 0 else "sell"
+
+        # Master regime gate: no new/added longs unless a bull is confirmed. Selling
+        # (de-risking to cash) is always permitted, even with the gate OFF.
+        if not regime_on and side == "buy":
+            return Decision("hold", notional, c.live,
+                            "regime gate OFF — bull not confirmed (no new longs)", blocked="regime")
 
         # cooldown
         if self.state.last_trade_ts and (now_ts - self.state.last_trade_ts) < c.cooldown_min * 60:
