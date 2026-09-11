@@ -6,40 +6,23 @@
 <style>img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
-<title>Discipline Over Prediction</title>
+<title>Saatgut — Discipline Over Prediction</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&family=Grenze+Gotisch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap">
 <style>
+  /* Saatgut — Bavarian harvest, committed dark identity. */
   :root{
-    --bg:#eceef0; --surface:#f7f8f9; --surface-2:#ffffff; --border:#d6dbe1;
-    --text:#1a1e26; --muted:#5b626e; --faint:#8a919d;
-    --accent:#a9761b; --accent-soft:rgba(169,118,27,.12);
-    --up:#2c8767; --down:#bd4d34; --down-soft:rgba(189,77,52,.10);
-    --chart-bh:#8a919d;
-    --shadow:0 1px 2px rgba(20,25,35,.06),0 8px 24px rgba(20,25,35,.06);
-    --serif:"Fraunces",Georgia,serif;
+    --bg:#14100a; --surface:#1f180f; --surface-2:#251c11; --border:#3b2d1a;
+    --text:#f2e7cf; --muted:#b3a07d; --faint:#8a7a5c;
+    --accent:#e3b23c; --accent-soft:rgba(227,178,60,.13);
+    --up:#84ab41; --down:#c33a2b; --down-soft:rgba(195,58,43,.12);
+    --chart-bh:#8a7a5c; --brown:#7a5230;
+    --shadow:0 2px 6px rgba(0,0,0,.5),0 14px 34px rgba(0,0,0,.4);
+    --black:"UnifrakturCook","Grenze Gotisch",serif;
+    --serif:"Grenze Gotisch",Georgia,serif;
     --sans:"IBM Plex Sans",system-ui,sans-serif;
     --mono:"IBM Plex Mono",ui-monospace,monospace;
-  }
-  :root:not([data-theme="light"]){ }
-  @media (prefers-color-scheme:dark){
-    :root:not([data-theme="light"]){
-      --bg:#14171e; --surface:#1b1f28; --surface-2:#212734; --border:#2d333f;
-      --text:#e8e6e0; --muted:#9aa1ad; --faint:#6b727e;
-      --accent:#d7a13e; --accent-soft:rgba(215,161,62,.13);
-      --up:#57b894; --down:#d9694f; --down-soft:rgba(217,105,79,.12);
-      --chart-bh:#7b828e;
-      --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px rgba(0,0,0,.28);
-    }
-  }
-  :root[data-theme="dark"]{
-    --bg:#14171e; --surface:#1b1f28; --surface-2:#212734; --border:#2d333f;
-    --text:#e8e6e0; --muted:#9aa1ad; --faint:#6b727e;
-    --accent:#d7a13e; --accent-soft:rgba(215,161,62,.13);
-    --up:#57b894; --down:#d9694f; --down-soft:rgba(217,105,79,.12);
-    --chart-bh:#7b828e;
-    --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px rgba(0,0,0,.28);
   }
 
   *{box-sizing:border-box}
@@ -48,7 +31,12 @@
   .wrap{max-width:1020px;margin:0 auto;padding:0 24px}
   .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;
            color:var(--accent);font-weight:500}
-  h1,h2,h3{font-family:var(--serif);font-weight:500;text-wrap:balance;letter-spacing:-.01em;margin:0}
+  .brand{font-family:var(--black);font-size:clamp(44px,9vw,84px);line-height:.9;color:var(--accent);
+         margin:0 0 6px;text-shadow:0 2px 0 #000,0 0 22px rgba(227,178,60,.25)}
+  .brand .mark{filter:drop-shadow(0 1px 0 #000)}
+  .brand-tag{font-family:var(--mono);font-size:11px;letter-spacing:.34em;text-transform:uppercase;
+             color:var(--muted);margin-bottom:26px}
+  h1,h2,h3{font-family:var(--serif);font-weight:600;text-wrap:balance;letter-spacing:0;margin:0}
   p{margin:0}
   a{color:var(--accent)}
 
@@ -139,6 +127,8 @@
 
 <div class="wrap">
   <header>
+    <div class="brand"><span class="mark">🌾</span> Saatgut</div>
+    <div class="brand-tag">sow · cultivate · multiply</div>
     <div class="eyebrow">Systematic crypto strategy · trend + capital preservation</div>
     <h1>Stop guessing tops.<br>Trade the <em>trend</em>, bank the <em>wins</em>.</h1>
     <p class="lede">A rules-based system that never sleeps through a move, cuts losers fast, and skims a
@@ -371,7 +361,7 @@
     <h2>Run it yourself, risk nothing</h2>
     <p>The whole system ships in paper mode — real signals, real data, simulated fills. Watch it work before a
       single dollar is ever at stake.</p>
-    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap"><a href="/app" style="display:inline-block;font-family:var(--sans);font-weight:600;font-size:15px;background:var(--accent);color:#12151c;border-radius:10px;padding:14px 26px;text-decoration:none">Open the live dashboard →</a><span class="run"><b>python</b> -m tradebot.server</span></div>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap"><a href="wallet.html" style="display:inline-block;font-family:var(--sans);font-weight:700;font-size:15px;background:linear-gradient(180deg,#efc257,#d69f2c);color:#241804;border:1px solid #b9861f;border-radius:10px;padding:14px 26px;text-decoration:none">Open Saatgut · connect wallet →</a><a href="app.html" style="align-self:center;color:var(--muted);text-decoration:none;font-size:14px">or the read-only dashboard</a></div>
   </div>
   <footer>
     <span class="tag">tradebot · systematic crypto</span>
