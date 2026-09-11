@@ -524,8 +524,12 @@ async function exSign(){
       primaryType:"Order",domain:{name:"Gnosis Protocol",version:"v2",chainId:BASE_ID,verifyingContract:COW_SETTLEMENT},message:order};
     st.textContent="Sign the order in your wallet…";
     const sig=await rpc("eth_signTypedData_v4",[acct,JSON.stringify(typedData)]);
-    st.textContent="Submitting the signed order to CoW…";
-    const body=Object.assign({},order,{signingScheme:"eip712",signature:sig,from:acct});
+    // A 65-byte (130 hex) sig is a normal EOA (eip712); anything longer is a
+    // smart-contract wallet (e.g. Coinbase/Base Smart Wallet) -> eip1271.
+    const hexLen=sig.replace(/^0x/,"").length;
+    const scheme=(hexLen===130)?"eip712":"eip1271";
+    st.textContent=`Submitting the signed order to CoW (${scheme})…`;
+    const body=Object.assign({},order,{signingScheme:scheme,signature:sig,from:acct});
     const r=await fetch(`${COW_API}/orders`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
     const txt=await r.text();
     let d=null; try{ d=JSON.parse(txt); }catch(_){}
