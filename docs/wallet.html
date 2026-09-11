@@ -527,9 +527,14 @@ async function exSign(){
     st.textContent="Submitting the signed order to CoW…";
     const body=Object.assign({},order,{signingScheme:"eip712",signature:sig,from:acct});
     const r=await fetch(`${COW_API}/orders`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
-    const d=await r.json();
-    if(!r.ok){ st.innerHTML=`<span class="no">Order rejected: ${(d&&(d.description||d.errorType))||("HTTP "+r.status)}</span>`; return; }
-    const uid=typeof d==="string"?d:(d.uid||d);
+    const txt=await r.text();
+    let d=null; try{ d=JSON.parse(txt); }catch(_){}
+    if(!r.ok){
+      const msg=(d&&(d.description||d.errorType))||txt||("HTTP "+r.status);
+      st.innerHTML=`<span class="no">Order rejected (${r.status}): ${String(msg).slice(0,300)}</span>`;
+      return;
+    }
+    const uid=(typeof d==="string")?d:(d&&(d.uid||d.orderUid))||txt.replace(/"/g,"");
     _pending=null;
     st.innerHTML=`<span class="ok">Order placed! </span><a href="https://explorer.cow.fi/base/orders/${uid}" target="_blank">track it on CoW explorer ↗</a>`;
   }catch(e){ st.innerHTML=`<span class="no">Could not place order: ${e.message||e}</span>`; }
