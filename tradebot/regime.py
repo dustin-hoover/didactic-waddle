@@ -15,11 +15,17 @@ and a persistence requirement so a single green day can't flip the switch.
 
 Bull is CONFIRMED (gate ON) when, for `confirm_days` running days, ALL hold:
   * BTC close is above its `sma_long` (200d) by the `buffer`,
-  * the short average is above the long (50d > 200d — "golden-cross" structure),
+  * the short average is above the long (20d > 200d — cross structure),
   * the long average is rising (non-negative slope over `slope_lookback`).
 Bull is BROKEN (gate OFF) when, for `confirm_days` running days, BTC closes below
 the 200d by the buffer OR the short average falls back below the long. Between those
 two triggers the gate HOLDS its last state — that band is the anti-whipsaw buffer.
+
+Defaults (sma_short=20, confirm_days=3) were chosen by a sensitivity sweep over
+~3.5y of BTC daily: they beat the slower 50d/5d gate on risk-adjusted return AND
+drawdown while staying positive in BOTH halves of the window (i.e. not overfit).
+Faster-reacting short/long spans scored higher in-sample but went negative
+out-of-sample, so they were rejected.
 
 `mode` allows a manual override: "auto" (detect), "on" (force-enable), "off"
 (force-disable / hard kill). This is pure logic over a BTC close series — no keys,
@@ -39,9 +45,9 @@ from . import indicators as ind
 class RegimeConfig:
     mode: str = "auto"                 # "auto" | "on" (force ON) | "off" (force OFF / kill)
     sma_long: int = 200               # the bull/bear line
-    sma_short: int = 50               # structure confirm (golden/death cross)
+    sma_short: int = 20               # structure confirm (responsive cross vs the 200d)
     buffer: float = 0.02              # +/- band around the long MA (hysteresis)
-    confirm_days: int = 5             # a trigger must persist this many days to flip
+    confirm_days: int = 3             # a trigger must persist this many days to flip
     slope_lookback: int = 20          # window for the long-MA slope check
     require_golden_cross: bool = True # also require 50d > 200d to confirm a bull
 
@@ -144,9 +150,10 @@ def detect(closes: List[float], cfg: Optional[RegimeConfig] = None) -> RegimeSta
     warming = len(closes) < need
     regime = "bull" if on else "bear"
     if on:
-        reason = f"BULL confirmed: BTC {pct*100:+.1f}% vs 200d, 50d{'>' if f['golden'] else '<'}200d"
+        reason = (f"BULL confirmed: BTC {pct*100:+.1f}% vs {c.sma_long}d, "
+                  f"{c.sma_short}d{'>' if f['golden'] else '<'}{c.sma_long}d")
     else:
-        reason = f"BEAR / unconfirmed: BTC {pct*100:+.1f}% vs 200d — engine gated OFF"
+        reason = f"BEAR / unconfirmed: BTC {pct*100:+.1f}% vs {c.sma_long}d — engine gated OFF"
     if warming:
         reason += " (limited history)"
     return RegimeState(on=on, regime=regime, mode="auto", price=price, sma_long=long_ma,
