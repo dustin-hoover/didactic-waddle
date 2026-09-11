@@ -149,7 +149,16 @@
     <div id="exOut" class="muted" style="margin-top:10px">Connect a wallet, then fetch a live read-only quote.</div>
     <label style="display:block;margin-top:12px;font-size:13px;color:var(--muted)">
       <input type="checkbox" id="exEnable"> I understand live trading can move real funds
-      (arms approve/sign — coming next)</label>
+      (arms the canary steps below)</label>
+    <div id="exLive" class="hide" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
+      <div class="muted" style="font-size:12px;margin-bottom:8px">Canary — Base · CoW · you sign every step in your wallet.
+        Per-order cap $100; order sets a min-receive so you can't be filled worse than shown.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="exApprove" class="small">1 · Approve sell token (one-time)</button>
+        <button id="exPlace" class="primary small">2 · Review &amp; sign order</button>
+      </div>
+      <div id="exStatus" class="muted" style="margin-top:8px"></div>
+    </div>
   </div>
 
   <div class="foot">
@@ -410,39 +419,110 @@ function toRaw(amtStr, dec){
 const fromRaw = (raw,dec)=>Number(BigInt(raw))/10**dec;
 function connectedAddr(){ const b=store.load(); const k=Object.keys(b).find(k=>!b[k].watch); return k?b[k].address:null; }
 
+const COW_API="https://api.cow.fi/base/api/v1";
+const COW_SETTLEMENT="0x9008D19f58AAbD9eD0D60971565AA8510560ab41";  // GPv2Settlement (verifyingContract)
+const COW_RELAYER="0xC92E8bdf79f0507f65a392b0ab4667716BFE0110";     // vault relayer (approval target)
+const BASE_HEX="0x2105", BASE_ID=8453, SLIPPAGE_BPS=100;            // 1% min-receive floor on the canary
+const MAX_NOTIONAL=100;
+
+async function fetchQuote(sell, buy, amt, acct){
+  const [sa,sd]=BASE_TOK[sell], [ba,bd]=BASE_TOK[buy];
+  const body={sellToken:sa,buyToken:ba,from:acct,receiver:acct,kind:"sell",
+    sellAmountBeforeFee:toRaw(amt,sd),signingScheme:"eip712",priceQuality:"fast",
+    validFor:1200,partiallyFillable:false,sellTokenBalance:"erc20",buyTokenBalance:"erc20"};
+  const r=await fetch(`${COW_API}/quote`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+  const d=await r.json();
+  if(!r.ok) throw new Error((d&&(d.description||d.errorType))||("HTTP "+r.status));
+  return {q:d.quote, sd, bd, sa, ba};
+}
+
 async function cowQuote(){
-  const out=$("#exOut");
-  const acct=connectedAddr();
+  const out=$("#exOut"); const acct=connectedAddr();
   if(!acct){ out.innerHTML='<span class="no">Connect a wallet first (read-only quote still needs your address).</span>'; return; }
   const sell=$("#exSell").value, buy=$("#exBuy").value;
   if(sell===buy){ out.innerHTML='<span class="no">Sell and buy tokens must differ.</span>'; return; }
   const amt=$("#exAmt").value;
   if(!(Number(amt)>0)){ out.innerHTML='<span class="no">Enter an amount.</span>'; return; }
-  const [sa,sd]=BASE_TOK[sell], [ba,bd]=BASE_TOK[buy];
   out.textContent="Fetching CoW quote…";
   try{
-    const body={sellToken:sa,buyToken:ba,from:acct,receiver:acct,kind:"sell",
-      sellAmountBeforeFee:toRaw(amt,sd),signingScheme:"eip712",priceQuality:"fast",
-      validFor:1200,partiallyFillable:false,sellTokenBalance:"erc20",buyTokenBalance:"erc20"};
-    const r=await fetch("https://api.cow.fi/base/api/v1/quote",
-      {method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
-    const d=await r.json();
-    if(!r.ok){ out.innerHTML=`<span class="no">Quote error: ${(d&&(d.description||d.errorType))||r.status}</span>`; return; }
-    const q=d.quote;
+    const {q,sd,bd}=await fetchQuote(sell,buy,amt,acct);
     const recv=fromRaw(q.buyAmount,bd), fee=fromRaw(q.feeAmount,sd), sold=fromRaw(q.sellAmount,sd);
-    const px = recv>0 ? (sold/recv) : 0;
+    const px=recv>0?(sold/recv):0;
     out.innerHTML = `<div class="kv"><span>Sell</span><b>${(+amt).toLocaleString()} ${sell}</b></div>
       <div class="kv"><span>Network fee (in ${sell})</span><span>${fee.toFixed(6)}</span></div>
       <div class="kv"><span>You receive (est.)</span><b class="pos">${recv.toFixed(6)} ${buy}</b></div>
       <div class="kv"><span>Effective price</span><span>${px?('~'+px.toLocaleString(undefined,{maximumFractionDigits:2})+' '+sell+'/'+buy):'—'}</span></div>
-      <div class="muted" style="font-size:12px;margin-top:6px">Read-only quote from CoW · Base · valid ~20 min.
-      Approve + sign (next step) will happen in your wallet.</div>`;
+      <div class="muted" style="font-size:12px;margin-top:6px">Read-only quote from CoW · Base · valid ~20 min.</div>`;
   }catch(e){ out.innerHTML=`<span class="no">Could not reach CoW: ${e.message}. (Open inside your wallet's browser.)</span>`; }
 }
+
+const pad32 = h => h.replace(/^0x/,"").toLowerCase().padStart(64,"0");
+async function ensureBase(){
+  const c=await rpc("eth_chainId",[]);
+  if(c===BASE_HEX) return true;
+  try{ await rpc("wallet_switchEthereumChain",[{chainId:BASE_HEX}]); return true; }
+  catch(e){ throw new Error("switch your wallet to the Base network, then retry"); }
+}
+function armed(){ try{return localStorage.getItem("exec_armed")==="1";}catch(e){return false;} }
+
+async function exApprove(){
+  const st=$("#exStatus"); const acct=connectedAddr();
+  if(!armed()){ st.innerHTML='<span class="no">Tick the box above to arm the canary.</span>'; return; }
+  if(!acct){ st.innerHTML='<span class="no">Connect your wallet first.</span>'; return; }
+  const sell=$("#exSell").value, amt=$("#exAmt").value;
+  if(Number(amt)*(sell==="USDC"?1:2600) > MAX_NOTIONAL){ st.innerHTML=`<span class="no">Over the $${MAX_NOTIONAL} canary cap — lower the amount.</span>`; return; }
+  const [sa,sd]=BASE_TOK[sell];
+  try{
+    await ensureBase();
+    const need=BigInt(toRaw(amt,sd));
+    const cur=BigInt(await rpc("eth_call",[{to:sa,data:"0xdd62ed3e"+pad32(acct)+pad32(COW_RELAYER)},"latest"]));
+    if(cur>=need){ st.innerHTML='<span class="ok">Already approved for this amount. Go to step 2.</span>'; return; }
+    st.textContent="Approving in your wallet…";
+    const data="0x095ea7b3"+pad32(COW_RELAYER)+pad32("0x"+need.toString(16));
+    const tx=await rpc("eth_sendTransaction",[{from:acct,to:sa,data}]);
+    st.innerHTML=`<span class="ok">Approval sent: ${tx.slice(0,10)}… (wait for it to confirm, then step 2).</span>`;
+  }catch(e){ st.innerHTML=`<span class="no">Approve failed: ${e.message||e}</span>`; }
+}
+
+async function exPlace(){
+  const st=$("#exStatus"); const acct=connectedAddr();
+  if(!armed()){ st.innerHTML='<span class="no">Tick the box above to arm the canary.</span>'; return; }
+  if(!acct){ st.innerHTML='<span class="no">Connect your wallet first.</span>'; return; }
+  const sell=$("#exSell").value, buy=$("#exBuy").value, amt=$("#exAmt").value;
+  if(sell===buy||!(Number(amt)>0)){ st.innerHTML='<span class="no">Check the sell/buy/amount.</span>'; return; }
+  try{
+    await ensureBase();
+    st.textContent="Getting a fresh quote to sign…";
+    const {q,sd,bd}=await fetchQuote(sell,buy,amt,acct);
+    const minBuy=(BigInt(q.buyAmount)*BigInt(10000-SLIPPAGE_BPS)/10000n).toString();
+    const order={sellToken:q.sellToken,buyToken:q.buyToken,receiver:acct,
+      sellAmount:q.sellAmount,buyAmount:minBuy,validTo:q.validTo,appData:q.appData,
+      feeAmount:q.feeAmount,kind:"sell",partiallyFillable:false,
+      sellTokenBalance:"erc20",buyTokenBalance:"erc20"};
+    if(!confirm(`Sign this order?\n\nSell ${fromRaw(q.sellAmount,sd).toFixed(6)} ${sell} (+fee ${fromRaw(q.feeAmount,sd).toFixed(6)})\nReceive at least ${fromRaw(minBuy,bd).toFixed(6)} ${buy}\nvia CoW on Base.\n\nYou sign in your wallet; CoW settles it gaslessly.`)) { st.textContent="Cancelled."; return; }
+    const typedData={types:{EIP712Domain:[{name:"name",type:"string"},{name:"version",type:"string"},{name:"chainId",type:"uint256"},{name:"verifyingContract",type:"address"}],
+      Order:[{name:"sellToken",type:"address"},{name:"buyToken",type:"address"},{name:"receiver",type:"address"},{name:"sellAmount",type:"uint256"},{name:"buyAmount",type:"uint256"},{name:"validTo",type:"uint32"},{name:"appData",type:"bytes32"},{name:"feeAmount",type:"uint256"},{name:"kind",type:"string"},{name:"partiallyFillable",type:"bool"},{name:"sellTokenBalance",type:"string"},{name:"buyTokenBalance",type:"string"}]},
+      primaryType:"Order",domain:{name:"Gnosis Protocol",version:"v2",chainId:BASE_ID,verifyingContract:COW_SETTLEMENT},message:order};
+    st.textContent="Sign the order in your wallet…";
+    const sig=await rpc("eth_signTypedData_v4",[acct,JSON.stringify(typedData)]);
+    st.textContent="Submitting the signed order to CoW…";
+    const body=Object.assign({},order,{signingScheme:"eip712",signature:sig,from:acct});
+    const r=await fetch(`${COW_API}/orders`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(!r.ok){ st.innerHTML=`<span class="no">Order rejected: ${(d&&(d.description||d.errorType))||("HTTP "+r.status)}</span>`; return; }
+    const uid=typeof d==="string"?d:(d.uid||d);
+    st.innerHTML=`<span class="ok">Order placed! </span><a href="https://explorer.cow.fi/base/orders/${uid}" target="_blank">track it on CoW explorer ↗</a>`;
+  }catch(e){ st.innerHTML=`<span class="no">Could not place order: ${e.message||e}</span>`; }
+}
+function syncArm(on){ const live=$("#exLive"); if(live) live.classList.toggle("hide", !on); }
 $("#exSell") && ($("#exSell").onchange=()=>{ $("#exAmtSym").textContent=$("#exSell").value; });
 $("#exQuote") && ($("#exQuote").onclick=cowQuote);
-$("#exEnable") && ($("#exEnable").checked = (()=>{ try{return localStorage.getItem("exec_armed")==="1";}catch(e){return false;} })(),
-  $("#exEnable").onchange=e=>{ try{localStorage.setItem("exec_armed", e.target.checked?"1":"0");}catch(_){}} );
+$("#exApprove") && ($("#exApprove").onclick=exApprove);
+$("#exPlace") && ($("#exPlace").onclick=exPlace);
+if($("#exEnable")){
+  const on = armed(); $("#exEnable").checked = on; syncArm(on);
+  $("#exEnable").onchange = e=>{ try{localStorage.setItem("exec_armed", e.target.checked?"1":"0");}catch(_){} syncArm(e.target.checked); };
+}
 
 // ---- boot ----
 $("#connect").onclick=connect;
