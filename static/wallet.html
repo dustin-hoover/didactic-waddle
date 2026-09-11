@@ -496,15 +496,17 @@ async function exPlace(){
     st.textContent="Getting a fresh quote to sign…";
     const {q,sd,bd}=await fetchQuote(sell,buy,amt,acct);
     const minBuy=(BigInt(q.buyAmount)*BigInt(10000-SLIPPAGE_BPS)/10000n).toString();
+    // Modern CoW: feeAmount must be 0 (fee is in the price); sell the full amount.
+    const fullSell=(BigInt(q.sellAmount)+BigInt(q.feeAmount)).toString();
     const order={sellToken:q.sellToken,buyToken:q.buyToken,receiver:acct,
-      sellAmount:q.sellAmount,buyAmount:minBuy,validTo:q.validTo,appData:q.appData,
-      feeAmount:q.feeAmount,kind:"sell",partiallyFillable:false,
+      sellAmount:fullSell,buyAmount:minBuy,validTo:q.validTo,appData:q.appData,
+      feeAmount:"0",kind:"sell",partiallyFillable:false,
       sellTokenBalance:"erc20",buyTokenBalance:"erc20"};
     _pending={order, acct};
     // In-page review (works in every wallet browser, unlike window.confirm)
     st.innerHTML = `<div class="card" style="margin-top:6px">
-      <div class="kv"><span>Sell</span><b>${fromRaw(q.sellAmount,sd).toFixed(6)} ${sell}</b></div>
-      <div class="kv"><span>+ network fee</span><span>${fromRaw(q.feeAmount,sd).toFixed(6)} ${sell}</span></div>
+      <div class="kv"><span>Sell</span><b>${fromRaw(fullSell,sd).toFixed(6)} ${sell}</b></div>
+      <div class="kv"><span>Fee</span><span>included in the price</span></div>
       <div class="kv"><span>Receive at least</span><b class="pos">${fromRaw(minBuy,bd).toFixed(6)} ${buy}</b></div>
       <div class="muted" style="font-size:12px;margin:6px 0">CoW · Base · gasless signature · you can't be filled below the minimum.</div>
       <div style="display:flex;gap:8px"><button id="exConfirmSign" class="primary small">Confirm &amp; sign in wallet</button>
