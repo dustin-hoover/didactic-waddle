@@ -131,6 +131,27 @@
     </div>
   </div>
 
+  <div class="panel">
+    <b style="font-size:15px">Execution (canary) — CoW on Base</b>
+    <div class="sec" style="margin-top:10px">⚠️ <div><b>Live trading is gated.</b> The quote below is
+      <b>read-only</b> — it moves nothing. Approvals and order-signing (coming next) move
+      <b>real funds</b> and always happen in <i>your</i> wallet, never here. Start tiny; keep your
+      main bags in a wallet the app never touches.</div></div>
+    <div class="row" style="align-items:center;gap:8px">
+      <span class="muted">sell</span>
+      <select id="exSell"><option>USDC</option><option>WETH</option></select>
+      <span class="muted">for</span>
+      <select id="exBuy"><option>WETH</option><option>USDC</option></select>
+      <input id="exAmt" type="number" min="0" step="1" value="5" style="width:90px;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink)">
+      <span class="muted" id="exAmtSym">USDC</span>
+      <button id="exQuote">Get CoW quote</button>
+    </div>
+    <div id="exOut" class="muted" style="margin-top:10px">Connect a wallet, then fetch a live read-only quote.</div>
+    <label style="display:block;margin-top:12px;font-size:13px;color:var(--muted)">
+      <input type="checkbox" id="exEnable"> I understand live trading can move real funds
+      (arms approve/sign — coming next)</label>
+  </div>
+
   <div class="foot">
     Bags run the validated trend + capital-preservation model; scenarios are the same model at
     different dial settings, scored on real market data. This is educational software and paper
@@ -377,6 +398,51 @@ $("#applyReb").onclick=()=>{
   $("#rebMsg").textContent="Saved."; render();
 };
 $("#closeReb").onclick=()=>$("#rebPanel").classList.add("hide");
+
+// ---- execution (canary): read-only CoW quote on Base ----
+const BASE_TOK = { USDC:["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",6],
+                   WETH:["0x4200000000000000000000000000000000000006",18] };
+function toRaw(amtStr, dec){
+  let [i,f=""]=String(amtStr).trim().split(".");
+  f=(f+"0".repeat(dec)).slice(0,dec);
+  return (BigInt(i||"0")*(10n**BigInt(dec))+BigInt(f||"0")).toString();
+}
+const fromRaw = (raw,dec)=>Number(BigInt(raw))/10**dec;
+function connectedAddr(){ const b=store.load(); const k=Object.keys(b).find(k=>!b[k].watch); return k?b[k].address:null; }
+
+async function cowQuote(){
+  const out=$("#exOut");
+  const acct=connectedAddr();
+  if(!acct){ out.innerHTML='<span class="no">Connect a wallet first (read-only quote still needs your address).</span>'; return; }
+  const sell=$("#exSell").value, buy=$("#exBuy").value;
+  if(sell===buy){ out.innerHTML='<span class="no">Sell and buy tokens must differ.</span>'; return; }
+  const amt=$("#exAmt").value;
+  if(!(Number(amt)>0)){ out.innerHTML='<span class="no">Enter an amount.</span>'; return; }
+  const [sa,sd]=BASE_TOK[sell], [ba,bd]=BASE_TOK[buy];
+  out.textContent="Fetching CoW quote…";
+  try{
+    const body={sellToken:sa,buyToken:ba,from:acct,receiver:acct,kind:"sell",
+      sellAmountBeforeFee:toRaw(amt,sd),signingScheme:"eip712",priceQuality:"fast",
+      validFor:1200,partiallyFillable:false,sellTokenBalance:"erc20",buyTokenBalance:"erc20"};
+    const r=await fetch("https://api.cow.fi/base/api/v1/quote",
+      {method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(!r.ok){ out.innerHTML=`<span class="no">Quote error: ${(d&&(d.description||d.errorType))||r.status}</span>`; return; }
+    const q=d.quote;
+    const recv=fromRaw(q.buyAmount,bd), fee=fromRaw(q.feeAmount,sd), sold=fromRaw(q.sellAmount,sd);
+    const px = recv>0 ? (sold/recv) : 0;
+    out.innerHTML = `<div class="kv"><span>Sell</span><b>${(+amt).toLocaleString()} ${sell}</b></div>
+      <div class="kv"><span>Network fee (in ${sell})</span><span>${fee.toFixed(6)}</span></div>
+      <div class="kv"><span>You receive (est.)</span><b class="pos">${recv.toFixed(6)} ${buy}</b></div>
+      <div class="kv"><span>Effective price</span><span>${px?('~'+px.toLocaleString(undefined,{maximumFractionDigits:2})+' '+sell+'/'+buy):'—'}</span></div>
+      <div class="muted" style="font-size:12px;margin-top:6px">Read-only quote from CoW · Base · valid ~20 min.
+      Approve + sign (next step) will happen in your wallet.</div>`;
+  }catch(e){ out.innerHTML=`<span class="no">Could not reach CoW: ${e.message}. (Open inside your wallet's browser.)</span>`; }
+}
+$("#exSell") && ($("#exSell").onchange=()=>{ $("#exAmtSym").textContent=$("#exSell").value; });
+$("#exQuote") && ($("#exQuote").onclick=cowQuote);
+$("#exEnable") && ($("#exEnable").checked = (()=>{ try{return localStorage.getItem("exec_armed")==="1";}catch(e){return false;} })(),
+  $("#exEnable").onchange=e=>{ try{localStorage.setItem("exec_armed", e.target.checked?"1":"0");}catch(_){}} );
 
 // ---- boot ----
 $("#connect").onclick=connect;
