@@ -31,6 +31,16 @@ out-of-sample, so they were rejected.
 (force-disable / hard kill). This is pure logic over a BTC close series — no keys,
 no orders. A runner/engine calls `detect()` and, when `state.on` is False, holds
 everything flat regardless of what the per-asset signal says.
+
+Design doctrine (see STRATEGY.md, backed by scripts/regime_validation.py):
+  * BTC is the market's macro trend anchor; the regime is confirmed on BTC and that
+    one switch governs everything. Read it from BTC's TREND STRUCTURE, not
+    stock-to-flow (S2F is a scarcity rhythm, not a reliable price predictor).
+  * BTC regime is the risk-on UMBRELLA. Never open new alt longs while BTC is in a
+    confirmed bear; when BTC is bull, trade each alt on its OWN trend. De-risking is
+    always allowed — the umbrella never traps a position. This is `apply_umbrella()`.
+  * Trading BTC itself (the live vehicle: cbBTC on Base) sidesteps the alt lead/lag
+    mismatch entirely — gate and asset are then the same thing.
 """
 
 from __future__ import annotations
