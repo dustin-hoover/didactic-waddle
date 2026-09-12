@@ -94,3 +94,15 @@ def test_proposal_for_signal_respects_cap():
     # a huge move gets clamped to the cap, not refused
     pr = proposal_for_signal("b1", "0xabc", 1.0, 0.0, 10_000.0, "WETH", PRICES, pol)
     assert pr is not None and pr.notional_usd == 100.0
+
+
+def test_cbbtc_tradeable_on_base():
+    # cbBTC is the Base-native BTC vehicle the regime gate is validated on.
+    pol = ExecutionPolicy(enabled=True, chain="base", allowed_tokens=("USDC", "CBBTC"),
+                          max_notional_usd=100)
+    pr = propose("b1", "0xabc", "USDC", "CBBTC", 100.0,
+                 {"USDC": 1.0, "CBBTC": 77000.0}, pol)
+    assert pr.ok is True
+    assert pr.buy_token == "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf"
+    # 8-decimal token: ~100/77000 cbBTC in raw base units
+    assert pr.min_buy_raw.isdigit() and int(pr.min_buy_raw) > 0

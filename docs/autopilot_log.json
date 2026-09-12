@@ -1,18 +1,18 @@
 {
  "exposure": {
-  "WETH": 1.0
+  "CBBTC": 1.0
  },
  "decisions": [
   {
-   "ts": 1789173840,
-   "asset": "WETH",
+   "ts": 1789174659,
+   "asset": "CBBTC",
    "action": "buy",
    "notional": 100.0,
    "target": 1.0,
    "current": 0.0,
    "gate": "ON",
-   "price": 2513.16,
-   "reason": "WOULD buy $100.00 of WETH (DRY-RUN)",
+   "price": 77312.21,
+   "reason": "WOULD buy $100.00 of CBBTC (DRY-RUN)",
    "blocked": null
   }
  ]

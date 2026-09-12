@@ -168,7 +168,7 @@ fetch('./data.json?t='+Date.now()).then(r=>r.json()).then(d=>{
     });
     if(!(ap.recent||[]).length) log.innerHTML='<div class="note">No transitions yet — decisions log here as the gate/strategy flip.</div>';
     document.getElementById('apNote').textContent=
-      `Paper only — live=${ap.live}. Each scheduled run decides what the regime-gated engine WOULD trade on Base (WETH/USDC), within a $${ap.max_notional} per-order and $${ap.daily_cap} daily cap. No key, no signing.`;
+      `Paper only — live=${ap.live}. Each scheduled run decides what the regime-gated engine WOULD trade on Base (${(l0.asset||'cbBTC')}/USDC — the BTC vehicle the gate is validated on), within a $${ap.max_notional} per-order and $${ap.daily_cap} daily cap. No key, no signing.`;
   }
 
   const pp=d.paper;

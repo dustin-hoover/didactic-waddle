@@ -33,8 +33,12 @@ TOKENS: Dict[str, Dict[str, tuple]] = {
         "WBTC": ("0x2260fac5e5542a773aa44fbcfedf7c193bc2c599", 8),
     },
     "base": {
-        "USDC": ("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 6),
-        "WETH": ("0x4200000000000000000000000000000000000006", 18),
+        "USDC":  ("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", 6),
+        "WETH":  ("0x4200000000000000000000000000000000000006", 18),
+        # cbBTC (key upper-cased like the rest) — Coinbase Wrapped BTC, Base-native,
+        # ~$450M/day volume: the BTC vehicle the regime gate is validated on. Verified
+        # via CoinGecko, 8 decimals.
+        "CBBTC": ("0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf", 8),
     },
 }
 

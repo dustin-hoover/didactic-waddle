@@ -142,9 +142,10 @@ def build():
 
     # AUTOPILOT — DRY RUN. Each scheduled cycle, decide what the regime-gated engine
     # WOULD trade (strategy target -> autopilot guardrails), log it, and (on a genuine
-    # transition) alert the phone. Trades WETH on Base against USDC — the proven path;
-    # BTC is only the regime indicator. live=False, so nothing is ever signable here.
-    # This builds a real forward paper track record before any money moves.
+    # transition) alert the phone. Trades BTC via cbBTC on Base against USDC — the
+    # vehicle the regime gate is VALIDATED on (gate and asset aligned; the 95%-bull-
+    # capture / 27%-drawdown case). live=False, so nothing is ever signable here. This
+    # builds a real forward paper track record before any money moves.
     autopilot = {}
     try:
         from tradebot.autopilot import Autopilot, AutopilotConfig
@@ -153,14 +154,14 @@ def build():
             max_notional_usd=float(os.environ.get("TB_AP_MAX", "100")),
             daily_cap_usd=float(os.environ.get("TB_AP_DAILY", "300")),
             cooldown_min=int(os.environ.get("TB_AP_COOLDOWN", "60")),
-            chain="base", stable="USDC", allowed_tokens=("USDC", "WETH"))
+            chain="base", stable="USDC", allowed_tokens=("USDC", "WETH", "CBBTC"))
         ap = Autopilot(apcfg, os.path.join(DOCS, "autopilot.json"))
         logp = os.path.join(DOCS, "autopilot_log.json")
         book = json.load(open(logp)) if os.path.exists(logp) else {"exposure": {}, "decisions": []}
         regime_on = bool(regime.get("on"))
         now_ts = int(time.time())
         latest = []
-        for coin, base in (("ETH", "WETH"),):        # WETH is the tradeable base on Base
+        for coin, base in (("BTC", "CBBTC"),):       # BTC via cbBTC — gate and asset aligned
             eb = feed.history(coin, "1d", 400)
             price = eb[-1].close
             from tradebot.signals import TrendFilterStrategy as _TF
