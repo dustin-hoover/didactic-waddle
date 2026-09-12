@@ -42,6 +42,20 @@ TOKENS: Dict[str, Dict[str, tuple]] = {
     },
 }
 
+def register_tokens(chain: str, mapping: Dict[str, tuple]) -> None:
+    """Merge a vetted token set (from tradebot.universe) into the registry at runtime.
+
+    Keys are upper-cased to match the proposal layer's lookup. Existing hand-vetted
+    entries win on conflict, so a discovered token can never silently override a
+    known-good address. Values are (address, decimals).
+    """
+    reg = TOKENS.setdefault(chain, {})
+    for sym, (addr, dec) in mapping.items():
+        key = sym.upper()
+        if key not in reg:
+            reg[key] = (addr, int(dec))
+
+
 # Where a one-time ERC-20 approval must point for each venue (the signing layer
 # uses this later; recorded here so the whole execution contract lives in one file).
 VENUE_SPENDER = {

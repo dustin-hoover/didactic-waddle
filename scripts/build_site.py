@@ -140,6 +140,24 @@ def build():
     except Exception as e:  # noqa: BLE001
         regime = {"error": str(e)[:80]}
 
+    # UNIVERSE — auto-vet which Base tokens are safe/liquid enough to trade (live
+    # on-chain depth via GeckoTerminal + listed-on-CoinGecko screen). This is the MENU;
+    # the strategy (BTC-led doctrine + caps) still decides what to actually trade. The
+    # vetted set is registered into the execution layer so proposals can be built for it.
+    universe = {}
+    try:
+        from tradebot.universe import discover_base, to_registry
+        from tradebot.execution import register_tokens
+        vetted = discover_base(
+            pages=int(os.environ.get("TB_UNIVERSE_PAGES", "4")),
+            min_reserve_usd=float(os.environ.get("TB_UNIVERSE_MIN_RESERVE", "250000")))
+        register_tokens("base", to_registry(vetted))
+        universe = {"chain": "base", "count": len(vetted),
+                    "min_reserve_usd": float(os.environ.get("TB_UNIVERSE_MIN_RESERVE", "250000")),
+                    "tokens": [v.to_dict() for v in vetted]}
+    except Exception as e:  # noqa: BLE001
+        universe = {"error": str(e)[:120]}
+
     # AUTOPILOT — DRY RUN. Each scheduled cycle, decide what the regime-gated engine
     # WOULD trade (strategy target -> autopilot guardrails), log it, and (on a genuine
     # transition) alert the phone. Trades BTC via cbBTC on Base against USDC — the
@@ -268,7 +286,7 @@ def build():
 
     data = {"generated_at": datetime.now(timezone.utc).isoformat(timespec="minutes"),
             "interval": INTERVAL, "style": STYLE, "onchain": onchain, "regime": regime,
-            "autopilot": autopilot,
+            "autopilot": autopilot, "universe": universe,
             "rows": rows, "featured": featured, "paper": paper, "tape": tape,
             "scenarios": scenarios, "bag_tree": bag_tree}
     json.dump(data, open(os.path.join(DOCS, "data.json"), "w"), indent=1)
@@ -295,7 +313,7 @@ def build():
     gate = ("?" if regime.get("on") is None else ("ON" if regime["on"] else "OFF"))
     print(f"built docs/ · {len([r for r in rows if 'error' not in r])} coins · "
           f"{len(alerts)} flips · {pushed} pushed · risk {onchain.get('risk_regime')} · "
-          f"bull-gate {gate} ({regime.get('mode','?')})")
+          f"bull-gate {gate} ({regime.get('mode','?')}) · universe {universe.get('count','?')}")
 
 
 if __name__ == "__main__":

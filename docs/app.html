@@ -94,6 +94,15 @@
     <div class="note" id="apNote"></div>
   </div>
 
+  <div class="panel" id="universePanel" hidden>
+    <h2>Tradeable universe <span class="badge" id="uniCount"></span></h2>
+    <table>
+      <thead><tr><th>Token</th><th>Pool depth</th><th class="hide">24h vol</th><th class="hide">Pools</th></tr></thead>
+      <tbody id="uniRows"></tbody>
+    </table>
+    <div class="note" id="uniNote"></div>
+  </div>
+
   <div class="panel" id="paperPanel" hidden>
     <h2>Your paper portfolio <span class="badge" id="paperSince"></span></h2>
     <div class="grid" id="paper"></div>
@@ -169,6 +178,22 @@ fetch('./data.json?t='+Date.now()).then(r=>r.json()).then(d=>{
     if(!(ap.recent||[]).length) log.innerHTML='<div class="note">No transitions yet — decisions log here as the gate/strategy flip.</div>';
     document.getElementById('apNote').textContent=
       `Paper only — live=${ap.live}. Each scheduled run decides what the regime-gated engine WOULD trade on Base (${(l0.asset||'cbBTC')}/USDC — the BTC vehicle the gate is validated on), within a $${ap.max_notional} per-order and $${ap.daily_cap} daily cap. No key, no signing.`;
+  }
+
+  const uni=d.universe;
+  if(uni && !uni.error && uni.tokens){
+    document.getElementById('universePanel').hidden=false;
+    document.getElementById('uniCount').textContent=uni.count+' vetted';
+    const ub=document.getElementById('uniRows'); ub.innerHTML='';
+    const musd=x=>x>=1e6?('$'+(x/1e6).toFixed(1)+'M'):('$'+Math.round(x/1e3)+'k');
+    uni.tokens.forEach(t=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${t.symbol}</td><td>${musd(t.reserve_usd)}</td>`+
+        `<td class="hide">${musd(t.vol24_usd)}</td><td class="hide">${t.n_pools}</td>`;
+      ub.appendChild(tr);
+    });
+    document.getElementById('uniNote').textContent=
+      `Base tokens auto-vetted for depth (≥$${Math.round(uni.min_reserve_usd/1e3)}k pool reserve) and CoinGecko listing. This is the tradeable menu; the strategy (BTC-led, gated, capped) still picks what to trade. "Listed + liquid" is a coarse screen, not a full audit.`;
   }
 
   const pp=d.paper;
