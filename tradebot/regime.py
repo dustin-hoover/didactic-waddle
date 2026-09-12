@@ -173,7 +173,33 @@ def detect(closes: List[float], cfg: Optional[RegimeConfig] = None) -> RegimeSta
 
 
 def gate(target_exposure: float, state: RegimeState) -> Tuple[float, str]:
-    """Apply the master switch to a per-asset target: flat unless the gate is ON."""
+    """Apply the master switch to a per-asset target: flat unless the gate is ON.
+
+    Hard gate: nothing new AND nothing held while OFF. Use this for the primary BTC
+    vehicle, where the gate and the asset are the same thing. For ALTS, prefer
+    apply_umbrella(), which never force-liquidates.
+    """
     if not state.on:
         return 0.0, f"regime gate OFF ({state.regime}) — holding flat"
     return target_exposure, f"regime gate ON ({state.regime})"
+
+
+def apply_umbrella(asset_trend_target: float, current_exposure: float,
+                   btc_state: RegimeState) -> Tuple[float, str]:
+    """Alt-handling doctrine: BTC regime is the RISK-ON UMBRELLA (see STRATEGY.md).
+
+    When BTC is bull, trade the asset on its OWN trend target. When BTC is bear, open
+    no new/added longs (umbrella closed) but NEVER force-liquidate — de-risking is
+    always allowed, so the asset's own trend can still walk the position down. This
+    keeps you out of alts during BTC bears without clipping the alt's own exits.
+
+    Returns (effective_target, reason). For the primary BTC vehicle the asset's own
+    trend IS the BTC trend and btc_state IS its gate, so this collapses to the gate.
+    """
+    if btc_state.on:
+        return asset_trend_target, f"BTC umbrella OPEN ({btc_state.regime}) — trade own trend"
+    if asset_trend_target <= current_exposure:
+        # a reduction / exit — always allowed under a closed umbrella
+        return asset_trend_target, f"BTC umbrella CLOSED ({btc_state.regime}) — de-risk allowed"
+    # would add/open a long while BTC is bear — hold at current, no new exposure
+    return current_exposure, f"BTC umbrella CLOSED ({btc_state.regime}) — no new alt longs"

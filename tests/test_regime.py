@@ -83,3 +83,30 @@ def test_gate_applies_master_switch():
     exp_on, why_on = gate(0.8, on_state)
     assert exp_off == 0.0 and "OFF" in why_off
     assert exp_on == 0.8 and "ON" in why_on
+
+
+def _st(on):
+    return RegimeState(on=on, regime="bull" if on else "bear", mode="auto")
+
+
+def test_umbrella_open_trades_own_trend():
+    from tradebot.regime import apply_umbrella
+    tgt, why = apply_umbrella(0.8, 0.0, _st(True))
+    assert tgt == 0.8 and "OPEN" in why
+
+
+def test_umbrella_closed_blocks_new_alt_longs():
+    from tradebot.regime import apply_umbrella
+    # BTC bear + alt wants to add from 0 -> 1.0: hold at current (no new longs)
+    tgt, why = apply_umbrella(1.0, 0.0, _st(False))
+    assert tgt == 0.0 and "no new alt longs" in why
+
+
+def test_umbrella_closed_still_allows_derisking():
+    from tradebot.regime import apply_umbrella
+    # BTC bear + alt trend says exit (target below current): reduction allowed
+    tgt, why = apply_umbrella(0.0, 1.0, _st(False))
+    assert tgt == 0.0 and "de-risk allowed" in why
+    # partial trim also allowed
+    tgt2, _ = apply_umbrella(0.3, 1.0, _st(False))
+    assert tgt2 == 0.3
