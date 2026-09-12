@@ -14,6 +14,7 @@ the workflow, so alerts fire only on genuine changes.
 import json
 import os
 import sys
+import time
 from datetime import datetime, timezone
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -139,6 +140,55 @@ def build():
     except Exception as e:  # noqa: BLE001
         regime = {"error": str(e)[:80]}
 
+    # AUTOPILOT — DRY RUN. Each scheduled cycle, decide what the regime-gated engine
+    # WOULD trade (strategy target -> autopilot guardrails), log it, and (on a genuine
+    # transition) alert the phone. Trades WETH on Base against USDC — the proven path;
+    # BTC is only the regime indicator. live=False, so nothing is ever signable here.
+    # This builds a real forward paper track record before any money moves.
+    autopilot = {}
+    try:
+        from tradebot.autopilot import Autopilot, AutopilotConfig
+        apcfg = AutopilotConfig(
+            enabled=True, live=False,
+            max_notional_usd=float(os.environ.get("TB_AP_MAX", "100")),
+            daily_cap_usd=float(os.environ.get("TB_AP_DAILY", "300")),
+            cooldown_min=int(os.environ.get("TB_AP_COOLDOWN", "60")),
+            chain="base", stable="USDC", allowed_tokens=("USDC", "WETH"))
+        ap = Autopilot(apcfg, os.path.join(DOCS, "autopilot.json"))
+        logp = os.path.join(DOCS, "autopilot_log.json")
+        book = json.load(open(logp)) if os.path.exists(logp) else {"exposure": {}, "decisions": []}
+        regime_on = bool(regime.get("on"))
+        now_ts = int(time.time())
+        latest = []
+        for coin, base in (("ETH", "WETH"),):        # WETH is the tradeable base on Base
+            eb = feed.history(coin, "1d", 400)
+            price = eb[-1].close
+            from tradebot.signals import TrendFilterStrategy as _TF
+            tgt = _TF(STYLE).generate(eb).target_exposure
+            cur = float(book["exposure"].get(base, 0.0))
+            prices = {base: price, "USDC": 1.0}
+            d = ap.decide("paper", "dry-run", tgt, cur, apcfg.max_notional_usd,
+                          base, prices, now_ts, regime_on=regime_on)
+            entry = {"ts": now_ts, "asset": base, "action": d.action,
+                     "notional": round(d.notional_usd, 2), "target": round(tgt, 3),
+                     "current": round(cur, 3), "gate": "ON" if regime_on else "OFF",
+                     "price": round(price, 2), "reason": d.reason, "blocked": d.blocked}
+            latest.append(entry)
+            if d.action in ("buy", "sell"):          # a genuine transition: simulate the paper fill
+                book["exposure"][base] = tgt if (d.action == "sell" or regime_on) else cur
+                ap.record_fill(d.notional_usd, now_ts)
+                book["decisions"] = ([entry] + book.get("decisions", []))[:60]
+                alerts.append((d.action.upper(), coin,
+                               f"[DRY-RUN] autopilot WOULD {d.action} ${d.notional_usd:,.0f} {base} "
+                               f"@ ${price:,.0f} (gate {'ON' if regime_on else 'OFF'})"))
+        json.dump(book, open(logp, "w"), indent=1)
+        autopilot = {"enabled": apcfg.enabled, "live": apcfg.live, "gate_on": regime_on,
+                     "max_notional": apcfg.max_notional_usd, "daily_cap": apcfg.daily_cap_usd,
+                     "spent_today": round(ap.state.spent_usd, 2), "trades_today": ap.state.trades_today,
+                     "latest": latest, "recent": book["decisions"][:8], "exposure": book["exposure"]}
+    except Exception as e:  # noqa: BLE001
+        autopilot = {"error": str(e)[:120]}
+
     # LIVE PAPER BAGS — one supervised tree of stashes (the root bag IS the paper
     # portfolio). Each run advances every bag and lets the tree spawn fractally.
     # State persists under docs/bags/ (committed) across scheduled runs.
@@ -217,6 +267,7 @@ def build():
 
     data = {"generated_at": datetime.now(timezone.utc).isoformat(timespec="minutes"),
             "interval": INTERVAL, "style": STYLE, "onchain": onchain, "regime": regime,
+            "autopilot": autopilot,
             "rows": rows, "featured": featured, "paper": paper, "tape": tape,
             "scenarios": scenarios, "bag_tree": bag_tree}
     json.dump(data, open(os.path.join(DOCS, "data.json"), "w"), indent=1)

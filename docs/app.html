@@ -57,7 +57,15 @@
   .regime-title{font-family:var(--serif);font-weight:600;font-size:20px}
   .regime.on .regime-title{color:var(--up)}.regime.off .regime-title{color:var(--down)}
   .regime-reason{font-family:var(--mono);font-size:12px;color:var(--muted);margin:8px 0 12px}
-  @media(max-width:560px){th.hide,td.hide{display:none}}
+  /* Autopilot dry-run log */
+  .ap-log{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+  .ap-row{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;
+    background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:7px 10px}
+  .ap-row .when{color:var(--faint);flex:none;width:96px}
+  .ap-row .act{flex:none;width:52px;font-weight:600}
+  .ap-row .act.buy{color:var(--up)}.ap-row .act.sell{color:var(--down)}.ap-row .act.hold{color:var(--muted)}
+  .ap-row .msg{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  @media(max-width:560px){th.hide,td.hide{display:none}.ap-row .when{width:70px}}
 </style>
 </head>
 <body>
@@ -77,6 +85,13 @@
     <div class="regime-reason" id="regimeReason"></div>
     <div class="grid" id="regimeStats"></div>
     <div class="note" id="regimeNote"></div>
+  </div>
+
+  <div class="panel" id="autopilotPanel" hidden>
+    <h2>Autopilot <span class="badge" id="apMode">dry-run</span></h2>
+    <div class="grid" id="apStats"></div>
+    <div class="ap-log" id="apLog"></div>
+    <div class="note" id="apNote"></div>
   </div>
 
   <div class="panel" id="paperPanel" hidden>
@@ -132,6 +147,28 @@ fetch('./data.json?t='+Date.now()).then(r=>r.json()).then(d=>{
     if(rg.mode!=='auto') note=`Manual override active (REGIME_MODE=${rg.mode}). The market's own read is ${rg.auto_on?'BULL':'BEAR'}. Set REGIME_MODE=auto to hand control back to the gate.`;
     else note=`Auto gate: turns ON only when a bull is confirmed off BTC (above 200d, ${rg.sma_short}d>200d, rising), OFF when that breaks. It blocks new longs while OFF; de-risking to cash is always allowed. Override by setting the REGIME_MODE variable to on/off.`;
     document.getElementById('regimeNote').textContent=note;
+  }
+
+  const ap=d.autopilot;
+  if(ap && !ap.error){
+    document.getElementById('autopilotPanel').hidden=false;
+    document.getElementById('apMode').textContent=ap.live?'LIVE':'dry-run';
+    const l0=(ap.latest&&ap.latest[0])||{};
+    document.getElementById('apStats').innerHTML=`
+      <div class="stat"><div class="k">Gate</div><div class="v ${ap.gate_on?'up':'down'}">${ap.gate_on?'ON':'OFF'}</div><div class="n">bull-market switch</div></div>
+      <div class="stat"><div class="k">Would-do now</div><div class="v ${l0.action==='buy'?'up':(l0.action==='sell'?'down':'')}">${(l0.action||'—').toUpperCase()}</div><div class="n">${l0.asset||''} target ${l0.target!=null?(l0.target*100).toFixed(0)+'%':'–'}</div></div>
+      <div class="stat"><div class="k">Per-order cap</div><div class="v">$${ap.max_notional}</div><div class="n">$${ap.spent_today||0} used today</div></div>
+      <div class="stat"><div class="k">Daily cap</div><div class="v">$${ap.daily_cap}</div><div class="n">${ap.trades_today||0} sim trades today</div></div>`;
+    const log=document.getElementById('apLog'); log.innerHTML='';
+    (ap.recent||[]).forEach(e=>{
+      const row=document.createElement('div'); row.className='ap-row';
+      const when=new Date(e.ts*1000).toISOString().slice(5,16).replace('T',' ');
+      row.innerHTML=`<span class="when">${when}</span><span class="act ${e.action}">${e.action.toUpperCase()}</span><span class="msg">${e.reason||''}</span>`;
+      log.appendChild(row);
+    });
+    if(!(ap.recent||[]).length) log.innerHTML='<div class="note">No transitions yet — decisions log here as the gate/strategy flip.</div>';
+    document.getElementById('apNote').textContent=
+      `Paper only — live=${ap.live}. Each scheduled run decides what the regime-gated engine WOULD trade on Base (WETH/USDC), within a $${ap.max_notional} per-order and $${ap.daily_cap} daily cap. No key, no signing.`;
   }
 
   const pp=d.paper;
