@@ -168,6 +168,35 @@
     </div>
   </div>
 
+  <div class="panel">
+    <b style="font-size:15px">Execution (canary) — Jupiter on Solana</b>
+    <div class="sec" style="margin-top:10px">⚠️ <div><b>Live trading is gated.</b> The quote is
+      <b>read-only</b>. The swap is built by Jupiter and <b>signed in your Phantom wallet</b> — funds
+      move only when you approve there. Start tiny.</div></div>
+    <div class="row" style="align-items:center;gap:8px;margin-top:6px">
+      <button id="solConnect">Connect Phantom</button>
+      <span class="muted" id="solAddr"></span>
+    </div>
+    <div class="row" style="align-items:center;gap:8px;margin-top:8px">
+      <span class="muted">sell</span>
+      <select id="solSell"><option>USDC</option><option>SOL</option><option>CBBTC</option></select>
+      <span class="muted">for</span>
+      <select id="solBuy"><option>SOL</option><option>USDC</option><option>CBBTC</option></select>
+      <input id="solAmt" type="number" min="0" step="1" value="5" style="width:90px;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink)">
+      <button id="solQuote">Get Jupiter quote</button>
+    </div>
+    <div id="solOut" class="muted" style="margin-top:10px">Connect Phantom, then fetch a live read-only quote.</div>
+    <label style="display:block;margin-top:12px;font-size:13px;color:var(--muted)">
+      <input type="checkbox" id="solEnable"> I understand live trading can move real funds
+      (arms the sign step below)</label>
+    <div id="solLive" class="hide" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
+      <div class="muted" style="font-size:12px;margin-bottom:8px">Canary — Solana · Jupiter · you sign in Phantom.
+        The order sets a min-receive so you can't be filled worse than shown.</div>
+      <button id="solSwap" class="primary small">Review &amp; sign swap</button>
+      <div id="solStatus" class="muted" style="margin-top:8px"></div>
+    </div>
+  </div>
+
   <div class="foot">
     Bags run the validated trend + capital-preservation model; scenarios are the same model at
     different dial settings, scored on real market data. This is educational software and paper
@@ -176,6 +205,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.8/lib/index.iife.min.js"></script>
 <script>
 "use strict";
 const $ = s => document.querySelector(s);
@@ -560,6 +590,72 @@ $("#exPlace") && ($("#exPlace").onclick=exPlace);
 if($("#exEnable")){
   const on = armed(); $("#exEnable").checked = on; syncArm(on);
   $("#exEnable").onchange = e=>{ try{localStorage.setItem("exec_armed", e.target.checked?"1":"0");}catch(_){} syncArm(e.target.checked); };
+}
+
+// ---- Solana (Phantom + Jupiter) canary ----
+const SOL_MINTS = {                      // symbol -> [mint, decimals]
+  USDC:["EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",6],
+  SOL:["So11111111111111111111111111111111111111112",9],
+  CBBTC:["cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij",8],
+};
+const JUP = "https://lite-api.jup.ag/swap/v1";
+let solPubkey=null, lastSolQuote=null;
+function phantom(){ return (window.phantom&&window.phantom.solana) || (window.solana&&window.solana.isPhantom?window.solana:null); }
+async function solConnect(){
+  const p=phantom();
+  if(!p){ $("#solAddr").textContent="Phantom not found — install the Phantom app/extension"; return; }
+  try{ const r=await p.connect(); solPubkey=r.publicKey.toString(); $("#solAddr").textContent="connected "+short(solPubkey); }
+  catch(e){ $("#solAddr").textContent="connect cancelled"; }
+}
+async function jupQuote(inMint,outMint,rawAmt,slip){
+  const u=`${JUP}/quote?inputMint=${inMint}&outputMint=${outMint}&amount=${rawAmt}&slippageBps=${slip}`;
+  const r=await fetch(u,{headers:{accept:"application/json"}});
+  const t=await r.text(); let j; try{ j=JSON.parse(t); }catch(_){ throw new Error(t.slice(0,120)); }
+  if(!r.ok||!j.outAmount) throw new Error(j.error||("quote "+r.status));
+  return j;
+}
+async function solQuote(){
+  const sell=$("#solSell").value, buy=$("#solBuy").value;
+  if(sell===buy){ $("#solOut").textContent="pick two different tokens"; return; }
+  const [inMint,inDec]=SOL_MINTS[sell], [,outDec]=SOL_MINTS[buy], outMint=SOL_MINTS[buy][0];
+  const amt=parseFloat($("#solAmt").value||"0");
+  if(!(amt>0)){ $("#solOut").textContent="enter an amount"; return; }
+  const raw=Math.round(amt*Math.pow(10,inDec)).toString();
+  $("#solOut").textContent="fetching Jupiter quote…";
+  try{
+    const q=await jupQuote(inMint,outMint,raw,50); lastSolQuote=q;
+    const out=parseInt(q.outAmount)/Math.pow(10,outDec);
+    const min=parseInt(q.otherAmountThreshold)/Math.pow(10,outDec);
+    const route=(q.routePlan||[]).map(r=>r.swapInfo&&r.swapInfo.label).filter(Boolean).join(" › ");
+    const imp=(parseFloat(q.priceImpactPct||"0")*100).toFixed(3);
+    $("#solOut").innerHTML=`~<b>${out.toFixed(6)} ${buy}</b> (min ${min.toFixed(6)} @0.5% slippage) · impact ${imp}% · route ${route||"—"}`;
+  }catch(e){ lastSolQuote=null; $("#solOut").textContent="quote failed: "+e.message; }
+}
+async function solSwap(){
+  const p=phantom();
+  if(!p||!solPubkey){ $("#solStatus").textContent="connect Phantom first"; return; }
+  if(!lastSolQuote){ $("#solStatus").textContent="get a quote first"; return; }
+  if(typeof solanaWeb3==="undefined"){ $("#solStatus").textContent="Solana library didn't load — retry"; return; }
+  $("#solStatus").textContent="building transaction via Jupiter…";
+  try{
+    const r=await fetch(`${JUP}/swap`,{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({quoteResponse:lastSolQuote,userPublicKey:solPubkey,wrapAndUnwrapSol:true,dynamicComputeUnitLimit:true})});
+    const t=await r.text(); let j; try{ j=JSON.parse(t); }catch(_){ throw new Error(t.slice(0,120)); }
+    if(!j.swapTransaction) throw new Error(j.error||"no swapTransaction");
+    const buf=Uint8Array.from(atob(j.swapTransaction),c=>c.charCodeAt(0));
+    const tx=solanaWeb3.VersionedTransaction.deserialize(buf);
+    $("#solStatus").textContent="approve in Phantom…";
+    const res=await p.signAndSendTransaction(tx);
+    const sig=res.signature||res;
+    $("#solStatus").innerHTML=`✅ submitted — <a target="_blank" rel="noopener" href="https://solscan.io/tx/${sig}">view on Solscan</a>`;
+    lastSolQuote=null;
+  }catch(e){ $("#solStatus").textContent="swap failed: "+(e.message||e); }
+}
+$("#solConnect") && ($("#solConnect").onclick=solConnect);
+$("#solQuote") && ($("#solQuote").onclick=solQuote);
+$("#solSwap") && ($("#solSwap").onclick=solSwap);
+if($("#solEnable")){
+  $("#solEnable").onchange=e=>{ $("#solLive").classList.toggle("hide", !e.target.checked); };
 }
 
 // ---- boot ----
