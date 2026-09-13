@@ -37,7 +37,8 @@ class ChainSpec:
     exec_supported: bool        # is trade execution actually wired for this chain?
     screen_supported: bool      # on-chain rug-screen available?
     screen_chainid: Optional[str]   # Etherscan V2 chainid (EVM only)
-    primary_vehicle: str        # the BTC-proxy asset traded here ("" if none)
+    primary_vehicle: str        # the asset the autopilot trades here ("" if none)
+    vehicle_coin: str = ""      # OHLCV symbol driving the vehicle's own trend (BTC/SOL/…)
     enabled: bool = True        # is this chain toggled on / selectable?
 
     # --- capabilities (what the services may do here) ---
@@ -73,23 +74,23 @@ CHAINS: Dict[str, ChainSpec] = {
         id="base", name="Base", kind="evm", gt_network="base", native="ETH", stable="USDC",
         rpc_env="BASE_RPC_URL", explorer="https://basescan.org", exec_venue="cow",
         exec_supported=True, screen_supported=True, screen_chainid="8453",
-        primary_vehicle="CBBTC", enabled=True),
+        primary_vehicle="CBBTC", vehicle_coin="BTC", enabled=True),
     "solana": ChainSpec(
         id="solana", name="Solana", kind="svm", gt_network="solana", native="SOL", stable="USDC",
         rpc_env="SOLANA_RPC_URL", explorer="https://solscan.io", exec_venue="jupiter",
-        exec_supported=False, screen_supported=False, screen_chainid=None,
-        primary_vehicle="", enabled=True),
+        exec_supported=True, screen_supported=True, screen_chainid=None,
+        primary_vehicle="SOL", vehicle_coin="SOL", enabled=True),
     # --- ready to flip on as you choose them (enabled=False for now) ---
     "ethereum": ChainSpec(
         id="ethereum", name="Ethereum", kind="evm", gt_network="eth", native="ETH", stable="USDC",
         rpc_env="ETH_RPC_URL", explorer="https://etherscan.io", exec_venue="cow",
         exec_supported=False, screen_supported=True, screen_chainid="1",
-        primary_vehicle="WBTC", enabled=False),
+        primary_vehicle="WBTC", vehicle_coin="BTC", enabled=False),
     "arbitrum": ChainSpec(
         id="arbitrum", name="Arbitrum", kind="evm", gt_network="arbitrum", native="ETH", stable="USDC",
         rpc_env="ARBITRUM_RPC_URL", explorer="https://arbiscan.io", exec_venue="cow",
         exec_supported=False, screen_supported=True, screen_chainid="42161",
-        primary_vehicle="WBTC", enabled=False),
+        primary_vehicle="WBTC", vehicle_coin="BTC", enabled=False),
 }
 
 DEFAULT_CHAIN = "base"

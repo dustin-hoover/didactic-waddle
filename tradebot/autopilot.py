@@ -69,10 +69,23 @@ class Decision:
     blocked: Optional[str] = None      # guardrail that stopped/limited it, if any
 
 
+def _evm_proposer(cfg: AutopilotConfig):
+    """Default proposal builder: EVM execution.propose bound to the config's policy."""
+    def build(bag_id, wallet, sell, buy, notional, price_usd):
+        return propose(bag_id, wallet, sell, buy, notional, price_usd, cfg.exec_policy())
+    return build
+
+
 class Autopilot:
-    def __init__(self, cfg: AutopilotConfig, state_path: str = "data/autopilot.json"):
+    def __init__(self, cfg: AutopilotConfig, state_path: str = "data/autopilot.json",
+                 propose_fn=None):
+        """`propose_fn(bag_id, wallet, sell, buy, notional, price_usd) -> proposal`
+        lets a non-EVM chain inject its own builder (e.g. Jupiter on Solana). Whatever
+        it returns must expose .to_dict() and .ok, and raise execution.PolicyError on a
+        hard-guardrail violation. Defaults to the EVM execution layer."""
         self.cfg = cfg
         self.state_path = state_path
+        self.propose_fn = propose_fn or _evm_proposer(cfg)
         self.state = AutoState()
         if os.path.exists(state_path):
             try:
@@ -131,7 +144,7 @@ class Autopilot:
 
         sell, buy = (c.stable, base_symbol) if delta > 0 else (base_symbol, c.stable)
         try:
-            proposal = propose(bag_id, wallet, sell, buy, notional, price_usd, c.exec_policy())
+            proposal = self.propose_fn(bag_id, wallet, sell, buy, notional, price_usd)
         except PolicyError as e:
             return Decision("hold", notional, c.live, f"{side} refused", blocked=str(e))
 

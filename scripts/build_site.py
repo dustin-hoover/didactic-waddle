@@ -151,32 +151,42 @@ def build():
     # chain supports it). This is the MENU; the strategy (BTC-led + caps) still decides
     # what to trade. EVM vetted sets are registered into the execution token registry.
     universe = {}
+    vetted_tokens = []
     try:
         from tradebot.universe import discover, to_registry
         min_res = float(os.environ.get("TB_UNIVERSE_MIN_RESERVE", "250000"))
         if spec.can_discover:
+            do_screen = (spec.can_screen and os.environ.get("TB_UNIVERSE_SCREEN", "1").strip()
+                         in ("1", "true", "on"))
+            # Solana screens via the SPL mint-authority check; EVM via safety.check.
+            screen_fn = None
+            if do_screen and spec.kind == "svm":
+                from tradebot.solana import check as _sol_check
+                screen_fn = _sol_check
             vetted = discover(
                 spec.gt_network,
                 pages=int(os.environ.get("TB_UNIVERSE_PAGES", "4")),
-                min_reserve_usd=min_res,
-                screen=(spec.can_screen and os.environ.get("TB_UNIVERSE_SCREEN", "1").strip()
-                        in ("1", "true", "on")),
+                min_reserve_usd=min_res, screen=do_screen, screen_fn=screen_fn,
                 screen_chain=spec.id)
+            vetted_tokens = vetted
             if spec.kind == "evm":
                 from tradebot.execution import register_tokens
                 register_tokens(spec.id, to_registry(vetted))
+            else:
+                from tradebot.solana_exec import register_tokens as _sol_register
+                _sol_register({v.symbol: (v.address, v.decimals) for v in vetted})
             universe = {"chain": spec.id, "count": len(vetted), "min_reserve_usd": min_res,
-                        "screened": spec.can_screen, "tokens": [v.to_dict() for v in vetted]}
+                        "screened": do_screen, "tokens": [v.to_dict() for v in vetted]}
         else:
             universe = {"chain": spec.id, "count": 0, "note": "discovery not available for this chain"}
     except Exception as e:  # noqa: BLE001
         universe = {"error": str(e)[:120]}
 
     # AUTOPILOT — DRY RUN, on the active chain (only where execution is wired). Each
-    # cycle decides what the regime-gated engine WOULD trade (strategy target ->
-    # guardrails), logs it, and on a genuine transition alerts the phone. It trades the
-    # chain's primary BTC-proxy vehicle against USDC (Base: cbBTC — the validated,
-    # gate-aligned case). live=False, so nothing is ever signable here.
+    # cycle decides what the regime-gated engine WOULD trade (vehicle's own trend under
+    # the BTC umbrella -> guardrails), logs it, and on a genuine transition alerts the
+    # phone. Base trades cbBTC via CoW; Solana trades SOL via Jupiter. live=False, so
+    # nothing is ever signable here.
     autopilot = {}
     try:
         if not spec.can_execute:
@@ -186,19 +196,28 @@ def build():
         else:
             from tradebot.autopilot import Autopilot, AutopilotConfig
             base = spec.primary_vehicle
+            allowed = tuple(dict.fromkeys([spec.stable, "WETH", base] if spec.kind == "evm"
+                                          else [spec.stable, base]))
             apcfg = AutopilotConfig(
                 enabled=True, live=False,
                 max_notional_usd=float(os.environ.get("TB_AP_MAX", "100")),
                 daily_cap_usd=float(os.environ.get("TB_AP_DAILY", "300")),
                 cooldown_min=int(os.environ.get("TB_AP_COOLDOWN", "60")),
-                chain=spec.id, stable=spec.stable,
-                allowed_tokens=(spec.stable, "WETH", base))
-            ap = Autopilot(apcfg, os.path.join(DOCS, "autopilot.json"))
-            logp = os.path.join(DOCS, "autopilot_log.json")
+                chain=spec.id, stable=spec.stable, allowed_tokens=allowed)
+            # Per-chain proposal builder: Jupiter for Solana, EVM execution otherwise.
+            proposer = None
+            if spec.kind == "svm":
+                from tradebot import solana_exec as _sx
+                _solpol = _sx.SolanaExecPolicy(enabled=False, max_notional_usd=apcfg.max_notional_usd,
+                                               allowed_tokens=allowed)
+                def proposer(bag_id, wallet, sell, buy, notional, price_usd):  # noqa: E306
+                    return _sx.propose(wallet, sell, buy, notional, price_usd, _solpol)
+            ap = Autopilot(apcfg, os.path.join(DOCS, f"autopilot_{spec.id}.json"), propose_fn=proposer)
+            logp = os.path.join(DOCS, f"autopilot_log_{spec.id}.json")
             book = json.load(open(logp)) if os.path.exists(logp) else {"exposure": {}, "decisions": []}
             regime_on = bool(regime.get("on"))
             now_ts = int(time.time())
-            eb = feed.history("BTC", "1d", 400)      # BTC drives the primary vehicle's trend
+            eb = feed.history(spec.vehicle_coin, "1d", 400)   # the vehicle's OWN trend
             price = eb[-1].close
             from tradebot.signals import TrendFilterStrategy as _TF
             tgt = _TF(STYLE).generate(eb).target_exposure
@@ -215,9 +234,9 @@ def build():
                 book["exposure"][base] = tgt if (d.action == "sell" or regime_on) else cur
                 ap.record_fill(d.notional_usd, now_ts)
                 book["decisions"] = ([entry] + book.get("decisions", []))[:60]
-                alerts.append((d.action.upper(), "BTC",
+                alerts.append((d.action.upper(), spec.vehicle_coin,
                                f"[DRY-RUN] autopilot WOULD {d.action} ${d.notional_usd:,.0f} {base} "
-                               f"@ ${price:,.0f} (gate {'ON' if regime_on else 'OFF'})"))
+                               f"on {spec.name} @ ${price:,.0f} (gate {'ON' if regime_on else 'OFF'})"))
             json.dump(book, open(logp, "w"), indent=1)
             autopilot = {"enabled": apcfg.enabled, "live": apcfg.live, "gate_on": regime_on,
                          "chain": spec.id, "max_notional": apcfg.max_notional_usd,

@@ -14,12 +14,14 @@ def test_base_is_fully_capable():
     assert b.primary_vehicle == "CBBTC" and b.screen_chainid == "8453"
 
 
-def test_solana_enabled_data_only_no_execution_yet():
+def test_solana_fully_integrated():
     s = chains.get("solana")
     assert s.enabled and s.kind == "svm"
     assert s.can_discover is True            # GeckoTerminal has solana
-    assert s.can_screen is False             # no Etherscan-style screen
-    assert s.can_execute is False            # Jupiter not wired yet
+    assert s.can_screen is True              # SPL mint-authority screen
+    assert s.can_execute is True             # Jupiter wired + SOL vehicle
+    assert s.primary_vehicle == "SOL" and s.vehicle_coin == "SOL"
+    assert s.exec_venue == "jupiter"
 
 
 def test_active_defaults_to_base(monkeypatch):

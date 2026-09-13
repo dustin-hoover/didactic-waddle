@@ -92,3 +92,19 @@ def test_regime_gate_blocks_new_longs_but_allows_selling(tmp_path):
     # ...but de-risking (selling toward cash) is still allowed.
     d_sell = ap.decide("b1", "0xabc", 0.0, 1.0, 100, "WETH", PRICES, NOW, regime_on=False)
     assert d_sell.action == "sell" and d_sell.proposal is not None
+
+
+def test_injected_propose_fn_used(tmp_path):
+    # A non-EVM chain injects its own proposal builder; the autopilot must use it.
+    calls = {}
+    class FakeProposal:
+        ok = False
+        def to_dict(self): return {"venue": "jupiter", "ok": self.ok}
+    def proposer(bag_id, wallet, sell, buy, notional, price_usd):
+        calls["args"] = (sell, buy, round(notional, 2))
+        return FakeProposal()
+    ap = Autopilot(AutopilotConfig(enabled=True, live=False), str(tmp_path / "a.json"),
+                   propose_fn=proposer)
+    d = ap.decide("b", "0xw", 1.0, 0.0, 100, "SOL", {"SOL": 200.0, "USDC": 1.0}, NOW)
+    assert d.action == "buy" and d.proposal == {"venue": "jupiter", "ok": False}
+    assert calls["args"] == ("USDC", "SOL", 100.0)      # stable -> vehicle
