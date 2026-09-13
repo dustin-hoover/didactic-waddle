@@ -1,0 +1,49 @@
+"""Tests for the chain registry / high-level toggle."""
+
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from tradebot import chains
+
+
+def test_base_is_fully_capable():
+    b = chains.get("base")
+    assert b.kind == "evm" and b.can_discover and b.can_screen and b.can_execute
+    assert b.primary_vehicle == "CBBTC" and b.screen_chainid == "8453"
+
+
+def test_solana_enabled_data_only_no_execution_yet():
+    s = chains.get("solana")
+    assert s.enabled and s.kind == "svm"
+    assert s.can_discover is True            # GeckoTerminal has solana
+    assert s.can_screen is False             # no Etherscan-style screen
+    assert s.can_execute is False            # Jupiter not wired yet
+
+
+def test_active_defaults_to_base(monkeypatch):
+    monkeypatch.delenv("CHAIN", raising=False)
+    assert chains.active().id == "base"
+
+
+def test_active_honors_env_toggle(monkeypatch):
+    monkeypatch.setenv("CHAIN", "solana")
+    assert chains.active().id == "solana"
+
+
+def test_active_falls_back_when_disabled_or_unknown(monkeypatch):
+    monkeypatch.setenv("CHAIN", "ethereum")   # present but enabled=False
+    assert chains.active().id == "base"
+    monkeypatch.setenv("CHAIN", "nope")       # unknown
+    assert chains.active().id == "base"
+
+
+def test_enabled_lists_only_toggled_chains():
+    ids = {c.id for c in chains.enabled()}
+    assert "base" in ids and "solana" in ids and "ethereum" not in ids
+
+
+def test_rpc_url_reads_env(monkeypatch):
+    monkeypatch.setenv("SOLANA_RPC_URL", "https://sol.example/x")
+    assert chains.get("solana").rpc_url == "https://sol.example/x"

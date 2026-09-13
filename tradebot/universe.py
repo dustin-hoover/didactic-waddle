@@ -29,11 +29,12 @@ keep the per-order caps small. Depth/volume are live and move — re-run to refr
 from __future__ import annotations
 
 import json
+import time
 import urllib.request
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, Sequence
 
-_GT = "https://api.geckoterminal.com/api/v2/networks/base/pools"
+_GT = "https://api.geckoterminal.com/api/v2/networks/{network}/pools"
 _UA = "Mozilla/5.0 tradebot-universe/0.1"
 
 # Stables / pegged units are the quote leg, never a directional position.
@@ -90,7 +91,10 @@ def vet_candidates(cands: Sequence[TokenCandidate], min_reserve_usd: float = 250
                 continue
             if require_listed and not c.coingecko_id:
                 continue
-        vt = VettedToken(sym, c.address.lower(), int(c.decimals), round(c.reserve_usd, 2),
+        # EVM addresses are case-insensitive (normalize to lower); Solana mints are
+        # base58 and CASE-SENSITIVE, so never lowercase a non-0x address.
+        addr = c.address.lower() if c.address.lower().startswith("0x") else c.address
+        vt = VettedToken(sym, addr, int(c.decimals), round(c.reserve_usd, 2),
                          round(c.vol24_usd, 2), c.n_pools, c.coingecko_id)
         cur = best.get(sym)
         if cur is None or vt.reserve_usd > cur.reserve_usd:
@@ -122,11 +126,21 @@ def screen_vetted(vetted: Sequence[VettedToken], screen_fn: Callable,
     return out
 
 
-def _fetch_page(page: int) -> dict:
-    url = f"{_GT}?include=base_token&sort=h24_volume_usd_desc&page={page}"
-    req = urllib.request.Request(url, headers={"User-Agent": _UA, "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=25) as r:
-        return json.loads(r.read())
+def _fetch_page(page: int, network: str = "base", tries: int = 4) -> dict:
+    """One page of top pools. Retries with backoff — GeckoTerminal's free tier
+    rate-limits (~30/min), and a single 429 shouldn't wipe the whole discovery."""
+    base = _GT.format(network=network)
+    url = f"{base}?include=base_token&sort=h24_volume_usd_desc&page={page}"
+    last: Optional[Exception] = None
+    for i in range(tries):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": _UA, "Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=25) as r:
+                return json.loads(r.read())
+        except Exception as e:  # noqa: BLE001
+            last = e
+            time.sleep(1.5 * (i + 1))
+    raise RuntimeError(f"geckoterminal {network} p{page}: {last}")
 
 
 def _candidates_from_pages(pages_json: Sequence[dict]) -> List[TokenCandidate]:
@@ -161,28 +175,50 @@ def _candidates_from_pages(pages_json: Sequence[dict]) -> List[TokenCandidate]:
     return out
 
 
-def discover_base(pages: int = 3, min_reserve_usd: float = 250_000.0,
-                  fetch: Optional[Callable[[int], dict]] = None,
-                  allow: Sequence[str] = (), block: Sequence[str] = (),
-                  screen: bool = False, screen_fn: Optional[Callable] = None) -> List[VettedToken]:
-    """Fetch Base pools (top by 24h volume), aggregate per token, and vet. When
-    ``screen`` is on, also run the on-chain rug-screen (safety.check on Base) and drop
-    confirmed-bad tokens. `fetch`/`screen_fn` are injectable so tests skip the network."""
+def discover(network: str = "base", pages: int = 3, min_reserve_usd: float = 250_000.0,
+             fetch: Optional[Callable[..., dict]] = None,
+             allow: Sequence[str] = (), block: Sequence[str] = (),
+             screen: bool = False, screen_fn: Optional[Callable] = None,
+             screen_chain: Optional[str] = None) -> List[VettedToken]:
+    """Fetch a chain's top pools (by 24h volume), aggregate per token, and vet. When
+    ``screen`` is on, also run the on-chain rug-screen and drop confirmed-bad tokens.
+
+    Chain-agnostic: `network` is the GeckoTerminal network id (base, solana, eth, …).
+    `fetch(page, network)` and `screen_fn(address)` are injectable so tests skip the
+    network. Base58 (Solana) addresses are preserved case-sensitively by the vetter.
+    """
     fetch = fetch or _fetch_page
     pages_json = []
     for p in range(1, pages + 1):
         try:
-            pages_json.append(fetch(p))
+            try:
+                pj = fetch(p, network)
+            except TypeError:                   # injected fetch(page) with no network arg
+                pj = fetch(p)
+            pages_json.append(pj)
         except Exception:  # noqa: BLE001 — partial pages are fine
             break
+        if p < pages and fetch is _fetch_page:
+            time.sleep(0.5)                     # pace real requests under the rate limit
     cands = _candidates_from_pages(pages_json)
     vetted = vet_candidates(cands, min_reserve_usd=min_reserve_usd, allow=allow, block=block)
     if screen:
         if screen_fn is None:
             from .safety import check as _check
-            screen_fn = lambda a: _check(a, chain="base")  # noqa: E731
+            sc = screen_chain or network
+            screen_fn = lambda a: _check(a, chain=sc)  # noqa: E731
         vetted = screen_vetted(vetted, screen_fn)
     return vetted
+
+
+def discover_base(pages: int = 3, min_reserve_usd: float = 250_000.0,
+                  fetch: Optional[Callable[..., dict]] = None,
+                  allow: Sequence[str] = (), block: Sequence[str] = (),
+                  screen: bool = False, screen_fn: Optional[Callable] = None) -> List[VettedToken]:
+    """Back-compat convenience wrapper: discover on Base."""
+    return discover("base", pages=pages, min_reserve_usd=min_reserve_usd, fetch=fetch,
+                    allow=allow, block=block, screen=screen, screen_fn=screen_fn,
+                    screen_chain="base")
 
 
 def to_registry(vetted: Sequence[VettedToken]) -> Dict[str, tuple]:

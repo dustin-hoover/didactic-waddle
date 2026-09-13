@@ -140,72 +140,92 @@ def build():
     except Exception as e:  # noqa: BLE001
         regime = {"error": str(e)[:80]}
 
-    # UNIVERSE — auto-vet which Base tokens are safe/liquid enough to trade (live
-    # on-chain depth via GeckoTerminal + listed-on-CoinGecko screen). This is the MENU;
-    # the strategy (BTC-led doctrine + caps) still decides what to actually trade. The
-    # vetted set is registered into the execution layer so proposals can be built for it.
+    # CHAIN TOGGLE — the active chain (CHAIN env) drives which chain the services run on.
+    from tradebot import chains
+    spec = chains.active()
+    chains_block = {"active": spec.id, "active_name": spec.name,
+                    "list": [c.to_dict() for c in chains.enabled()]}
+
+    # UNIVERSE — auto-vet which tokens on the ACTIVE chain are safe/liquid enough to
+    # trade (live on-chain depth via GeckoTerminal + listing + rug-screen where the
+    # chain supports it). This is the MENU; the strategy (BTC-led + caps) still decides
+    # what to trade. EVM vetted sets are registered into the execution token registry.
     universe = {}
     try:
-        from tradebot.universe import discover_base, to_registry
-        from tradebot.execution import register_tokens
-        vetted = discover_base(
-            pages=int(os.environ.get("TB_UNIVERSE_PAGES", "4")),
-            min_reserve_usd=float(os.environ.get("TB_UNIVERSE_MIN_RESERVE", "250000")),
-            screen=os.environ.get("TB_UNIVERSE_SCREEN", "1").strip() in ("1", "true", "on"))
-        register_tokens("base", to_registry(vetted))
-        universe = {"chain": "base", "count": len(vetted),
-                    "min_reserve_usd": float(os.environ.get("TB_UNIVERSE_MIN_RESERVE", "250000")),
-                    "tokens": [v.to_dict() for v in vetted]}
+        from tradebot.universe import discover, to_registry
+        min_res = float(os.environ.get("TB_UNIVERSE_MIN_RESERVE", "250000"))
+        if spec.can_discover:
+            vetted = discover(
+                spec.gt_network,
+                pages=int(os.environ.get("TB_UNIVERSE_PAGES", "4")),
+                min_reserve_usd=min_res,
+                screen=(spec.can_screen and os.environ.get("TB_UNIVERSE_SCREEN", "1").strip()
+                        in ("1", "true", "on")),
+                screen_chain=spec.id)
+            if spec.kind == "evm":
+                from tradebot.execution import register_tokens
+                register_tokens(spec.id, to_registry(vetted))
+            universe = {"chain": spec.id, "count": len(vetted), "min_reserve_usd": min_res,
+                        "screened": spec.can_screen, "tokens": [v.to_dict() for v in vetted]}
+        else:
+            universe = {"chain": spec.id, "count": 0, "note": "discovery not available for this chain"}
     except Exception as e:  # noqa: BLE001
         universe = {"error": str(e)[:120]}
 
-    # AUTOPILOT — DRY RUN. Each scheduled cycle, decide what the regime-gated engine
-    # WOULD trade (strategy target -> autopilot guardrails), log it, and (on a genuine
-    # transition) alert the phone. Trades BTC via cbBTC on Base against USDC — the
-    # vehicle the regime gate is VALIDATED on (gate and asset aligned; the 95%-bull-
-    # capture / 27%-drawdown case). live=False, so nothing is ever signable here. This
-    # builds a real forward paper track record before any money moves.
+    # AUTOPILOT — DRY RUN, on the active chain (only where execution is wired). Each
+    # cycle decides what the regime-gated engine WOULD trade (strategy target ->
+    # guardrails), logs it, and on a genuine transition alerts the phone. It trades the
+    # chain's primary BTC-proxy vehicle against USDC (Base: cbBTC — the validated,
+    # gate-aligned case). live=False, so nothing is ever signable here.
     autopilot = {}
     try:
-        from tradebot.autopilot import Autopilot, AutopilotConfig
-        apcfg = AutopilotConfig(
-            enabled=True, live=False,
-            max_notional_usd=float(os.environ.get("TB_AP_MAX", "100")),
-            daily_cap_usd=float(os.environ.get("TB_AP_DAILY", "300")),
-            cooldown_min=int(os.environ.get("TB_AP_COOLDOWN", "60")),
-            chain="base", stable="USDC", allowed_tokens=("USDC", "WETH", "CBBTC"))
-        ap = Autopilot(apcfg, os.path.join(DOCS, "autopilot.json"))
-        logp = os.path.join(DOCS, "autopilot_log.json")
-        book = json.load(open(logp)) if os.path.exists(logp) else {"exposure": {}, "decisions": []}
-        regime_on = bool(regime.get("on"))
-        now_ts = int(time.time())
-        latest = []
-        for coin, base in (("BTC", "CBBTC"),):       # BTC via cbBTC — gate and asset aligned
-            eb = feed.history(coin, "1d", 400)
+        if not spec.can_execute:
+            autopilot = {"chain": spec.id, "supported": False,
+                         "note": f"trade execution not yet wired for {spec.name} "
+                                 f"(venue: {spec.exec_venue or 'n/a'})"}
+        else:
+            from tradebot.autopilot import Autopilot, AutopilotConfig
+            base = spec.primary_vehicle
+            apcfg = AutopilotConfig(
+                enabled=True, live=False,
+                max_notional_usd=float(os.environ.get("TB_AP_MAX", "100")),
+                daily_cap_usd=float(os.environ.get("TB_AP_DAILY", "300")),
+                cooldown_min=int(os.environ.get("TB_AP_COOLDOWN", "60")),
+                chain=spec.id, stable=spec.stable,
+                allowed_tokens=(spec.stable, "WETH", base))
+            ap = Autopilot(apcfg, os.path.join(DOCS, "autopilot.json"))
+            logp = os.path.join(DOCS, "autopilot_log.json")
+            book = json.load(open(logp)) if os.path.exists(logp) else {"exposure": {}, "decisions": []}
+            regime_on = bool(regime.get("on"))
+            now_ts = int(time.time())
+            eb = feed.history("BTC", "1d", 400)      # BTC drives the primary vehicle's trend
             price = eb[-1].close
             from tradebot.signals import TrendFilterStrategy as _TF
             tgt = _TF(STYLE).generate(eb).target_exposure
             cur = float(book["exposure"].get(base, 0.0))
-            prices = {base: price, "USDC": 1.0}
+            prices = {base: price, spec.stable: 1.0}
             d = ap.decide("paper", "dry-run", tgt, cur, apcfg.max_notional_usd,
                           base, prices, now_ts, regime_on=regime_on)
             entry = {"ts": now_ts, "asset": base, "action": d.action,
                      "notional": round(d.notional_usd, 2), "target": round(tgt, 3),
                      "current": round(cur, 3), "gate": "ON" if regime_on else "OFF",
                      "price": round(price, 2), "reason": d.reason, "blocked": d.blocked}
-            latest.append(entry)
+            latest = [entry]
             if d.action in ("buy", "sell"):          # a genuine transition: simulate the paper fill
                 book["exposure"][base] = tgt if (d.action == "sell" or regime_on) else cur
                 ap.record_fill(d.notional_usd, now_ts)
                 book["decisions"] = ([entry] + book.get("decisions", []))[:60]
-                alerts.append((d.action.upper(), coin,
+                alerts.append((d.action.upper(), "BTC",
                                f"[DRY-RUN] autopilot WOULD {d.action} ${d.notional_usd:,.0f} {base} "
                                f"@ ${price:,.0f} (gate {'ON' if regime_on else 'OFF'})"))
-        json.dump(book, open(logp, "w"), indent=1)
-        autopilot = {"enabled": apcfg.enabled, "live": apcfg.live, "gate_on": regime_on,
-                     "max_notional": apcfg.max_notional_usd, "daily_cap": apcfg.daily_cap_usd,
-                     "spent_today": round(ap.state.spent_usd, 2), "trades_today": ap.state.trades_today,
-                     "latest": latest, "recent": book["decisions"][:8], "exposure": book["exposure"]}
+            json.dump(book, open(logp, "w"), indent=1)
+            autopilot = {"enabled": apcfg.enabled, "live": apcfg.live, "gate_on": regime_on,
+                         "chain": spec.id, "max_notional": apcfg.max_notional_usd,
+                         "daily_cap": apcfg.daily_cap_usd,
+                         "spent_today": round(ap.state.spent_usd, 2),
+                         "trades_today": ap.state.trades_today,
+                         "latest": latest, "recent": book["decisions"][:8],
+                         "exposure": book["exposure"]}
     except Exception as e:  # noqa: BLE001
         autopilot = {"error": str(e)[:120]}
 
@@ -287,7 +307,7 @@ def build():
 
     data = {"generated_at": datetime.now(timezone.utc).isoformat(timespec="minutes"),
             "interval": INTERVAL, "style": STYLE, "onchain": onchain, "regime": regime,
-            "autopilot": autopilot, "universe": universe,
+            "chains": chains_block, "autopilot": autopilot, "universe": universe,
             "rows": rows, "featured": featured, "paper": paper, "tape": tape,
             "scenarios": scenarios, "bag_tree": bag_tree}
     json.dump(data, open(os.path.join(DOCS, "data.json"), "w"), indent=1)
@@ -312,7 +332,7 @@ def build():
                 pushed += 1
 
     gate = ("?" if regime.get("on") is None else ("ON" if regime["on"] else "OFF"))
-    print(f"built docs/ · {len([r for r in rows if 'error' not in r])} coins · "
+    print(f"built docs/ · chain {spec.id} · {len([r for r in rows if 'error' not in r])} coins · "
           f"{len(alerts)} flips · {pushed} pushed · risk {onchain.get('risk_regime')} · "
           f"bull-gate {gate} ({regime.get('mode','?')}) · universe {universe.get('count','?')}")
 

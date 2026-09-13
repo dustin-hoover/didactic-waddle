@@ -135,3 +135,33 @@ def test_discover_base_with_screen_drops_rug():
     out = discover_base(pages=1, fetch=lambda p: page, screen=True,
                         screen_fn=lambda a: _Rep("AVOID", 90) if a == "0xrug" else _Rep("OK", 5))
     assert [v.symbol for v in out] == ["GOOD"]
+
+
+def test_discover_generic_network_preserves_solana_base58():
+    # Solana mints are base58 and case-sensitive — must NOT be lowercased.
+    mint = "So11111111111111111111111111111111111111112"
+    page = {"data": [{"attributes": {"name": "SOL / USDC", "reserve_in_usd": "5000000",
+                                     "volume_usd": {"h24": "9"}},
+                      "relationships": {"base_token": {"data": {"id": f"solana_{mint}"}}}}],
+            "included": [{"type": "token", "id": f"solana_{mint}",
+                          "attributes": {"address": mint, "symbol": "SOL", "decimals": 9,
+                                         "coingecko_coin_id": "solana"}}]}
+    from tradebot.universe import discover
+    got = []
+    def fetch(page_n, network):
+        got.append(network); return page
+    out = discover("solana", pages=1, fetch=fetch)
+    assert got == ["solana"]
+    assert out[0].symbol == "SOL" and out[0].address == mint and out[0].decimals == 9
+
+
+def test_discover_base_wrapper_still_works():
+    page = {"data": [{"attributes": {"name": "AERO / USDC", "reserve_in_usd": "3000000",
+                                     "volume_usd": {"h24": "1"}},
+                      "relationships": {"base_token": {"data": {"id": "base_0xae"}}}}],
+            "included": [{"type": "token", "id": "base_0xae",
+                          "attributes": {"address": "0xAE", "symbol": "AERO", "decimals": 18,
+                                         "coingecko_coin_id": "aerodrome"}}]}
+    from tradebot.universe import discover_base
+    out = discover_base(pages=1, fetch=lambda p: page)   # one-arg fetch still supported
+    assert out[0].symbol == "AERO" and out[0].address == "0xae"

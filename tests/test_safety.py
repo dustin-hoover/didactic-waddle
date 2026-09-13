@@ -141,3 +141,10 @@ def test_unknown_base_token_without_key_is_unknown(monkeypatch):
     monkeypatch.delenv("ETHERSCAN_API_KEY", raising=False)
     rep = sf.check("0x" + "ab" * 20, chain="base")
     assert rep.verdict == "UNKNOWN" and rep.verified is None
+
+
+def test_non_evm_chain_returns_unknown_no_query(monkeypatch):
+    # Solana (non-EVM) has no Etherscan screen — must return UNKNOWN, never query.
+    monkeypatch.setattr(sf, "_etherscan", lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not query")))
+    rep = sf.check("So11111111111111111111111111111111111111112", chain="solana")
+    assert rep.verdict == "UNKNOWN" and "solana" in rep.notes.get("chain", "")

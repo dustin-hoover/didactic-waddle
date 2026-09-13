@@ -72,8 +72,10 @@
 <div class="wrap">
   <header>
     <h1>🌾 Saatgut</h1><span class="badge">live · paper</span>
+    <span class="badge" id="chainChip" hidden></span>
     <a href="index.html">← Strategy</a>
     <div class="updated" id="updated">loading…</div>
+    <div class="note" id="chainsNote" style="width:100%" hidden></div>
   </header>
 
   <div class="panel regime" id="regimePanel" hidden>
@@ -136,6 +138,17 @@ const pctv=x=>(x>=0?'+':'')+(x*100).toFixed(0)+'%';
 const b9=x=>x?('$'+(x/1e9).toFixed(1)+'B'):'–';
 fetch('./data.json?t='+Date.now()).then(r=>r.json()).then(d=>{
   document.getElementById('updated').textContent='updated '+d.generated_at.replace('T',' ')+' UTC · '+d.interval+' '+d.style;
+
+  const ch=d.chains;
+  if(ch && ch.list){
+    const chip=document.getElementById('chainChip');
+    chip.hidden=false; chip.textContent='⛓ '+ch.active_name;
+    const cap=c=>{const t=[]; if(c.can_execute)t.push('trade'); else if(c.can_discover)t.push('data'); if(c.can_screen)t.push('screen'); return t.join('+')||'—';};
+    const parts=ch.list.map(c=>`${c.id===ch.active?'▶ ':''}${c.name} (${cap(c)})`);
+    const note=document.getElementById('chainsNote');
+    note.hidden=false;
+    note.textContent='Chains: '+parts.join('  ·  ')+'. Toggle with the CHAIN setting; "data" = universe only, "trade" = execution wired.';
+  }
 
   const rg=d.regime;
   if(rg && !rg.error){

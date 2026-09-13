@@ -242,6 +242,13 @@ def check(address: str, chain: str = "ethereum") -> SafetyReport:
     ``chain`` routes both the Etherscan V2 chainid and the eth_call RPC, so the same
     screen works on Base (chainid 8453) as on Ethereum.
     """
+    # Non-EVM chains (e.g. Solana) have no Etherscan-style contract screen — be honest
+    # and return UNKNOWN rather than querying the wrong chain.
+    if chain not in _CHAIN_IDS:
+        rep = SafetyReport(address=(address or "").strip())
+        rep.notes["chain"] = f"on-chain rug-screen not available for '{chain}' yet"
+        return rep
+
     addr = _norm(address)
     rep = SafetyReport(address=addr)
     chainid = _CHAIN_IDS.get(chain, "1")
