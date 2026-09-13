@@ -43,6 +43,12 @@ jobs:
           TB_TAPE: ${{ vars.TB_TAPE }}
           TB_INTERVAL: "4h"
           TB_STYLE: "swing"
+          # Active chain toggle. Defaults to solana; set repo VARIABLE CHAIN=base to
+          # switch back (each chain keeps its own paper ledger, so it's reversible).
+          CHAIN: ${{ vars.CHAIN || 'solana' }}
+          # Your Alchemy Solana endpoint (repo SECRET). Optional: the Solana rug-screen
+          # and Jupiter quotes fall back to public nodes without it, just slower.
+          SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}
         run: python scripts/build_site.py
 
       - name: Publish updated site
