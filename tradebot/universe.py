@@ -61,6 +61,8 @@ class VettedToken:
     vol24_usd: float
     n_pools: int
     coingecko_id: Optional[str]
+    safety_verdict: Optional[str] = None   # OK | CAUTION | AVOID | UNKNOWN (rug-screen)
+    safety_risk: Optional[int] = None
 
     def to_dict(self) -> dict:
         return self.__dict__.copy()
@@ -94,6 +96,30 @@ def vet_candidates(cands: Sequence[TokenCandidate], min_reserve_usd: float = 250
         if cur is None or vt.reserve_usd > cur.reserve_usd:
             best[sym] = vt
     return sorted(best.values(), key=lambda v: v.reserve_usd, reverse=True)
+
+
+def screen_vetted(vetted: Sequence[VettedToken], screen_fn: Callable,
+                  drop: Sequence[str] = ("AVOID",)) -> List[VettedToken]:
+    """Run a rug-screen over vetted tokens: annotate verdict/risk, drop confirmed-bad.
+
+    HONEST policy: we only DROP a token on a confirmed-bad verdict (default AVOID).
+    UNKNOWN (no API key, unverified, or non-contract) is NEVER a rejection — you can't
+    gate on missing data — so those pass through annotated as UNKNOWN. `screen_fn` is
+    injectable (tests); production passes safety.check(addr, chain="base").
+    """
+    drop_u = {d.upper() for d in drop}
+    out: List[VettedToken] = []
+    for v in vetted:
+        try:
+            rep = screen_fn(v.address)
+            v.safety_verdict = getattr(rep, "verdict", None)
+            v.safety_risk = getattr(rep, "risk_score", None)
+        except Exception:  # noqa: BLE001 — a failed screen must not silently drop a token
+            v.safety_verdict = "UNKNOWN"
+        if (v.safety_verdict or "").upper() in drop_u:
+            continue
+        out.append(v)
+    return out
 
 
 def _fetch_page(page: int) -> dict:
@@ -137,9 +163,11 @@ def _candidates_from_pages(pages_json: Sequence[dict]) -> List[TokenCandidate]:
 
 def discover_base(pages: int = 3, min_reserve_usd: float = 250_000.0,
                   fetch: Optional[Callable[[int], dict]] = None,
-                  allow: Sequence[str] = (), block: Sequence[str] = ()) -> List[VettedToken]:
-    """Fetch Base pools (top by 24h volume), aggregate per token, and vet. `fetch` is
-    injectable so tests never touch the network."""
+                  allow: Sequence[str] = (), block: Sequence[str] = (),
+                  screen: bool = False, screen_fn: Optional[Callable] = None) -> List[VettedToken]:
+    """Fetch Base pools (top by 24h volume), aggregate per token, and vet. When
+    ``screen`` is on, also run the on-chain rug-screen (safety.check on Base) and drop
+    confirmed-bad tokens. `fetch`/`screen_fn` are injectable so tests skip the network."""
     fetch = fetch or _fetch_page
     pages_json = []
     for p in range(1, pages + 1):
@@ -148,7 +176,13 @@ def discover_base(pages: int = 3, min_reserve_usd: float = 250_000.0,
         except Exception:  # noqa: BLE001 — partial pages are fine
             break
     cands = _candidates_from_pages(pages_json)
-    return vet_candidates(cands, min_reserve_usd=min_reserve_usd, allow=allow, block=block)
+    vetted = vet_candidates(cands, min_reserve_usd=min_reserve_usd, allow=allow, block=block)
+    if screen:
+        if screen_fn is None:
+            from .safety import check as _check
+            screen_fn = lambda a: _check(a, chain="base")  # noqa: E731
+        vetted = screen_vetted(vetted, screen_fn)
+    return vetted
 
 
 def to_registry(vetted: Sequence[VettedToken]) -> Dict[str, tuple]:

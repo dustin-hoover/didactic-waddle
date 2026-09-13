@@ -97,7 +97,7 @@
   <div class="panel" id="universePanel" hidden>
     <h2>Tradeable universe <span class="badge" id="uniCount"></span></h2>
     <table>
-      <thead><tr><th>Token</th><th>Pool depth</th><th class="hide">24h vol</th><th class="hide">Pools</th></tr></thead>
+      <thead><tr><th>Token</th><th>Pool depth</th><th class="hide">24h vol</th><th>Safety</th></tr></thead>
       <tbody id="uniRows"></tbody>
     </table>
     <div class="note" id="uniNote"></div>
@@ -186,14 +186,15 @@ fetch('./data.json?t='+Date.now()).then(r=>r.json()).then(d=>{
     document.getElementById('uniCount').textContent=uni.count+' vetted';
     const ub=document.getElementById('uniRows'); ub.innerHTML='';
     const musd=x=>x>=1e6?('$'+(x/1e6).toFixed(1)+'M'):('$'+Math.round(x/1e3)+'k');
+    const sv=v=>{const c={OK:'up',CAUTION:'gold',AVOID:'down',UNKNOWN:'',null:''}[v]||'';return `<span class="${c}">${v||'—'}</span>`;};
     uni.tokens.forEach(t=>{
       const tr=document.createElement('tr');
       tr.innerHTML=`<td>${t.symbol}</td><td>${musd(t.reserve_usd)}</td>`+
-        `<td class="hide">${musd(t.vol24_usd)}</td><td class="hide">${t.n_pools}</td>`;
+        `<td class="hide">${musd(t.vol24_usd)}</td><td>${sv(t.safety_verdict)}</td>`;
       ub.appendChild(tr);
     });
     document.getElementById('uniNote').textContent=
-      `Base tokens auto-vetted for depth (≥$${Math.round(uni.min_reserve_usd/1e3)}k pool reserve) and CoinGecko listing. This is the tradeable menu; the strategy (BTC-led, gated, capped) still picks what to trade. "Listed + liquid" is a coarse screen, not a full audit.`;
+      `Base tokens auto-vetted for depth (≥$${Math.round(uni.min_reserve_usd/1e3)}k pool reserve), CoinGecko listing, and an on-chain rug-screen (owner powers, mint, proxy, verified source). Confirmed-bad (AVOID) tokens are dropped; UNKNOWN means it couldn't be audited (no key / unverified), not a clean bill. This is the tradeable menu; the strategy (BTC-led, gated, capped) still picks what to trade.`;
   }
 
   const pp=d.paper;

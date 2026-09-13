@@ -150,7 +150,8 @@ def build():
         from tradebot.execution import register_tokens
         vetted = discover_base(
             pages=int(os.environ.get("TB_UNIVERSE_PAGES", "4")),
-            min_reserve_usd=float(os.environ.get("TB_UNIVERSE_MIN_RESERVE", "250000")))
+            min_reserve_usd=float(os.environ.get("TB_UNIVERSE_MIN_RESERVE", "250000")),
+            screen=os.environ.get("TB_UNIVERSE_SCREEN", "1").strip() in ("1", "true", "on"))
         register_tokens("base", to_registry(vetted))
         universe = {"chain": "base", "count": len(vetted),
                     "min_reserve_usd": float(os.environ.get("TB_UNIVERSE_MIN_RESERVE", "250000")),

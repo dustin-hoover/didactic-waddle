@@ -55,6 +55,15 @@ KNOWN_SAFE = {
     "0x514910771af9ca656af840dff83e8264ecf986ca": "LINK",
 }
 
+# Base-native canonical majors (chainid 8453) — same idea, per chain.
+KNOWN_SAFE_BASE = {
+    "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913": "USDC",
+    "0x4200000000000000000000000000000000000006": "WETH",
+    "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf": "cbBTC",
+}
+
+KNOWN_SAFE_BY_CHAIN = {"ethereum": KNOWN_SAFE, "base": KNOWN_SAFE_BASE}
+
 # Capability patterns matched against ABI function names (authoritative) and,
 # as a fallback, the raw verified source. Each: (flag key, human note, regex).
 _PATTERNS = [
@@ -82,12 +91,28 @@ def _http(url: str, tries: int = 3, timeout: int = 25):
     raise RuntimeError(f"{url}: {last}")
 
 
-def _etherscan(params: Dict[str, str]) -> Optional[dict]:
+# Chain routing: Etherscan V2 is multichain via chainid (one key). eth_call needs a
+# chain-appropriate RPC. Base honors BASE_RPC_URL; falls back to public endpoints.
+_BASE_RPC = ["https://mainnet.base.org", "https://base-rpc.publicnode.com",
+             "https://base.llamarpc.com"]
+
+
+def _chain_rpc_urls(chain: str) -> List[str]:
+    if chain == "base":
+        env = os.environ.get("BASE_RPC_URL", "").strip()
+        return ([env] if env else []) + _BASE_RPC
+    return _rpc_urls()
+
+
+_CHAIN_IDS = {"ethereum": "1", "base": "8453"}
+
+
+def _etherscan(params: Dict[str, str], chainid: str = "1") -> Optional[dict]:
     key = os.environ.get("ETHERSCAN_API_KEY", "").strip()
     if not key:
         return None
     q = dict(params)
-    q.setdefault("chainid", "1")
+    q.setdefault("chainid", chainid)
     q["apikey"] = key
     try:
         return _http(f"{_ETHERSCAN_V2}?{urllib.parse.urlencode(q)}")
@@ -95,10 +120,10 @@ def _etherscan(params: Dict[str, str]) -> Optional[dict]:
         return None
 
 
-def _eth_call(to: str, data: str) -> Optional[str]:
+def _eth_call(to: str, data: str, rpc_urls: Optional[List[str]] = None) -> Optional[str]:
     body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "eth_call",
                        "params": [{"to": to, "data": data}, "latest"]}).encode()
-    for url in _rpc_urls():
+    for url in (rpc_urls or _rpc_urls()):
         try:
             req = urllib.request.Request(url, data=body,
                                          headers={"Content-Type": "application/json", "User-Agent": _UA})
@@ -211,13 +236,19 @@ def _scan_capabilities(abi_json: str, source: str) -> List[str]:
     return flags
 
 
-def check(address: str) -> SafetyReport:
-    """Build a safety report for an ERC-20/contract address from free-tier data."""
+def check(address: str, chain: str = "ethereum") -> SafetyReport:
+    """Build a safety report for an ERC-20/contract address from free-tier data.
+
+    ``chain`` routes both the Etherscan V2 chainid and the eth_call RPC, so the same
+    screen works on Base (chainid 8453) as on Ethereum.
+    """
     addr = _norm(address)
     rep = SafetyReport(address=addr)
+    chainid = _CHAIN_IDS.get(chain, "1")
+    known = KNOWN_SAFE_BY_CHAIN.get(chain, KNOWN_SAFE)
 
-    if addr in KNOWN_SAFE:
-        rep.name = KNOWN_SAFE[addr]
+    if addr in known:
+        rep.name = known[addr]
         rep.verified = True
         rep.is_proxy = False
         rep.owner_renounced = True
@@ -228,7 +259,7 @@ def check(address: str) -> SafetyReport:
         rep.notes["etherscan"] = "no ETHERSCAN_API_KEY set — contract audit skipped"
         return rep
 
-    src = _etherscan({"module": "contract", "action": "getsourcecode", "address": addr})
+    src = _etherscan({"module": "contract", "action": "getsourcecode", "address": addr}, chainid)
     if src and src.get("status") == "1" and src.get("result"):
         row = src["result"][0]
         source_code = row.get("SourceCode") or ""
@@ -243,7 +274,7 @@ def check(address: str) -> SafetyReport:
         rep.notes["source"] = "Etherscan returned no source (bad key, rate limit, or non-contract)"
 
     # Ownership: owner() (0x8da5cb5b). 0x0 / dead == renounced.
-    owner_res = _eth_call(addr, "0x8da5cb5b")
+    owner_res = _eth_call(addr, "0x8da5cb5b", _chain_rpc_urls(chain))
     if owner_res and len(owner_res) >= 42:
         owner = "0x" + owner_res[-40:]
         rep.owner = owner
@@ -253,7 +284,7 @@ def check(address: str) -> SafetyReport:
 
     # Age from the creation record.
     created = _etherscan({"module": "contract", "action": "getcontractcreation",
-                          "contractaddresses": addr})
+                          "contractaddresses": addr}, chainid)
     if created and created.get("status") == "1" and created.get("result"):
         row = created["result"][0]
         ts = row.get("timestamp") or row.get("blockTimestamp")

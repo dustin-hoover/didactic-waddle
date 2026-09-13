@@ -94,3 +94,44 @@ def test_to_registry_and_register_merges_without_override():
     assert TOKENS["base"]["USDC"] == original_usdc
     assert TOKENS["base"]["AERO"] == ("0xae", 18)
     del TOKENS["base"]["AERO"]             # clean up shared registry
+
+
+class _Rep:
+    def __init__(self, verdict, risk=10):
+        self.verdict = verdict; self.risk_score = risk
+
+
+def test_screen_drops_avoid_keeps_ok_and_unknown():
+    from tradebot.universe import screen_vetted, VettedToken
+    v = [VettedToken("GOOD", "0xa", 18, 5e6, 1e6, 3, "g"),
+         VettedToken("RUG", "0xb", 18, 4e6, 1e6, 2, "r"),
+         VettedToken("MYST", "0xc", 18, 3e6, 1e6, 1, "m")]
+    verdicts = {"0xa": _Rep("OK", 5), "0xb": _Rep("AVOID", 80), "0xc": _Rep("UNKNOWN", None)}
+    out = screen_vetted(v, lambda a: verdicts[a])
+    syms = [t.symbol for t in out]
+    assert syms == ["GOOD", "MYST"]                 # AVOID dropped, UNKNOWN kept
+    good = next(t for t in out if t.symbol == "GOOD")
+    assert good.safety_verdict == "OK" and good.safety_risk == 5
+
+
+def test_screen_failure_marks_unknown_not_dropped():
+    from tradebot.universe import screen_vetted, VettedToken
+    v = [VettedToken("X", "0xa", 18, 5e6, 1e6, 3, "g")]
+    def boom(a):
+        raise RuntimeError("etherscan down")
+    out = screen_vetted(v, boom)
+    assert len(out) == 1 and out[0].safety_verdict == "UNKNOWN"
+
+
+def test_discover_base_with_screen_drops_rug():
+    page = {"data": [
+        {"attributes": {"name": "GOOD / USDC", "reserve_in_usd": "3000000", "volume_usd": {"h24": "1"}},
+         "relationships": {"base_token": {"data": {"id": "base_0xgood"}}}},
+        {"attributes": {"name": "RUG / USDC", "reserve_in_usd": "3000000", "volume_usd": {"h24": "1"}},
+         "relationships": {"base_token": {"data": {"id": "base_0xrug"}}}}],
+        "included": [
+            {"type": "token", "id": "base_0xgood", "attributes": {"address": "0xgood", "symbol": "GOOD", "decimals": 18, "coingecko_coin_id": "g"}},
+            {"type": "token", "id": "base_0xrug", "attributes": {"address": "0xrug", "symbol": "RUG", "decimals": 18, "coingecko_coin_id": "r"}}]}
+    out = discover_base(pages=1, fetch=lambda p: page, screen=True,
+                        screen_fn=lambda a: _Rep("AVOID", 90) if a == "0xrug" else _Rep("OK", 5))
+    assert [v.symbol for v in out] == ["GOOD"]
