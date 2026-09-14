@@ -601,11 +601,25 @@ const SOL_MINTS = {                      // symbol -> [mint, decimals]
 const JUP = "https://lite-api.jup.ag/swap/v1";
 let solPubkey=null, lastSolQuote=null;
 function phantom(){ return (window.phantom&&window.phantom.solana) || (window.solana&&window.solana.isPhantom?window.solana:null); }
+function isMobile(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent||""); }
+function phantomDeeplink(){
+  return `https://phantom.app/ul/browse/${encodeURIComponent(location.href)}?ref=${encodeURIComponent(location.origin)}`;
+}
 async function solConnect(){
   const p=phantom();
-  if(!p){ $("#solAddr").textContent="Phantom not found — install the Phantom app/extension"; return; }
-  try{ const r=await p.connect(); solPubkey=r.publicKey.toString(); $("#solAddr").textContent="connected "+short(solPubkey); }
-  catch(e){ $("#solAddr").textContent="connect cancelled"; }
+  if(!p){
+    if(isMobile()){
+      $("#solAddr").innerHTML=`No wallet in this browser — <a href="${phantomDeeplink()}" style="color:var(--gold,#e3b23c)">open this page inside Phantom →</a> then Connect again.`;
+    } else {
+      $("#solAddr").textContent="Phantom not found — install the Phantom browser extension, then reload.";
+    }
+    return;
+  }
+  try{
+    const r=await p.connect();
+    solPubkey=(r&&r.publicKey?r.publicKey:p.publicKey).toString();
+    $("#solAddr").textContent="connected "+short(solPubkey);
+  }catch(e){ $("#solAddr").textContent="connect failed: "+(e&&e.message?e.message:e); }
 }
 async function jupQuote(inMint,outMint,rawAmt,slip){
   const u=`${JUP}/quote?inputMint=${inMint}&outputMint=${outMint}&amount=${rawAmt}&slippageBps=${slip}`;
