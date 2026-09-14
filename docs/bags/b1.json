@@ -1,5 +1,5 @@
 {
- "cash": 0.21966536141668075,
+ "cash": 0.09349522459354648,
  "units": 0.01234758753091449,
  "fills": [
   {
@@ -32,14 +32,14 @@
   "halt_price": null
  },
  "reserve": {
-  "reserve": 50.27124660794854,
+  "reserve": 50.405680511337366,
   "hwm": 999.1505945837914,
   "skims": 0,
-  "yield_earned": 0.024682451017331748,
+  "yield_earned": 0.03294621758302192,
   "reinvests": 0,
   "total_reinvested": 0.0,
   "trading_base": 1000.0
  },
- "last_ts": 1789257600000,
+ "last_ts": 1789344000000,
  "started_ts": 1788998400000
 }
