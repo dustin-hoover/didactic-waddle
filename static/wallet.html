@@ -170,6 +170,7 @@
 
   <div class="panel">
     <b style="font-size:15px">Execution (canary) — Jupiter on Solana</b>
+    <span class="badge" style="margin-left:6px">build sol6</span>
     <div class="sec" style="margin-top:10px">⚠️ <div><b>Live trading is gated.</b> The quote is
       <b>read-only</b>. The swap is built by Jupiter and <b>signed in your Phantom wallet</b> — funds
       move only when you approve there. Start tiny.</div></div>
@@ -205,10 +206,13 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.8/lib/index.iife.min.js"></script>
 <script>
 "use strict";
 const $ = s => document.querySelector(s);
+// Surface any script error where we can see it on the phone.
+window.addEventListener("error", function(ev){
+  try{ const d=$("#solAddr"); if(d) d.textContent="JS error: "+(ev.message||"")+" @"+String(ev.filename||"").split("/").pop()+":"+ev.lineno; }catch(_){ }
+});
 const short = a => a ? a.slice(0,6)+"…"+a.slice(-4) : "";
 const pct = x => (x>=0?"+":"") + (x*100).toFixed(1) + "%";
 const NETS = {"0x1":"Ethereum","0x2105":"Base","0xa":"Optimism","0x89":"Polygon","0xa4b1":"Arbitrum"};
@@ -654,11 +658,21 @@ async function solQuote(){
     $("#solOut").innerHTML=`~<b>${out.toFixed(6)} ${buy}</b> (min ${min.toFixed(6)} @0.5% slippage) · impact ${imp}% · route ${route||"—"}`;
   }catch(e){ lastSolQuote=null; $("#solOut").textContent="quote failed: "+e.message; }
 }
+function ensureWeb3(){
+  return new Promise((resolve,reject)=>{
+    if(typeof solanaWeb3!=="undefined") return resolve();
+    const s=document.createElement("script");
+    s.src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.8/lib/index.iife.min.js";
+    s.onload=()=>resolve(); s.onerror=()=>reject(new Error("could not load Solana library"));
+    document.head.appendChild(s);
+  });
+}
 async function solSwap(){
   const p=phantom();
   if(!p||!solPubkey){ $("#solStatus").textContent="connect Phantom first"; return; }
   if(!lastSolQuote){ $("#solStatus").textContent="get a quote first"; return; }
-  if(typeof solanaWeb3==="undefined"){ $("#solStatus").textContent="Solana library didn't load — retry"; return; }
+  $("#solStatus").textContent="loading library…";
+  try{ await ensureWeb3(); }catch(e){ $("#solStatus").textContent=e.message; return; }
   $("#solStatus").textContent="building transaction via Jupiter…";
   try{
     const r=await fetch(`${JUP}/swap`,{method:"POST",headers:{"content-type":"application/json"},
