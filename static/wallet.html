@@ -605,21 +605,28 @@ function isMobile(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent
 function phantomDeeplink(){
   return `https://phantom.app/ul/browse/${encodeURIComponent(location.href)}?ref=${encodeURIComponent(location.origin)}`;
 }
+function _solDbg(){
+  return `[solana=${!!window.solana} isPhantom=${!!(window.solana&&window.solana.isPhantom)}`
+       + ` phantom.solana=${!!(window.phantom&&window.phantom.solana)} web3=${typeof solanaWeb3!=="undefined"}]`;
+}
 async function solConnect(){
   const p=phantom();
   if(!p){
     if(isMobile()){
-      $("#solAddr").innerHTML=`No wallet in this browser — <a href="${phantomDeeplink()}" style="color:var(--gold,#e3b23c)">open this page inside Phantom →</a> then Connect again.`;
+      $("#solAddr").innerHTML=`No provider ${_solDbg()} — <a href="${phantomDeeplink()}" style="color:var(--gold,#e3b23c)">open inside Phantom →</a>`;
     } else {
-      $("#solAddr").textContent="Phantom not found — install the Phantom browser extension, then reload.";
+      $("#solAddr").textContent="Phantom not found "+_solDbg()+" — install the extension, then reload.";
     }
     return;
   }
+  $("#solAddr").textContent="provider found, connecting… "+_solDbg();
   try{
     const r=await p.connect();
-    solPubkey=(r&&r.publicKey?r.publicKey:p.publicKey).toString();
+    const pk=(r&&r.publicKey)?r.publicKey:p.publicKey;
+    if(!pk) throw new Error("connected but no publicKey returned");
+    solPubkey=pk.toString();
     $("#solAddr").textContent="connected "+short(solPubkey);
-  }catch(e){ $("#solAddr").textContent="connect failed: "+(e&&e.message?e.message:e); }
+  }catch(e){ $("#solAddr").textContent="connect failed: "+(e&&e.message?e.message:String(e))+" "+_solDbg(); }
 }
 async function jupQuote(inMint,outMint,rawAmt,slip){
   const u=`${JUP}/quote?inputMint=${inMint}&outputMint=${outMint}&amount=${rawAmt}&slippageBps=${slip}`;
