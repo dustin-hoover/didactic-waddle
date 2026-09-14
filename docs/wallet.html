@@ -170,7 +170,7 @@
 
   <div class="panel">
     <b style="font-size:15px">Execution (canary) — Jupiter on Solana</b>
-    <span class="badge" style="margin-left:6px">build sol7</span>
+    <span class="badge" style="margin-left:6px">build sol8</span>
     <div class="sec" style="margin-top:10px">⚠️ <div><b>Live trading is gated.</b> The quote is
       <b>read-only</b>. The swap is built by Jupiter and <b>signed in your Phantom wallet</b> — funds
       move only when you approve there. Start tiny.</div></div>
@@ -199,11 +199,97 @@
     </div>
   </div>
   <script>
-  /* standalone probe — runs independently of the main script */
-  (function(){ try{
-    var d=document.getElementById("solAddr");
-    if(d) d.textContent="JS ok · solana="+(!!window.solana)+" phantom="+(!!(window.phantom&&window.phantom.solana));
-  }catch(e){ try{ document.getElementById("solAddr").textContent="probe err: "+e.message; }catch(_){} } })();
+  /* Self-contained Solana panel — depends on nothing else on the page. */
+  (function(){
+    "use strict";
+    var g=function(id){ return document.getElementById(id); };
+    var shortA=function(a){ return a ? a.slice(0,6)+"…"+a.slice(-4) : ""; };
+    var MINTS={ USDC:["EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",6],
+                SOL:["So11111111111111111111111111111111111111112",9],
+                CBBTC:["cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij",8] };
+    var JUP="https://lite-api.jup.ag/swap/v1";
+    var pubkey=null, lastQuote=null;
+    function provider(){ return (window.phantom&&window.phantom.solana) || window.solana || null; }
+    function isMobile(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent||""); }
+    function deeplink(){ return "https://phantom.app/ul/browse/"+encodeURIComponent(location.href)+"?ref="+encodeURIComponent(location.origin); }
+    function dbg(){ return "[solana="+(!!window.solana)+" phantom.solana="+(!!(window.phantom&&window.phantom.solana))+"]"; }
+    function setAddr(t){ var d=g("solAddr"); if(d) d.textContent=t; }
+    function setAddrHtml(h){ var d=g("solAddr"); if(d) d.innerHTML=h; }
+
+    function refresh(){ if(!pubkey) setAddr("wallet check "+dbg()); }
+
+    async function connect(){
+      var p=provider();
+      if(!p){
+        if(isMobile()) setAddrHtml("No wallet here "+dbg()+" — <a href='"+deeplink()+"' style='color:#e3b23c'>open inside Phantom →</a>");
+        else setAddr("Phantom not found "+dbg()+" — install the extension.");
+        return;
+      }
+      setAddr("connecting… "+dbg());
+      try{
+        var r=await p.connect();
+        var pk=(r&&r.publicKey)?r.publicKey:p.publicKey;
+        if(!pk) throw new Error("no publicKey");
+        pubkey=pk.toString(); setAddr("connected "+shortA(pubkey));
+      }catch(e){ setAddr("connect failed: "+((e&&e.message)||e)+" "+dbg()); }
+    }
+    async function quote(){
+      var sell=g("solSell").value, buy=g("solBuy").value;
+      if(sell===buy){ g("solOut").textContent="pick two different tokens"; return; }
+      var inM=MINTS[sell][0], inD=MINTS[sell][1], outM=MINTS[buy][0], outD=MINTS[buy][1];
+      var amt=parseFloat(g("solAmt").value||"0");
+      if(!(amt>0)){ g("solOut").textContent="enter an amount"; return; }
+      var raw=Math.round(amt*Math.pow(10,inD)).toString();
+      g("solOut").textContent="fetching Jupiter quote…";
+      try{
+        var res=await fetch(JUP+"/quote?inputMint="+inM+"&outputMint="+outM+"&amount="+raw+"&slippageBps=50",{headers:{accept:"application/json"}});
+        var txt=await res.text(), q; try{ q=JSON.parse(txt); }catch(_){ throw new Error(txt.slice(0,120)); }
+        if(!res.ok||!q.outAmount) throw new Error(q.error||("quote "+res.status));
+        lastQuote=q;
+        var out=parseInt(q.outAmount)/Math.pow(10,outD), min=parseInt(q.otherAmountThreshold)/Math.pow(10,outD);
+        var route=(q.routePlan||[]).map(function(r){return r.swapInfo&&r.swapInfo.label;}).filter(Boolean).join(" › ");
+        var imp=(parseFloat(q.priceImpactPct||"0")*100).toFixed(3);
+        g("solOut").innerHTML="~<b>"+out.toFixed(6)+" "+buy+"</b> (min "+min.toFixed(6)+" @0.5%) · impact "+imp+"% · route "+(route||"—");
+      }catch(e){ lastQuote=null; g("solOut").textContent="quote failed: "+((e&&e.message)||e); }
+    }
+    function ensureWeb3(){
+      return new Promise(function(resolve,reject){
+        if(typeof solanaWeb3!=="undefined") return resolve();
+        var s=document.createElement("script");
+        s.src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.8/lib/index.iife.min.js";
+        s.onload=function(){resolve();}; s.onerror=function(){reject(new Error("could not load Solana library"));};
+        document.head.appendChild(s);
+      });
+    }
+    async function swap(){
+      var p=provider();
+      if(!p||!pubkey){ g("solStatus").textContent="connect Phantom first"; return; }
+      if(!lastQuote){ g("solStatus").textContent="get a quote first"; return; }
+      g("solStatus").textContent="loading library…";
+      try{ await ensureWeb3(); }catch(e){ g("solStatus").textContent=(e&&e.message)||e; return; }
+      g("solStatus").textContent="building transaction via Jupiter…";
+      try{
+        var res=await fetch(JUP+"/swap",{method:"POST",headers:{"content-type":"application/json"},
+          body:JSON.stringify({quoteResponse:lastQuote,userPublicKey:pubkey,wrapAndUnwrapSol:true,dynamicComputeUnitLimit:true})});
+        var txt=await res.text(), j; try{ j=JSON.parse(txt); }catch(_){ throw new Error(txt.slice(0,120)); }
+        if(!j.swapTransaction) throw new Error(j.error||"no swapTransaction");
+        var buf=Uint8Array.from(atob(j.swapTransaction),function(c){return c.charCodeAt(0);});
+        var tx=solanaWeb3.VersionedTransaction.deserialize(buf);
+        g("solStatus").textContent="approve in Phantom…";
+        var r=await p.signAndSendTransaction(tx);
+        var sig=r.signature||r;
+        g("solStatus").innerHTML="✅ submitted — <a target='_blank' rel='noopener' href='https://solscan.io/tx/"+sig+"'>view on Solscan</a>";
+        lastQuote=null;
+      }catch(e){ g("solStatus").textContent="swap failed: "+((e&&e.message)||e); }
+    }
+    try{
+      g("solConnect").onclick=connect;
+      g("solQuote").onclick=quote;
+      g("solSwap").onclick=swap;
+      g("solEnable").onchange=function(e){ g("solLive").classList.toggle("hide", !e.target.checked); };
+      refresh(); setTimeout(refresh,300); setTimeout(refresh,1200);
+    }catch(e){ setAddr("panel init error: "+((e&&e.message)||e)); }
+  })();
   </script>
 
   <div class="foot">
@@ -604,107 +690,8 @@ if($("#exEnable")){
   $("#exEnable").onchange = e=>{ try{localStorage.setItem("exec_armed", e.target.checked?"1":"0");}catch(_){} syncArm(e.target.checked); };
 }
 
-// ---- Solana (Phantom + Jupiter) canary ----
-const SOL_MINTS = {                      // symbol -> [mint, decimals]
-  USDC:["EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",6],
-  SOL:["So11111111111111111111111111111111111111112",9],
-  CBBTC:["cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij",8],
-};
-const JUP = "https://lite-api.jup.ag/swap/v1";
-let solPubkey=null, lastSolQuote=null;
-// Accept any injected Solana provider — Phantom's mobile in-app browser exposes
-// window.solana but does not always set isPhantom, so don't require that flag.
-function phantom(){ return (window.phantom&&window.phantom.solana) || window.solana || null; }
-function isMobile(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent||""); }
-function phantomDeeplink(){
-  return `https://phantom.app/ul/browse/${encodeURIComponent(location.href)}?ref=${encodeURIComponent(location.origin)}`;
-}
-function _solDbg(){
-  return `[solana=${!!window.solana} isPhantom=${!!(window.solana&&window.solana.isPhantom)}`
-       + ` phantom.solana=${!!(window.phantom&&window.phantom.solana)} web3=${typeof solanaWeb3!=="undefined"}]`;
-}
-async function solConnect(){
-  const p=phantom();
-  if(!p){
-    if(isMobile()){
-      $("#solAddr").innerHTML=`No provider ${_solDbg()} — <a href="${phantomDeeplink()}" style="color:var(--gold,#e3b23c)">open inside Phantom →</a>`;
-    } else {
-      $("#solAddr").textContent="Phantom not found "+_solDbg()+" — install the extension, then reload.";
-    }
-    return;
-  }
-  $("#solAddr").textContent="provider found, connecting… "+_solDbg();
-  try{
-    const r=await p.connect();
-    const pk=(r&&r.publicKey)?r.publicKey:p.publicKey;
-    if(!pk) throw new Error("connected but no publicKey returned");
-    solPubkey=pk.toString();
-    $("#solAddr").textContent="connected "+short(solPubkey);
-  }catch(e){ $("#solAddr").textContent="connect failed: "+(e&&e.message?e.message:String(e))+" "+_solDbg(); }
-}
-async function jupQuote(inMint,outMint,rawAmt,slip){
-  const u=`${JUP}/quote?inputMint=${inMint}&outputMint=${outMint}&amount=${rawAmt}&slippageBps=${slip}`;
-  const r=await fetch(u,{headers:{accept:"application/json"}});
-  const t=await r.text(); let j; try{ j=JSON.parse(t); }catch(_){ throw new Error(t.slice(0,120)); }
-  if(!r.ok||!j.outAmount) throw new Error(j.error||("quote "+r.status));
-  return j;
-}
-async function solQuote(){
-  const sell=$("#solSell").value, buy=$("#solBuy").value;
-  if(sell===buy){ $("#solOut").textContent="pick two different tokens"; return; }
-  const [inMint,inDec]=SOL_MINTS[sell], [,outDec]=SOL_MINTS[buy], outMint=SOL_MINTS[buy][0];
-  const amt=parseFloat($("#solAmt").value||"0");
-  if(!(amt>0)){ $("#solOut").textContent="enter an amount"; return; }
-  const raw=Math.round(amt*Math.pow(10,inDec)).toString();
-  $("#solOut").textContent="fetching Jupiter quote…";
-  try{
-    const q=await jupQuote(inMint,outMint,raw,50); lastSolQuote=q;
-    const out=parseInt(q.outAmount)/Math.pow(10,outDec);
-    const min=parseInt(q.otherAmountThreshold)/Math.pow(10,outDec);
-    const route=(q.routePlan||[]).map(r=>r.swapInfo&&r.swapInfo.label).filter(Boolean).join(" › ");
-    const imp=(parseFloat(q.priceImpactPct||"0")*100).toFixed(3);
-    $("#solOut").innerHTML=`~<b>${out.toFixed(6)} ${buy}</b> (min ${min.toFixed(6)} @0.5% slippage) · impact ${imp}% · route ${route||"—"}`;
-  }catch(e){ lastSolQuote=null; $("#solOut").textContent="quote failed: "+e.message; }
-}
-function ensureWeb3(){
-  return new Promise((resolve,reject)=>{
-    if(typeof solanaWeb3!=="undefined") return resolve();
-    const s=document.createElement("script");
-    s.src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.8/lib/index.iife.min.js";
-    s.onload=()=>resolve(); s.onerror=()=>reject(new Error("could not load Solana library"));
-    document.head.appendChild(s);
-  });
-}
-async function solSwap(){
-  const p=phantom();
-  if(!p||!solPubkey){ $("#solStatus").textContent="connect Phantom first"; return; }
-  if(!lastSolQuote){ $("#solStatus").textContent="get a quote first"; return; }
-  $("#solStatus").textContent="loading library…";
-  try{ await ensureWeb3(); }catch(e){ $("#solStatus").textContent=e.message; return; }
-  $("#solStatus").textContent="building transaction via Jupiter…";
-  try{
-    const r=await fetch(`${JUP}/swap`,{method:"POST",headers:{"content-type":"application/json"},
-      body:JSON.stringify({quoteResponse:lastSolQuote,userPublicKey:solPubkey,wrapAndUnwrapSol:true,dynamicComputeUnitLimit:true})});
-    const t=await r.text(); let j; try{ j=JSON.parse(t); }catch(_){ throw new Error(t.slice(0,120)); }
-    if(!j.swapTransaction) throw new Error(j.error||"no swapTransaction");
-    const buf=Uint8Array.from(atob(j.swapTransaction),c=>c.charCodeAt(0));
-    const tx=solanaWeb3.VersionedTransaction.deserialize(buf);
-    $("#solStatus").textContent="approve in Phantom…";
-    const res=await p.signAndSendTransaction(tx);
-    const sig=res.signature||res;
-    $("#solStatus").innerHTML=`✅ submitted — <a target="_blank" rel="noopener" href="https://solscan.io/tx/${sig}">view on Solscan</a>`;
-    lastSolQuote=null;
-  }catch(e){ $("#solStatus").textContent="swap failed: "+(e.message||e); }
-}
-$("#solConnect") && ($("#solConnect").onclick=solConnect);
-$("#solQuote") && ($("#solQuote").onclick=solQuote);
-$("#solSwap") && ($("#solSwap").onclick=solSwap);
-if($("#solEnable")){
-  $("#solEnable").onchange=e=>{ $("#solLive").classList.toggle("hide", !e.target.checked); };
-}
-// Auto wallet-detection readout (the provider can inject a beat after load).
-function solInit(){ if($("#solAddr") && !solPubkey) $("#solAddr").textContent="wallet check "+_solDbg(); }
-setTimeout(solInit, 250); setTimeout(solInit, 1200);
+// (Solana panel logic now lives in its own self-contained <script> next to the panel,
+//  so it never depends on this EVM app script finishing.)
 
 // ---- boot ----
 $("#connect").onclick=connect;
