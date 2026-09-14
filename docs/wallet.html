@@ -197,6 +197,13 @@
       <div id="solStatus" class="muted" style="margin-top:8px"></div>
     </div>
   </div>
+  <script>
+  /* standalone probe — runs independently of the main script */
+  (function(){ try{
+    var d=document.getElementById("solAddr");
+    if(d) d.textContent="JS ok · solana="+(!!window.solana)+" phantom="+(!!(window.phantom&&window.phantom.solana));
+  }catch(e){ try{ document.getElementById("solAddr").textContent="probe err: "+e.message; }catch(_){} } })();
+  </script>
 
   <div class="foot">
     Bags run the validated trend + capital-preservation model; scenarios are the same model at
