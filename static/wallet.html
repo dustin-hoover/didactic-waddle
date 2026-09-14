@@ -600,7 +600,9 @@ const SOL_MINTS = {                      // symbol -> [mint, decimals]
 };
 const JUP = "https://lite-api.jup.ag/swap/v1";
 let solPubkey=null, lastSolQuote=null;
-function phantom(){ return (window.phantom&&window.phantom.solana) || (window.solana&&window.solana.isPhantom?window.solana:null); }
+// Accept any injected Solana provider — Phantom's mobile in-app browser exposes
+// window.solana but does not always set isPhantom, so don't require that flag.
+function phantom(){ return (window.phantom&&window.phantom.solana) || window.solana || null; }
 function isMobile(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent||""); }
 function phantomDeeplink(){
   return `https://phantom.app/ul/browse/${encodeURIComponent(location.href)}?ref=${encodeURIComponent(location.origin)}`;
@@ -678,6 +680,9 @@ $("#solSwap") && ($("#solSwap").onclick=solSwap);
 if($("#solEnable")){
   $("#solEnable").onchange=e=>{ $("#solLive").classList.toggle("hide", !e.target.checked); };
 }
+// Auto wallet-detection readout (the provider can inject a beat after load).
+function solInit(){ if($("#solAddr") && !solPubkey) $("#solAddr").textContent="wallet check "+_solDbg(); }
+setTimeout(solInit, 250); setTimeout(solInit, 1200);
 
 // ---- boot ----
 $("#connect").onclick=connect;
