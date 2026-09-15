@@ -50,10 +50,20 @@ class ArbOpportunity:
         return self.__dict__.copy()
 
 
-def find_arbitrage(asset: str, quotes: Sequence[dict], cfg: Optional[ArbConfig] = None) -> ArbOpportunity:
+def find_arbitrage(asset: str, quotes: Sequence[dict], cfg: Optional[ArbConfig] = None,
+                   bridge_bps_fn: Optional[Callable[[str, str, str], Optional[float]]] = None
+                   ) -> ArbOpportunity:
     """Best buy-low/sell-high across venues, net of costs. `quotes`: list of
     {venue, price, chain?, fee_bps?}. Returns an ArbOpportunity (tradeable only when the
-    modelled NET edge clears min_net_bps)."""
+    modelled NET edge clears min_net_bps).
+
+    When the two legs are on different chains the bridge cost is normally the static
+    `cfg.bridge_bps` ASSUMPTION. Pass `bridge_bps_fn(asset, buy_chain, sell_chain)` to
+    replace that with a LIVE measurement (e.g. a NEAR Intents dry quote) — if it returns
+    a number that value is used; if it returns None or raises we fall back to the
+    assumption. That turns "cross-chain arb probably doesn't clear a guessed 1% bridge"
+    into "…doesn't clear the real 28 bps move cost we just measured."
+    """
     c = cfg or ArbConfig()
     valid = [q for q in quotes if float(q.get("price", 0) or 0) > 0]
     if len(valid) < 2:
@@ -66,12 +76,24 @@ def find_arbitrage(asset: str, quotes: Sequence[dict], cfg: Optional[ArbConfig] 
     gross_bps = (sell["price"] - buy["price"]) / buy["price"] * 1e4
     fees = float(buy.get("fee_bps", c.default_fee_bps)) + float(sell.get("fee_bps", c.default_fee_bps))
     cross = bool(buy.get("chain") and sell.get("chain") and buy["chain"] != sell["chain"])
-    bridge = c.bridge_bps if cross else 0.0
+    bridge = 0.0
+    bridge_src = ""
+    if cross:
+        bridge = c.bridge_bps
+        bridge_src = "est"
+        if bridge_bps_fn is not None:
+            try:
+                live = bridge_bps_fn(asset, buy["chain"], sell["chain"])
+                if live is not None and float(live) >= 0:
+                    bridge = float(live)
+                    bridge_src = "live"
+            except Exception:  # noqa: BLE001 — a live probe must never break scanning
+                pass
     net_bps = gross_bps - fees - c.gas_mev_bps - bridge
     tradeable = net_bps >= c.min_net_bps
     reason = (f"buy {buy.get('venue','?')} @ {buy['price']:.6g} → sell {sell.get('venue','?')} "
               f"@ {sell['price']:.6g}: gross {gross_bps:.0f}bps, net {net_bps:.0f}bps"
-              f"{' (cross-chain +bridge)' if cross else ''}")
+              f"{f' (cross-chain +{bridge:.0f}bps bridge {bridge_src})' if cross else ''}")
     return ArbOpportunity(asset, buy.get("venue", "?"), sell.get("venue", "?"),
                           buy["price"], sell["price"], round(gross_bps, 1), round(net_bps, 1),
                           tradeable, reason)

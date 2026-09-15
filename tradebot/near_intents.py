@@ -186,6 +186,39 @@ def fetch_tokens(get_fn: Optional[Callable[[str, str], list]] = None, jwt: str =
     return get("/v0/tokens", jwt)
 
 
+_STABLES = {"USDC", "USDT", "DAI", "USDG"}
+
+
+def bridge_cost_bps(asset: str, origin_chain: str, dest_chain: str,
+                    notional_usd: float = 50.0, price_usd: Optional[Dict[str, float]] = None,
+                    tokens: Optional[List[dict]] = None,
+                    post_fn: Optional[Callable[[str, dict, str], dict]] = None,
+                    jwt: Optional[str] = None) -> Optional[float]:
+    """Live cost (bps) of RELOCATING `asset` from one chain to another via a dry quote.
+
+    Same symbol both sides — this is the "move it across" cost, exactly what the
+    arbitrage scanner needs in place of a guessed bridge fee. Returns None if it
+    can't be measured (unknown asset on a leg, no price, network hiccup) so callers
+    fall back to their static assumption instead of dropping the opportunity.
+
+    Designed to be handed to arbitrage.find_arbitrage as
+    `bridge_bps_fn=lambda a, oc, dc: bridge_cost_bps(a, oc, dc, price_usd=..., tokens=...)`.
+    """
+    sym = asset.upper()
+    px = dict(price_usd or {})
+    if sym not in px:
+        if sym in _STABLES:
+            px[sym] = 1.0
+        else:
+            return None
+    try:
+        q = quote(origin_chain, dest_chain, sym, sym, notional_usd, price_usd=px,
+                  tokens=tokens, post_fn=post_fn, jwt=jwt)
+        return q.cost_bps
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _fnum(x) -> float:
     try:
         return float(x)

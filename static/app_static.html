@@ -105,6 +105,15 @@
     <div class="note" id="uniNote"></div>
   </div>
 
+  <div class="panel" id="xchainPanel" hidden>
+    <h2>Cross-chain cost <span class="badge" id="xcVenue"></span></h2>
+    <table>
+      <thead><tr><th>Move</th><th>Out</th><th>Cost</th><th class="hide">ETA</th></tr></thead>
+      <tbody id="xcRows"></tbody>
+    </table>
+    <div class="note" id="xcNote"></div>
+  </div>
+
   <div class="panel" id="paperPanel" hidden>
     <h2>Your paper portfolio <span class="badge" id="paperSince"></span></h2>
     <div class="grid" id="paper"></div>
@@ -208,6 +217,31 @@ fetch('./data.json?t='+Date.now()).then(r=>r.json()).then(d=>{
     });
     document.getElementById('uniNote').textContent=
       `Base tokens auto-vetted for depth (≥$${Math.round(uni.min_reserve_usd/1e3)}k pool reserve), CoinGecko listing, and an on-chain rug-screen (owner powers, mint, proxy, verified source). Confirmed-bad (AVOID) tokens are dropped; UNKNOWN means it couldn't be audited (no key / unverified), not a clean bill. This is the tradeable menu; the strategy (BTC-led, gated, capped) still picks what to trade.`;
+  }
+
+  const xc=d.crosschain;
+  if(xc && !xc.error && (xc.legs||[]).length){
+    document.getElementById('xchainPanel').hidden=false;
+    document.getElementById('xcVenue').textContent=xc.venue||'NEAR Intents';
+    const xb=document.getElementById('xcRows'); xb.innerHTML='';
+    xc.legs.forEach(l=>{
+      const tr=document.createElement('tr');
+      if(l.error){
+        tr.innerHTML=`<td>${l.label}</td><td colspan="3" class="note">${l.error}</td>`;
+      }else{
+        const cc=l.cost_bps<=50?'up':(l.cost_bps<=100?'gold':'down');
+        tr.innerHTML=`<td>${l.label}<div class="n">${l.sell}@${l.origin} → ${l.buy}@${l.dest}</div></td>`+
+          `<td>${(+l.out).toLocaleString(undefined,{maximumFractionDigits:4})} ${l.buy}</td>`+
+          `<td class="${cc}">$${(+l.cost_usd).toFixed(2)} · ${Math.round(l.cost_bps)}bps</td>`+
+          `<td class="hide">${Math.round(l.eta_s)}s</td>`;
+      }
+      xb.appendChild(tr);
+    });
+    const med=xc.median_cost_bps, asm=xc.assumed_bridge_bps;
+    document.getElementById('xcNote').innerHTML=
+      `Live <b>read-only</b> quotes (dry, $${xc.notional_usd} each) from ${xc.venue} — intent-based cross-chain settlement, no bridge to operate. `+
+      (med!=null?`Measured median <b>~${Math.round(med)} bps</b> vs the arbitrage engine's assumed <b>${asm} bps</b> bridge cost — cross-chain spawning is cheaper than we assumed. `:'')+
+      `Nothing signs here; this proves whether moving a bag between chains is economical before any funds move.`;
   }
 
   const pp=d.paper;

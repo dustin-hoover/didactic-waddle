@@ -365,11 +365,52 @@ def build():
     except Exception as e:  # noqa: BLE001
         scenarios = {"error": str(e)[:80]}
 
+    # CROSS-CHAIN COST — live NEAR Intents dry quotes for the moves our doctrine
+    # cares about (spawn a bag onto another chain, relocate a stable, exit home).
+    # Read-only: every quote is `dry` (price only), nothing signable. Fully
+    # defensive — a rate-limit or outage yields {error} and never breaks the build.
+    # Disable with TB_CROSSCHAIN=0.
+    crosschain = {}
+    if os.environ.get("TB_CROSSCHAIN", "1").strip() not in ("0", "false", "off"):
+        try:
+            from tradebot import near_intents as ni
+            toks = ni.fetch_tokens()
+            sol_px = 0.0
+            try:
+                sol_px = feed.history("SOL", "1d", 5)[-1].close
+            except Exception:  # noqa: BLE001
+                pass
+            px = {"USDC": 1.0, "SOL": sol_px}
+            routes = [("base", "solana", "USDC", "SOL", "spawn → Solana"),
+                      ("base", "avalanche", "USDC", "USDC", "relocate stable → Avalanche"),
+                      ("base", "arbitrum", "USDC", "USDC", "relocate stable → Arbitrum"),
+                      ("solana", "base", "SOL", "USDC", "exit Solana → Base")]
+            legs = []
+            for oc, dc, os_, ds, label in routes:
+                try:
+                    q = ni.quote(oc, dc, os_, ds, 50.0, price_usd=px, tokens=toks)
+                    legs.append({"label": label, "origin": oc, "dest": dc,
+                                 "sell": os_, "buy": ds, "in_usd": q.amount_in_usd,
+                                 "out": q.amount_out, "out_usd": q.amount_out_usd,
+                                 "cost_usd": q.cost_usd, "cost_bps": q.cost_bps,
+                                 "eta_s": q.time_estimate_s})
+                except Exception as e:  # noqa: BLE001
+                    legs.append({"label": label, "origin": oc, "dest": dc,
+                                 "sell": os_, "buy": ds, "error": str(e)[:80]})
+            ok = [l for l in legs if "cost_bps" in l]
+            crosschain = {"venue": "NEAR Intents (1Click)", "notional_usd": 50,
+                          "dry": True, "legs": legs,
+                          "assumed_bridge_bps": 100,  # arbitrage.py's static assumption
+                          "median_cost_bps": (sorted(l["cost_bps"] for l in ok)[len(ok)//2]
+                                              if ok else None)}
+        except Exception as e:  # noqa: BLE001
+            crosschain = {"error": str(e)[:120]}
+
     data = {"generated_at": datetime.now(timezone.utc).isoformat(timespec="minutes"),
             "interval": INTERVAL, "style": STYLE, "onchain": onchain, "regime": regime,
             "chains": chains_block, "autopilot": autopilot, "universe": universe,
             "rows": rows, "featured": featured, "paper": paper, "tape": tape,
-            "scenarios": scenarios, "bag_tree": bag_tree}
+            "scenarios": scenarios, "bag_tree": bag_tree, "crosschain": crosschain}
     json.dump(data, open(os.path.join(DOCS, "data.json"), "w"), indent=1)
     json.dump(state, open(os.path.join(DOCS, "alert_state.json"), "w"))
 

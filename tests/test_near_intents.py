@@ -183,6 +183,31 @@ def test_rejects_missing_price():
         ni.quote("base", "solana", "USDC", "SOL", 50.0, price_usd={}, post_fn=post)
 
 
+def test_bridge_cost_bps_stable_relocation():
+    post, seen = _canned(amount_out="49.9", out_usd="49.85")
+    bps = ni.bridge_cost_bps("USDC", "base", "arbitrum", notional_usd=50.0, post_fn=post)
+    # in_usd defaults to notional 50 (no amountInUsd override here -> uses notional)
+    assert seen["body"]["originAsset"].startswith("nep141:base-")
+    assert seen["body"]["destinationAsset"].startswith("nep141:arb-")
+    assert bps is not None and bps > 0                    # 50 - 49.85 = 0.15 -> 30 bps
+
+
+def test_bridge_cost_bps_unknown_asset_returns_none():
+    post, _ = _canned()
+    assert ni.bridge_cost_bps("PEPE", "base", "solana", post_fn=post) is None
+
+
+def test_bridge_cost_bps_non_stable_without_price_none():
+    post, _ = _canned()
+    # SOL is a known asset but no price supplied -> cannot size -> None (not a crash)
+    assert ni.bridge_cost_bps("SOL", "solana", "base", post_fn=post) is None
+
+
+def test_bridge_cost_bps_swallows_errors():
+    def boom(path, body, jwt=""): raise RuntimeError("down")
+    assert ni.bridge_cost_bps("USDC", "base", "arbitrum", post_fn=boom) is None
+
+
 def test_fetch_tokens_uses_injected_getter():
     def get(path, jwt=""):
         assert path == "/v0/tokens"

@@ -37,6 +37,43 @@ def test_cross_chain_adds_bridge_cost():
     assert cross.net_bps == same.net_bps - 100     # bridge cost applied cross-chain
 
 
+def test_live_bridge_fn_replaces_static_assumption():
+    cfg = ArbConfig(min_net_bps=10, default_fee_bps=10, gas_mev_bps=5, bridge_bps=100)
+    q = [{"venue": "a", "price": 100, "chain": "base", "fee_bps": 10},
+         {"venue": "b", "price": 101.5, "chain": "solana", "fee_bps": 10}]
+    static = find_arbitrage("X", q, cfg)                       # 150 gross - 20 - 5 - 100 = 25
+    live = find_arbitrage("X", q, cfg, bridge_bps_fn=lambda a, oc, dc: 28.0)
+    assert static.net_bps == 25.0
+    assert live.net_bps == 97.0                                # 150 - 20 - 5 - 28
+    assert "bridge live" in live.reason and "bridge est" in static.reason
+
+
+def test_live_bridge_fn_none_falls_back_to_static():
+    cfg = ArbConfig(min_net_bps=10, default_fee_bps=10, gas_mev_bps=5, bridge_bps=100)
+    q = [{"venue": "a", "price": 100, "chain": "base", "fee_bps": 10},
+         {"venue": "b", "price": 101.5, "chain": "solana", "fee_bps": 10}]
+    o = find_arbitrage("X", q, cfg, bridge_bps_fn=lambda a, oc, dc: None)
+    assert o.net_bps == 25.0 and "bridge est" in o.reason
+
+
+def test_live_bridge_fn_exception_falls_back():
+    cfg = ArbConfig(min_net_bps=10, default_fee_bps=10, gas_mev_bps=5, bridge_bps=100)
+    q = [{"venue": "a", "price": 100, "chain": "base", "fee_bps": 10},
+         {"venue": "b", "price": 101.5, "chain": "arbitrum", "fee_bps": 10}]
+    def boom(a, oc, dc): raise RuntimeError("network down")
+    o = find_arbitrage("X", q, cfg, bridge_bps_fn=boom)
+    assert o.net_bps == 25.0                                    # unbroken; static used
+
+
+def test_live_bridge_fn_not_called_same_chain():
+    cfg = ArbConfig(min_net_bps=10, default_fee_bps=10, gas_mev_bps=5, bridge_bps=100)
+    calls = []
+    q = [{"venue": "a", "price": 100, "chain": "base", "fee_bps": 10},
+         {"venue": "b", "price": 103, "chain": "base", "fee_bps": 10}]
+    find_arbitrage("X", q, cfg, bridge_bps_fn=lambda a, oc, dc: calls.append(1) or 5.0)
+    assert calls == []                                         # same chain -> no bridge probe
+
+
 def test_no_spread():
     o = find_arbitrage("X", [{"venue": "a", "price": 100}, {"venue": "b", "price": 100}])
     assert o.tradeable is False and o.gross_bps == 0.0
