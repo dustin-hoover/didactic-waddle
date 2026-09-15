@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 from . import indicators as ind
-from .ohlcv import get_feed
+from .ohlcv import ExchangeFeed, get_feed
 from .signals import CompositeStrategy, TrendFilterStrategy, _last
 
 DEFAULT_UNIVERSE = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "AVAX", "LINK", "DOGE", "LTC"]

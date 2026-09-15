@@ -20,7 +20,7 @@ from __future__ import annotations
 import json
 import urllib.request
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Optional, Sequence
+from typing import Callable, List, Optional, Sequence
 
 _GT = "https://api.geckoterminal.com/api/v2/networks/{network}/tokens/{addr}/pools"
 _UA = "Mozilla/5.0 tradebot-arb/0.1"

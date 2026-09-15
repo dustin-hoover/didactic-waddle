@@ -16,7 +16,7 @@ advice; rates and rules vary and a professional should confirm the filing.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 _YEAR = 365 * 86400   # seconds
 
@@ -41,7 +41,7 @@ def trades_from_fills(fills, symbol: str) -> List[dict]:
     """Convert engine/portfolio Fills (objects OR stored dicts) to tax trades."""
     out = []
     for f in fills:
-        g = (lambda k: f[k]) if isinstance(f, dict) else (lambda k: getattr(f, k))
+        g = (lambda k, f=f: f[k]) if isinstance(f, dict) else (lambda k, f=f: getattr(f, k))
         ts = int(g("ts"))
         ts = ts // 1000 if ts > 10_000_000_000 else ts   # ms -> s if needed
         out.append({"ts": ts, "symbol": symbol, "side": g("side"),

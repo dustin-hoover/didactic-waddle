@@ -36,7 +36,7 @@ This module reads and measures. It holds no key and places no orders.
 from __future__ import annotations
 
 import statistics
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable, List, Optional, Sequence
 
 _BLOCKS_PER_DAY = 7200.0          # ~12s blocks on Ethereum mainnet

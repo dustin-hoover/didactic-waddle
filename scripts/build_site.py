@@ -151,7 +151,6 @@ def build():
     # chain supports it). This is the MENU; the strategy (BTC-led + caps) still decides
     # what to trade. EVM vetted sets are registered into the execution token registry.
     universe = {}
-    vetted_tokens = []
     try:
         from tradebot.universe import discover, to_registry
         min_res = float(os.environ.get("TB_UNIVERSE_MIN_RESERVE", "250000"))
@@ -168,7 +167,6 @@ def build():
                 pages=int(os.environ.get("TB_UNIVERSE_PAGES", "4")),
                 min_reserve_usd=min_res, screen=do_screen, screen_fn=screen_fn,
                 screen_chain=spec.id)
-            vetted_tokens = vetted
             if spec.kind == "evm":
                 from tradebot.execution import register_tokens
                 register_tokens(spec.id, to_registry(vetted))

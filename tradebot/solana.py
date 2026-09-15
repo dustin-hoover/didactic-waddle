@@ -47,7 +47,6 @@ def _rpc_urls() -> List[str]:
 
 def _rpc(method: str, params: list, timeout: int = 20) -> Optional[dict]:
     body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode()
-    last = None
     for url in _rpc_urls():
         try:
             req = urllib.request.Request(url, data=body,

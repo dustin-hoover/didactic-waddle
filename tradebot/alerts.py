@@ -18,7 +18,6 @@ import urllib.request
 from dataclasses import dataclass
 from typing import List, Optional
 
-from .config import BotConfig, StrategyConfig
 from .ohlcv import ExchangeFeed
 from .signals import CompositeStrategy, TrendFilterStrategy
 
