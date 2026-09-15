@@ -44,6 +44,10 @@ TOKENS: Dict[str, Dict[str, tuple]] = {
         "USDC": ("0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e", 6),
         "BTCB": ("0x152b9d0fdc40c096757f570a51e494bd4b943e50", 8),   # BTC.b — the BTC vehicle
     },
+    "arbitrum": {    # Arbitrum One (id 42161); CoW Swap live. Addresses verified.
+        "USDC": ("0xaf88d065e77c8cc2239327c5edb3a432268e5831", 6),   # native USDC
+        "WBTC": ("0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f", 8),   # the BTC vehicle
+    },
 }
 
 def register_tokens(chain: str, mapping: Dict[str, tuple]) -> None:
@@ -71,6 +75,8 @@ VENUE_SPENDER = {
     # is live on Avalanche. 1inch router v6 is likewise the same address cross-chain.
     "avalanche": {"cow": "0xc92e8bdf79f0507f65a392b0ab4667716bfe0110",
                   "1inch": "0x111111125421ca6dc452d289314280a0f8842a65"},
+    "arbitrum": {"cow": "0xc92e8bdf79f0507f65a392b0ab4667716bfe0110",
+                 "1inch": "0x111111125421ca6dc452d289314280a0f8842a65"},
 }
 
 

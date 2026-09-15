@@ -155,3 +155,9 @@ def test_avalanche_known_safe_and_chainid():
     rep = sf.check("0x152b9d0fdc40c096757f570a51e494bd4b943e50", chain="avalanche")
     assert rep.verified is True and rep.verdict == "OK" and rep.name == "BTC.b"
     assert any("avax" in u for u in sf._chain_rpc_urls("avalanche"))
+
+
+def test_arbitrum_known_safe_and_chainid():
+    assert sf._CHAIN_IDS["arbitrum"] == "42161"
+    rep = sf.check("0xaf88d065e77c8cc2239327c5edb3a432268e5831", chain="arbitrum")
+    assert rep.verified is True and rep.verdict == "OK" and rep.name == "USDC"

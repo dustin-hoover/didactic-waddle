@@ -115,3 +115,10 @@ def test_btcb_tradeable_on_avalanche():
     assert pr.ok is True
     assert pr.buy_token == "0x152b9d0fdc40c096757f570a51e494bd4b943e50"
     assert pr.spender == "0xc92e8bdf79f0507f65a392b0ab4667716bfe0110"   # CoW relayer
+
+
+def test_wbtc_tradeable_on_arbitrum():
+    pol = ExecutionPolicy(enabled=True, chain="arbitrum", allowed_tokens=("USDC", "WBTC"),
+                          max_notional_usd=100)
+    pr = propose("b1", "0xabc", "USDC", "WBTC", 100.0, {"USDC": 1.0, "WBTC": 100000.0}, pol)
+    assert pr.ok is True and pr.buy_token == "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f"

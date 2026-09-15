@@ -57,3 +57,10 @@ def test_avalanche_fully_wired():
     assert a.can_discover and a.can_screen and a.can_execute
     assert a.gt_network == "avax" and a.screen_chainid == "43114"
     assert a.primary_vehicle == "BTCB" and a.vehicle_coin == "BTC" and a.exec_venue == "cow"
+
+
+def test_arbitrum_fully_wired():
+    a = chains.get("arbitrum")
+    assert a.enabled and a.can_discover and a.can_screen and a.can_execute
+    assert a.gt_network == "arbitrum" and a.screen_chainid == "42161"
+    assert a.primary_vehicle == "WBTC" and a.exec_venue == "cow"

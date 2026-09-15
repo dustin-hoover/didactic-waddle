@@ -107,8 +107,8 @@ CHAINS: Dict[str, ChainSpec] = {
     "arbitrum": ChainSpec(
         id="arbitrum", name="Arbitrum", kind="evm", gt_network="arbitrum", native="ETH", stable="USDC",
         rpc_env="ARBITRUM_RPC_URL", explorer="https://arbiscan.io", exec_venue="cow",
-        exec_supported=False, screen_supported=True, screen_chainid="42161",
-        primary_vehicle="WBTC", vehicle_coin="BTC", enabled=False),
+        exec_supported=True, screen_supported=True, screen_chainid="42161",
+        primary_vehicle="WBTC", vehicle_coin="BTC", enabled=True),   # CoW live; USDC/WBTC verified
 }
 
 DEFAULT_CHAIN = "base"

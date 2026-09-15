@@ -68,7 +68,14 @@ KNOWN_SAFE_AVAX = {
     "0x152b9d0fdc40c096757f570a51e494bd4b943e50": "BTC.b",
 }
 
-KNOWN_SAFE_BY_CHAIN = {"ethereum": KNOWN_SAFE, "base": KNOWN_SAFE_BASE, "avalanche": KNOWN_SAFE_AVAX}
+# Arbitrum One majors (chainid 42161) — verified.
+KNOWN_SAFE_ARB = {
+    "0xaf88d065e77c8cc2239327c5edb3a432268e5831": "USDC",
+    "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f": "WBTC",
+}
+
+KNOWN_SAFE_BY_CHAIN = {"ethereum": KNOWN_SAFE, "base": KNOWN_SAFE_BASE,
+                       "avalanche": KNOWN_SAFE_AVAX, "arbitrum": KNOWN_SAFE_ARB}
 
 # Capability patterns matched against ABI function names (authoritative) and,
 # as a fallback, the raw verified source. Each: (flag key, human note, regex).
@@ -102,6 +109,7 @@ def _http(url: str, tries: int = 3, timeout: int = 25):
 _BASE_RPC = ["https://mainnet.base.org", "https://base-rpc.publicnode.com",
              "https://base.llamarpc.com"]
 _AVAX_RPC = ["https://api.avax.network/ext/bc/C/rpc", "https://avalanche-c-chain-rpc.publicnode.com"]
+_ARB_RPC = ["https://arb1.arbitrum.io/rpc", "https://arbitrum-one-rpc.publicnode.com"]
 
 
 def _chain_rpc_urls(chain: str) -> List[str]:
@@ -111,10 +119,13 @@ def _chain_rpc_urls(chain: str) -> List[str]:
     if chain == "avalanche":
         env = os.environ.get("AVALANCHE_RPC_URL", "").strip()
         return ([env] if env else []) + _AVAX_RPC
+    if chain == "arbitrum":
+        env = os.environ.get("ARBITRUM_RPC_URL", "").strip()
+        return ([env] if env else []) + _ARB_RPC
     return _rpc_urls()
 
 
-_CHAIN_IDS = {"ethereum": "1", "base": "8453", "avalanche": "43114"}
+_CHAIN_IDS = {"ethereum": "1", "base": "8453", "avalanche": "43114", "arbitrum": "42161"}
 
 
 def _etherscan(params: Dict[str, str], chainid: str = "1") -> Optional[dict]:
