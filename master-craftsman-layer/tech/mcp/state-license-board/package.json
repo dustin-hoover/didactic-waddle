@@ -1,0 +1,19 @@
+{
+  "name": "@mcl/mcp-state-license-board",
+  "version": "0.0.1",
+  "private": true,
+  "description": "MCP server: verify trade licenses against the state board of record (stub).",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "node --loader ts-node/esm src/index.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "ts-node": "^10.9.0"
+  }
+}
