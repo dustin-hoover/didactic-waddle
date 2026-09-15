@@ -128,3 +128,61 @@ def test_reproducible_same_spec_same_result(tmp_path):
     r1 = s1.advance(_feed(b))["bags"][0]
     r2 = s2.advance(_feed(b))["bags"][0]
     assert r1["total"] == r2["total"] and r1["exposure"] == r2["exposure"]
+
+
+# ---- evolutionary retirement ("self-destruct / strongest survives") ----
+import time as _time
+from tradebot.bags import RetirePolicy
+
+
+def _age(sup, bid, days):
+    sup.specs[bid].created_ts = int(_time.time() - days * 86400)
+
+
+def test_retire_culls_weak_old_bag_and_absorbs_value(tmp_path):
+    rp = RetirePolicy(enabled=True, survival_target=1.5, deadline_days=30, grace_days=7, keep_min=1)
+    sup = Supervisor(str(tmp_path), SpawnPolicy(enabled=False), retire=rp)
+    sup.add_bag("steady", 100); sup.add_bag("steady", 100)
+    _age(sup, "b1", 60); _age(sup, "b2", 60)
+    before = sup._engine(sup.specs["b1"]).protector.state.reserve
+    sup._maybe_retire({"b1": 200.0, "b2": 100.0})   # b1 2x survives; b2 1x < 1.5x retired
+    assert "b1" in sup.specs and "b2" not in sup.specs
+    assert sup.retired[-1]["bag"] == "b2" and sup.retired[-1]["absorbed_by"] == "b1"
+    after = sup._engine(sup.specs["b1"]).protector.state.reserve
+    assert abs(after - (before + 100.0)) < 1e-6      # value conserved into the survivor
+
+
+def test_keep_min_protects_strongest_even_at_1000x_bar(tmp_path):
+    # The literal "1000x or die" rule: everything but the single strongest is culled.
+    rp = RetirePolicy(enabled=True, survival_target=1000, deadline_days=1, grace_days=0, keep_min=1)
+    sup = Supervisor(str(tmp_path), SpawnPolicy(enabled=False), retire=rp)
+    for _ in range(3): sup.add_bag("steady", 100)
+    for b in ("b1", "b2", "b3"): _age(sup, b, 10)
+    sup._maybe_retire({"b1": 50.0, "b2": 300.0, "b3": 10.0})
+    assert set(sup.specs) == {"b2"} and len(sup.retired) == 2   # strongest survives
+
+
+def test_grace_period_spares_young_bag(tmp_path):
+    rp = RetirePolicy(enabled=True, survival_target=1.5, deadline_days=30, grace_days=14, keep_min=1)
+    sup = Supervisor(str(tmp_path), SpawnPolicy(enabled=False), retire=rp)
+    sup.add_bag("steady", 100); sup.add_bag("steady", 100)
+    _age(sup, "b1", 60); _age(sup, "b2", 5)          # b2 too young to cull
+    sup._maybe_retire({"b1": 300.0, "b2": 50.0})
+    assert "b2" in sup.specs
+
+
+def test_survivor_above_target_kept(tmp_path):
+    rp = RetirePolicy(enabled=True, survival_target=1.5, deadline_days=30, grace_days=7, keep_min=1)
+    sup = Supervisor(str(tmp_path), SpawnPolicy(enabled=False), retire=rp)
+    sup.add_bag("steady", 100); sup.add_bag("steady", 100)
+    _age(sup, "b1", 60); _age(sup, "b2", 60)
+    sup._maybe_retire({"b1": 300.0, "b2": 200.0})    # both >= 1.5x
+    assert set(sup.specs) == {"b1", "b2"} and not sup.retired
+
+
+def test_retire_disabled_by_default_is_noop(tmp_path):
+    sup = Supervisor(str(tmp_path), SpawnPolicy(enabled=False))
+    sup.add_bag("steady", 100); sup.add_bag("steady", 100)
+    for b in ("b1", "b2"): _age(sup, b, 90)
+    sup._maybe_retire({"b1": 1.0, "b2": 1.0})
+    assert set(sup.specs) == {"b1", "b2"}

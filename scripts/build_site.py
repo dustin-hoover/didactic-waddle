@@ -253,7 +253,7 @@ def build():
     # State persists under docs/bags/ (committed) across scheduled runs.
     paper, bag_tree = {}, {}
     try:
-        from tradebot.bags import Supervisor, SpawnPolicy
+        from tradebot.bags import Supervisor, SpawnPolicy, RetirePolicy
         bars_cache = {}
         def bars_for(sym, interval):
             k = f"{sym}:{interval}"
@@ -266,7 +266,18 @@ def build():
             trigger_multiple=float(os.environ.get("TB_SPAWN_TRIGGER", "2.0")),
             fraction=float(os.environ.get("TB_SPAWN_FRACTION", "0.5")),
             child_scenario=(os.environ.get("TB_SPAWN_CHILD", "").strip() or None))
-        sup = Supervisor(os.path.join(DOCS, "bags"), policy)
+        # Evolutionary retirement: a bag that hasn't reached TB_SURVIVAL_TARGET x its
+        # seed by TB_SURVIVAL_DEADLINE_DAYS is culled; the strongest always survive
+        # (keep_min=1) and absorb the culled value. Default target 1.0 = "don't lose
+        # money" (realistic). Crank TB_SURVIVAL_TARGET toward 1000 and the tree prunes
+        # to just its single strongest bag — an honest demo that a 1000x bar terminates
+        # almost everything. Off unless TB_RETIRE is set, so it's a deliberate choice.
+        retire = RetirePolicy(
+            enabled=os.environ.get("TB_RETIRE", "").strip() in ("1", "true", "on"),
+            survival_target=float(os.environ.get("TB_SURVIVAL_TARGET", "1.0")),
+            deadline_days=float(os.environ.get("TB_SURVIVAL_DEADLINE_DAYS", "90")),
+            keep_min=int(os.environ.get("TB_SURVIVAL_KEEP_MIN", "1")))
+        sup = Supervisor(os.path.join(DOCS, "bags"), policy, retire=retire)
         if not sup.specs:
             sup.add_bag("steady", seed=1000.0)      # root bag = the paper portfolio
         bag_tree = sup.advance(bars_for)

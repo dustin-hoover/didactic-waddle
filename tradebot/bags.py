@@ -60,13 +60,38 @@ class SpawnPolicy:
     child_scenario: Optional[str] = None   # None -> child inherits the parent's scenario
 
 
+@dataclass
+class RetirePolicy:
+    """Natural selection for bags — the honest version of "1000x or it's obsolete".
+
+    A bag must reach ``survival_target`` x its seed by the time it is
+    ``deadline_days`` old, or it is RETIRED: removed from the tree, its remaining
+    value swept into the strongest surviving bag (value is conserved, never lost).
+    ``keep_min`` bags are ALWAYS protected — the strongest survive no matter what —
+    so the tree self-prunes toward its best performers instead of vanishing.
+
+    HONESTY: set ``survival_target`` to something reachable (e.g. 1.0 = don't lose
+    money, 1.5 = beat a bank). Set it to 1000 and every bag but the single strongest
+    is culled the moment it ages past the deadline — a faithful demonstration that a
+    "1000x or die" rule terminates almost everything, because ~nothing 1000xes."""
+    enabled: bool = False
+    survival_target: float = 1.0      # bag must reach >= this multiple of seed to survive
+    deadline_days: float = 90.0       # ...by this age (younger bags get a pass)
+    grace_days: float = 14.0          # never cull a bag younger than this
+    keep_min: int = 1                 # always keep at least this many (the strongest)
+    absorb_into_strongest: bool = True  # sweep a retired bag's value into the best survivor
+
+
 class Supervisor:
-    def __init__(self, root_dir: str, policy: Optional[SpawnPolicy] = None):
+    def __init__(self, root_dir: str, policy: Optional[SpawnPolicy] = None,
+                 retire: Optional["RetirePolicy"] = None):
         self.root = root_dir
         os.makedirs(root_dir, exist_ok=True)
         self.policy = policy or SpawnPolicy()
+        self.retire = retire or RetirePolicy()
         self.specs: Dict[str, BagSpec] = {}
         self.spawns: List[dict] = []
+        self.retired: List[dict] = []
         self._load_index()
 
     # ---- persistence -----------------------------------------------------
@@ -84,12 +109,13 @@ class Supervisor:
             d = json.load(open(p))
             self.specs = {b["id"]: BagSpec(**b) for b in d.get("bags", [])}
             self.spawns = d.get("spawns", [])
+            self.retired = d.get("retired", [])
         except Exception:  # noqa: BLE001
-            self.specs, self.spawns = {}, []
+            self.specs, self.spawns, self.retired = {}, [], []
 
     def _save_index(self) -> None:
-        json.dump({"bags": [asdict(s) for s in self.specs.values()], "spawns": self.spawns},
-                  open(self._index_path(), "w"), indent=1)
+        json.dump({"bags": [asdict(s) for s in self.specs.values()], "spawns": self.spawns,
+                   "retired": self.retired}, open(self._index_path(), "w"), indent=1)
 
     # ---- bag lifecycle ---------------------------------------------------
     def _engine(self, spec: BagSpec) -> TradingEngine:
@@ -122,6 +148,7 @@ class Supervisor:
         network). Returns the full tree snapshot for the UI.
         """
         cache: Dict[str, List[Bar]] = {}
+        totals: Dict[str, float] = {}
         for bid, spec in list(self.specs.items()):
             scn = scenarios.by_key(spec.scenario) or scenarios.by_key(scenarios.DEFAULT_KEY)
             key = f"{scn.symbol}:{scn.interval}"
@@ -130,9 +157,44 @@ class Supervisor:
                 continue
             eng = self._engine(spec)
             eng.advance(bars)
+            totals[bid] = eng.protector.total_equity(eng.pf, bars[-1].close)
             self._maybe_spawn(spec, eng, bars[-1].close)
+        self._maybe_retire(totals)
         self._save_index()
         return self.snapshot(bars_for)
+
+    def _maybe_retire(self, totals: Dict[str, float]) -> None:
+        """Cull bags that failed to reach the survival bar by their deadline; the
+        strongest always survive (keep_min). A retired bag's value is swept into the
+        strongest survivor, so total value is conserved — the strong absorb the weak."""
+        r = self.retire
+        if not r.enabled or len(self.specs) <= r.keep_min:
+            return
+        now = time.time()
+        ranked = sorted(self.specs.values(), key=lambda s: totals.get(s.id, 0.0), reverse=True)
+        protected = {s.id for s in ranked[:max(1, r.keep_min)]}
+        strongest = ranked[0]
+        for spec in ranked:
+            if spec.id in protected or len(self.specs) <= r.keep_min:
+                continue
+            age_days = (now - spec.created_ts) / 86400.0 if spec.created_ts else 1e9
+            if age_days < r.grace_days:
+                continue
+            total = totals.get(spec.id, 0.0)
+            mult = (total / spec.seed) if spec.seed > 0 else 0.0
+            if age_days >= r.deadline_days and mult < r.survival_target:
+                if r.absorb_into_strongest and strongest.id != spec.id and strongest.id in self.specs:
+                    seng = self._engine(strongest)
+                    seng.protector.state.reserve += total     # value moves, never minted
+                    seng._save()
+                del self.specs[spec.id]
+                try:
+                    os.remove(self._state_path(spec.id))
+                except OSError:
+                    pass
+                self.retired.append({"ts": int(now), "bag": spec.id, "seed": spec.seed,
+                                     "final_value": round(total, 2), "multiple": round(mult, 3),
+                                     "absorbed_by": strongest.id if r.absorb_into_strongest else None})
 
     def _maybe_spawn(self, spec: BagSpec, eng: TradingEngine, price: float) -> None:
         p = self.policy
@@ -183,17 +245,21 @@ class Supervisor:
                    "trading": round(snap["trading_equity"], 2), "reserve": round(snap["reserve"], 2),
                    "total": round(snap["total"], 2), "exposure": snap["exposure"],
                    "total_return": round(snap["total_return"], 4), "trades": snap["trades"],
+                   "fitness": round(snap["total"] / spec.seed, 3) if spec.seed > 0 else 0.0,
                    "skims": snap["skims"], "reinvests": snap["reinvests"], "halted": snap["halted"]}
             bags.append(row)
             tot_trading += snap["trading_equity"]
             tot_reserve += snap["reserve"]
             tot_seed += spec.seed if spec.parent is None else 0.0   # only root seeds are external capital
-        totals = {"bags": len(bags), "spawns": len(self.spawns),
+        totals = {"bags": len(bags), "spawns": len(self.spawns), "retired": len(self.retired),
                   "trading": round(tot_trading, 2), "reserve": round(tot_reserve, 2),
                   "total": round(tot_trading + tot_reserve, 2), "external_seed": round(tot_seed, 2),
                   "realized_gain": round(sum(b.get("realized_gain", 0.0) for b in bags), 2),
                   "est_tax": round(sum(b.get("est_tax", 0.0) for b in bags), 2)}
         policy = {"enabled": self.policy.enabled, "trigger_multiple": self.policy.trigger_multiple,
                   "trigger_on": self.policy.trigger_on, "fraction": self.policy.fraction,
-                  "child_scenario": self.policy.child_scenario}
-        return {"bags": bags, "spawns": self.spawns[-50:], "totals": totals, "policy": policy}
+                  "child_scenario": self.policy.child_scenario,
+                  "retire_enabled": self.retire.enabled, "survival_target": self.retire.survival_target,
+                  "deadline_days": self.retire.deadline_days}
+        return {"bags": bags, "spawns": self.spawns[-50:], "retired": self.retired[-50:],
+                "totals": totals, "policy": policy}
