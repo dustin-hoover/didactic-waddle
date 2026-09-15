@@ -40,6 +40,7 @@ class BagSpec:
     parent: Optional[str] = None      # parent bag id; None for a root bag
     created_ts: int = 0
     chain: str = "base"               # chain this bag lives on (children can be born elsewhere)
+    last_morph_ts: int = 0            # last time this bag changed its own scenario
 
 
 @dataclass
@@ -84,20 +85,46 @@ class RetirePolicy:
     absorb_into_strongest: bool = True  # sweep a retired bag's value into the best survivor
 
 
+@dataclass
+class MorphPolicy:
+    """A bag adapts its OWN strategy to the regime — value preserved (only the dials
+    change; the bag keeps its holdings and reserve). Defensive in a BTC bear, growth in
+    a confirmed bull, aggressive in a strong bull. A cooldown prevents thrash."""
+    enabled: bool = False
+    cooldown_days: float = 7.0
+    bear: str = "guardian"            # BTC regime off -> low-risk
+    bull: str = "compounder"          # confirmed bull -> medium growth
+    strong_bull: str = "runner"       # strong bull -> high-risk
+    strong_threshold: float = 0.15    # BTC this far above its 200d = "strong"
+
+
+def decide_morph(current: str, regime_on: bool, strength: float,
+                 policy: "MorphPolicy") -> tuple:
+    """Pure: the scenario a bag should hold given the regime. Returns (target, reason)."""
+    if not regime_on:
+        return policy.bear, "BTC bear/unconfirmed — morph to defensive"
+    if strength >= policy.strong_threshold:
+        return policy.strong_bull, f"strong bull (BTC +{strength*100:.0f}% vs 200d) — morph aggressive"
+    return policy.bull, "confirmed bull — morph to growth"
+
+
 class Supervisor:
     def __init__(self, root_dir: str, policy: Optional[SpawnPolicy] = None,
                  retire: Optional["RetirePolicy"] = None,
-                 chain_selector: Optional[Callable[[], str]] = None):
+                 chain_selector: Optional[Callable[[], str]] = None,
+                 morph: Optional["MorphPolicy"] = None):
         self.root = root_dir
         os.makedirs(root_dir, exist_ok=True)
         self.policy = policy or SpawnPolicy()
         self.retire = retire or RetirePolicy()
+        self.morph = morph or MorphPolicy()
         # Returns the most opportunistic chain id for a new child (opportunity.best_chain,
         # wired by the runner). Injected so the bag engine stays pure/testable.
         self.chain_selector = chain_selector
         self.specs: Dict[str, BagSpec] = {}
         self.spawns: List[dict] = []
         self.retired: List[dict] = []
+        self.morphs: List[dict] = []
         self._load_index()
 
     # ---- persistence -----------------------------------------------------
@@ -116,12 +143,14 @@ class Supervisor:
             self.specs = {b["id"]: BagSpec(**b) for b in d.get("bags", [])}
             self.spawns = d.get("spawns", [])
             self.retired = d.get("retired", [])
+            self.morphs = d.get("morphs", [])
         except Exception:  # noqa: BLE001
-            self.specs, self.spawns, self.retired = {}, [], []
+            self.specs, self.spawns, self.retired, self.morphs = {}, [], [], []
 
     def _save_index(self) -> None:
         json.dump({"bags": [asdict(s) for s in self.specs.values()], "spawns": self.spawns,
-                   "retired": self.retired}, open(self._index_path(), "w"), indent=1)
+                   "retired": self.retired, "morphs": self.morphs},
+                  open(self._index_path(), "w"), indent=1)
 
     # ---- bag lifecycle ---------------------------------------------------
     def _engine(self, spec: BagSpec) -> TradingEngine:
@@ -148,15 +177,18 @@ class Supervisor:
         return spec
 
     # ---- stepping the whole tree ----------------------------------------
-    def advance(self, bars_for: Callable[[str, str], List[Bar]]) -> dict:
-        """Advance every bag on its scenario's data, then run the spawn check.
+    def advance(self, bars_for: Callable[[str, str], List[Bar]],
+                signals: Optional[dict] = None) -> dict:
+        """Advance every bag on its scenario's data, then run spawn/retire checks.
 
         ``bars_for(symbol, interval)`` supplies candles (injected so tests need no
-        network). Returns the full tree snapshot for the UI.
+        network). ``signals`` (e.g. {"regime_on": bool, "strength": float}) drives
+        morphing when a MorphPolicy is enabled. Returns the full tree snapshot.
         """
         cache: Dict[str, List[Bar]] = {}
         totals: Dict[str, float] = {}
         for bid, spec in list(self.specs.items()):
+            self._maybe_morph(spec, signals)     # adapt strategy BEFORE trading this candle
             scn = scenarios.by_key(spec.scenario) or scenarios.by_key(scenarios.DEFAULT_KEY)
             key = f"{scn.symbol}:{scn.interval}"
             bars = cache.get(key) or cache.setdefault(key, bars_for(scn.symbol, scn.interval))
@@ -169,6 +201,24 @@ class Supervisor:
         self._maybe_retire(totals)
         self._save_index()
         return self.snapshot(bars_for)
+
+    def _maybe_morph(self, spec: BagSpec, signals: Optional[dict]) -> None:
+        """Adapt a bag's scenario to the regime (value preserved — the engine state at
+        this bag's path carries over; only the strategy dials change). Cooldown-gated."""
+        m = self.morph
+        if not m.enabled or not signals:
+            return
+        now = time.time()
+        if spec.last_morph_ts and (now - spec.last_morph_ts) < m.cooldown_days * 86400:
+            return
+        target, reason = decide_morph(spec.scenario, bool(signals.get("regime_on", True)),
+                                      float(signals.get("strength", 0.0) or 0.0), m)
+        if target and target != spec.scenario and scenarios.by_key(target):
+            old = spec.scenario
+            spec.scenario = target
+            spec.last_morph_ts = int(now)
+            self.morphs.append({"ts": int(now), "bag": spec.id, "from": old,
+                                "to": target, "reason": reason})
 
     def _maybe_retire(self, totals: Dict[str, float]) -> None:
         """Cull bags that failed to reach the survival bar by their deadline; the
@@ -277,4 +327,4 @@ class Supervisor:
                   "retire_enabled": self.retire.enabled, "survival_target": self.retire.survival_target,
                   "deadline_days": self.retire.deadline_days}
         return {"bags": bags, "spawns": self.spawns[-50:], "retired": self.retired[-50:],
-                "totals": totals, "policy": policy}
+                "morphs": self.morphs[-50:], "totals": totals, "policy": policy}

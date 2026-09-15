@@ -253,7 +253,7 @@ def build():
     # State persists under docs/bags/ (committed) across scheduled runs.
     paper, bag_tree = {}, {}
     try:
-        from tradebot.bags import Supervisor, SpawnPolicy, RetirePolicy
+        from tradebot.bags import Supervisor, SpawnPolicy, RetirePolicy, MorphPolicy
         bars_cache = {}
         def bars_for(sym, interval):
             k = f"{sym}:{interval}"
@@ -301,11 +301,16 @@ def build():
             survival_target=float(os.environ.get("TB_SURVIVAL_TARGET", "1.0")),
             deadline_days=float(os.environ.get("TB_SURVIVAL_DEADLINE_DAYS", "90")),
             keep_min=int(os.environ.get("TB_SURVIVAL_KEEP_MIN", "1")))
+        # Morph policy: a bag adapts its own strategy to the BTC regime (defensive in a
+        # bear, growth/aggressive in a confirmed bull). Gated by TB_MORPH.
+        morph = MorphPolicy(enabled=os.environ.get("TB_MORPH", "").strip() in ("1", "true", "on"),
+                            cooldown_days=float(os.environ.get("TB_MORPH_COOLDOWN_DAYS", "7")))
         sup = Supervisor(os.path.join(DOCS, "bags"), policy, retire=retire,
-                         chain_selector=chain_selector)
+                         chain_selector=chain_selector, morph=morph)
         if not sup.specs:
             sup.add_bag("steady", seed=1000.0)      # root bag = the paper portfolio
-        bag_tree = sup.advance(bars_for)
+        bag_tree = sup.advance(bars_for, signals={"regime_on": bool(regime.get("on")),
+                                                  "strength": float(regime.get("pct_above_long") or 0.0)})
         root = next((b for b in bag_tree["bags"] if b["parent"] is None), None)
         if root:                                     # map root -> the existing paper panel
             paper = {"symbol": "BTC", "interval": "1d", "trading_equity": root["trading"],

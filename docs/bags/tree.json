@@ -7,9 +7,11 @@
    "wallet": null,
    "parent": null,
    "created_ts": 1789083249,
-   "chain": "base"
+   "chain": "base",
+   "last_morph_ts": 0
   }
  ],
  "spawns": [],
- "retired": []
+ "retired": [],
+ "morphs": []
 }

@@ -186,3 +186,48 @@ def test_retire_disabled_by_default_is_noop(tmp_path):
     for b in ("b1", "b2"): _age(sup, b, 90)
     sup._maybe_retire({"b1": 1.0, "b2": 1.0})
     assert set(sup.specs) == {"b1", "b2"}
+
+
+# ---- morphing (a bag adapts its own strategy to the regime) ----
+from tradebot.bags import MorphPolicy, decide_morph
+
+
+def test_decide_morph_tiers():
+    mp = MorphPolicy(enabled=True, bear="guardian", bull="compounder", strong_bull="runner",
+                     strong_threshold=0.15)
+    assert decide_morph("steady", False, 0.5, mp)[0] == "guardian"      # bear -> defensive
+    assert decide_morph("steady", True, 0.02, mp)[0] == "compounder"    # mild bull -> growth
+    assert decide_morph("steady", True, 0.30, mp)[0] == "runner"        # strong bull -> aggressive
+
+
+def test_bag_morphs_on_advance_and_preserves_equity(tmp_path):
+    mp = MorphPolicy(enabled=True, cooldown_days=7, bear="guardian")
+    sup = Supervisor(str(tmp_path), SpawnPolicy(enabled=False), morph=mp)
+    sup.add_bag("runner", seed=1000)                    # starts aggressive
+    # grow some equity first (bull data), no morph signal yet
+    sup.advance(_feed(_bars()), signals=None)
+    eq_before = sup.snapshot(_feed(_bars()))["bags"][0]["total"]
+    # now a bear signal -> should morph to guardian, equity carried over
+    sup.advance(_feed(_bars()), signals={"regime_on": False, "strength": 0.0})
+    assert sup.specs["b1"].scenario == "guardian"
+    assert sup.morphs[-1]["to"] == "guardian" and sup.morphs[-1]["from"] == "runner"
+    eq_after = sup.snapshot(_feed(_bars()))["bags"][0]["total"]
+    assert eq_after > 0 and abs(eq_after - eq_before) / eq_before < 0.5   # equity preserved, not reset
+
+
+def test_morph_cooldown_blocks_thrash(tmp_path):
+    mp = MorphPolicy(enabled=True, cooldown_days=30)
+    sup = Supervisor(str(tmp_path), SpawnPolicy(enabled=False), morph=mp)
+    sup.add_bag("compounder", seed=1000)
+    sup.advance(_feed(_bars()), signals={"regime_on": False, "strength": 0.0})  # morph -> guardian
+    assert sup.specs["b1"].scenario == "guardian" and len(sup.morphs) == 1
+    # immediate opposite signal is inside cooldown -> no second morph
+    sup.advance(_feed(_bars()), signals={"regime_on": True, "strength": 0.3})
+    assert sup.specs["b1"].scenario == "guardian" and len(sup.morphs) == 1
+
+
+def test_morph_disabled_is_noop(tmp_path):
+    sup = Supervisor(str(tmp_path), SpawnPolicy(enabled=False))   # morph default off
+    sup.add_bag("runner", seed=1000)
+    sup.advance(_feed(_bars()), signals={"regime_on": False, "strength": 0.0})
+    assert sup.specs["b1"].scenario == "runner" and not sup.morphs
