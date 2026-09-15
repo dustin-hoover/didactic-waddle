@@ -319,6 +319,8 @@ def quote(origin_chain: str, dest_chain: str, origin_symbol: str, dest_symbol: s
     out_usd = _fnum(q.get("amountOutUsd"))
     cost_usd = in_usd - out_usd if out_usd else 0.0
     cost_bps = (cost_usd / in_usd * 10_000) if in_usd else 0.0
+    if out_usd <= 0:                 # don't let a missing output price read as "free"
+        warnings.append("output USD not returned — cost figures unavailable, not zero")
 
     ok = bool(p.enabled) and not dry and bool(q.get("depositAddress"))
     summary = (f"{amt_in:.6f} {os_}@{oc} -> {amt_out:.6f} {ds}@{dc} "

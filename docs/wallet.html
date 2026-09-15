@@ -526,7 +526,16 @@
         var d=await liveQuote(fromK, toK, g("xiAmt").value, acct), q=d.quote||{};
         var dep=q.depositAddress;
         if(!dep){ st.innerHTML='<span class="no">No deposit address returned — aborting.</span>'; return; }
-        var raw=q.amountIn||toRaw(g("xiAmt").value, USDC_DEC);
+        // Defense-in-depth: the quote we're about to fund must be FOR US and for the
+        // amount we asked. If the echoed request names a different recipient or amount
+        // (tampered response / wrong route), abort rather than send to a stranger's route.
+        var qr=d.quoteRequest||{};
+        var wantRaw=toRaw(g("xiAmt").value, USDC_DEC);
+        if(qr.recipient && String(qr.recipient).toLowerCase()!==acct.toLowerCase()){
+          st.innerHTML='<span class="no">Aborted: quote recipient does not match your wallet.</span>'; return; }
+        if(q.amountIn && String(q.amountIn)!==wantRaw){
+          st.innerHTML='<span class="no">Aborted: quote amount does not match what you entered.</span>'; return; }
+        var raw=q.amountIn||wantRaw;
         // 4) in-page review, then sign the ERC-20 transfer in the wallet
         st.innerHTML='<div class="card" style="margin-top:6px">'+
           '<div class="kv"><span>Send</span><b>'+fromRaw(raw,USDC_DEC).toFixed(6)+' USDC ('+CH[fromK].name+')</b></div>'+
