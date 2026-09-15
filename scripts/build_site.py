@@ -266,7 +266,11 @@ def build():
             trigger_multiple=float(os.environ.get("TB_SPAWN_TRIGGER", "2.0")),
             fraction=float(os.environ.get("TB_SPAWN_FRACTION", "0.5")),
             child_scenario=(os.environ.get("TB_SPAWN_CHILD", "").strip() or None),
-            cross_chain=os.environ.get("TB_CROSS_CHAIN", "").strip() in ("1", "true", "on"))
+            cross_chain=os.environ.get("TB_CROSS_CHAIN", "").strip() in ("1", "true", "on"),
+            # Memory gate: let the ledger VETO a spawn whose birth conditions have a weak
+            # track record. Off by default — it only bites once there's enough history,
+            # but it's a deliberate opt-in (TB_BAG_MEMORY_GATE=1).
+            consult_memory=os.environ.get("TB_BAG_MEMORY_GATE", "").strip() in ("1", "true", "on"))
         # Cross-chain selector: on a spawn, pick the most opportunistic executable chain
         # (opportunity.best_chain over live per-chain breadth/liquidity, gated by the BTC
         # regime). Lazy — only runs when a bag actually reproduces, so normal runs stay fast.
@@ -305,12 +309,28 @@ def build():
         # bear, growth/aggressive in a confirmed bull). Gated by TB_MORPH.
         morph = MorphPolicy(enabled=os.environ.get("TB_MORPH", "").strip() in ("1", "true", "on"),
                             cooldown_days=float(os.environ.get("TB_MORPH_COOLDOWN_DAYS", "7")))
+        # The tree's MEMORY — an append-only ledger of births + outcomes (survived by
+        # reproducing, or culled) with the conditions at birth, persisted under
+        # docs/bags/ledger.json across runs so lessons accumulate over weeks.
+        from tradebot.ledger import BagLedger
+        ledger = BagLedger(os.path.join(DOCS, "bags", "ledger.json"))
         sup = Supervisor(os.path.join(DOCS, "bags"), policy, retire=retire,
-                         chain_selector=chain_selector, morph=morph)
+                         chain_selector=chain_selector, morph=morph, ledger=ledger)
         if not sup.specs:
+            sup._signals = {"regime_on": bool(regime.get("on")),
+                            "strength": float(regime.get("pct_above_long") or 0.0),
+                            "risk_regime": onchain.get("risk_regime")}
             sup.add_bag("steady", seed=1000.0)      # root bag = the paper portfolio
+        # Backfill births for bags that predate the ledger (idempotent). Their true
+        # birth regime is unknown, so record it as such rather than fabricating it —
+        # future outcomes still link to them; new spawns carry the live conditions.
+        for _s in sup.specs.values():
+            ledger.record_birth(_s.id, scenario=_s.scenario, chain=getattr(_s, "chain", "base"),
+                                seed=_s.seed, parent=_s.parent, regime_on=None, strength=None,
+                                ts=_s.created_ts or None)
         bag_tree = sup.advance(bars_for, signals={"regime_on": bool(regime.get("on")),
-                                                  "strength": float(regime.get("pct_above_long") or 0.0)})
+                                                  "strength": float(regime.get("pct_above_long") or 0.0),
+                                                  "risk_regime": onchain.get("risk_regime")})
         root = next((b for b in bag_tree["bags"] if b["parent"] is None), None)
         if root:                                     # map root -> the existing paper panel
             paper = {"symbol": "BTC", "interval": "1d", "trading_equity": root["trading"],

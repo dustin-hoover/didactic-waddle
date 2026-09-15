@@ -1,0 +1,17 @@
+{
+ "records": [
+  {
+   "event": "born",
+   "ts": 1789083249,
+   "bag": "b1",
+   "parent": null,
+   "chain": "base",
+   "scenario": "steady",
+   "seed": 1000.0,
+   "regime_on": null,
+   "strength": null,
+   "regime_bucket": "unknown",
+   "risk_regime": null
+  }
+ ]
+}

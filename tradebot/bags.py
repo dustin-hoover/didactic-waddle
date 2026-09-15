@@ -61,6 +61,7 @@ class SpawnPolicy:
     max_bags: int = 64                # safety cap on the tree size
     child_scenario: Optional[str] = None   # None -> child inherits the parent's scenario
     cross_chain: bool = False         # child is born on the most opportunistic chain (needs a selector)
+    consult_memory: bool = False      # let the bag ledger VETO a spawn whose conditions have a weak track record
 
 
 @dataclass
@@ -112,7 +113,8 @@ class Supervisor:
     def __init__(self, root_dir: str, policy: Optional[SpawnPolicy] = None,
                  retire: Optional["RetirePolicy"] = None,
                  chain_selector: Optional[Callable[[], str]] = None,
-                 morph: Optional["MorphPolicy"] = None):
+                 morph: Optional["MorphPolicy"] = None,
+                 ledger: Optional[object] = None):
         self.root = root_dir
         os.makedirs(root_dir, exist_ok=True)
         self.policy = policy or SpawnPolicy()
@@ -121,6 +123,10 @@ class Supervisor:
         # Returns the most opportunistic chain id for a new child (opportunity.best_chain,
         # wired by the runner). Injected so the bag engine stays pure/testable.
         self.chain_selector = chain_selector
+        # The tree's MEMORY (tradebot.ledger.BagLedger or None): records births/outcomes
+        # so future spawns can consult the track record. Injected; None => no memory kept.
+        self.ledger = ledger
+        self._signals: dict = {}          # regime context for the current advance() run
         self.specs: Dict[str, BagSpec] = {}
         self.spawns: List[dict] = []
         self.retired: List[dict] = []
@@ -173,6 +179,12 @@ class Supervisor:
                        parent=parent, created_ts=int(time.time()), chain=chain)
         self.specs[bid] = spec
         self._engine(spec)._save()      # persist the bag's initial state (seed as cash)
+        if self.ledger is not None:     # remember the conditions this bag was born into
+            self.ledger.record_birth(
+                bid, scenario=scenario, chain=chain, seed=float(seed), parent=parent,
+                regime_on=self._signals.get("regime_on"),
+                strength=self._signals.get("strength"),
+                risk_regime=self._signals.get("risk_regime"))
         self._save_index()
         return spec
 
@@ -185,6 +197,7 @@ class Supervisor:
         network). ``signals`` (e.g. {"regime_on": bool, "strength": float}) drives
         morphing when a MorphPolicy is enabled. Returns the full tree snapshot.
         """
+        self._signals = signals or {}            # regime context used for births/memory this run
         cache: Dict[str, List[Bar]] = {}
         totals: Dict[str, float] = {}
         for bid, spec in list(self.specs.items()):
@@ -200,6 +213,8 @@ class Supervisor:
             self._maybe_spawn(spec, eng, bars[-1].close)
         self._maybe_retire(totals)
         self._save_index()
+        if self.ledger is not None:
+            self.ledger.save()
         return self.snapshot(bars_for)
 
     def _maybe_morph(self, spec: BagSpec, signals: Optional[dict]) -> None:
@@ -244,6 +259,10 @@ class Supervisor:
                     seng = self._engine(strongest)
                     seng.protector.state.reserve += total     # value moves, never minted
                     seng._save()
+                reason = (f"retired: reached {mult:.2f}x (< {r.survival_target:.2f}x bar) "
+                          f"by {age_days:.0f}d")
+                if self.ledger is not None:      # remember the failure + its birth conditions
+                    self.ledger.record_failure(spec.id, multiple=mult, final_value=total, reason=reason)
                 del self.specs[spec.id]
                 try:
                     os.remove(self._state_path(spec.id))
@@ -251,6 +270,7 @@ class Supervisor:
                     pass
                 self.retired.append({"ts": int(now), "bag": spec.id, "seed": spec.seed,
                                      "final_value": round(total, 2), "multiple": round(mult, 3),
+                                     "reason": reason,
                                      "absorbed_by": strongest.id if r.absorb_into_strongest else None})
 
     def _maybe_spawn(self, spec: BagSpec, eng: TradingEngine, price: float) -> None:
@@ -271,8 +291,6 @@ class Supervisor:
         move = round(p.fraction * reserve, 2)
         if move <= 0:
             return
-        eng.protector.state.reserve -= move       # value moves, it is not minted
-        eng._save()
         # Cross-chain: a child can be born on the most opportunistic chain (else inherit).
         child_chain = spec.chain
         if p.cross_chain and self.chain_selector is not None:
@@ -280,10 +298,29 @@ class Supervisor:
                 child_chain = self.chain_selector() or spec.chain
             except Exception:  # noqa: BLE001 — a bad selector never blocks reproduction
                 child_chain = spec.chain
-        child = self.add_bag(scenario=p.child_scenario or spec.scenario, seed=move,
+        child_scenario = p.child_scenario or spec.scenario
+        # MEMORY GATE: consult the track record before carving capital into these
+        # conditions. A weak history (enough sample, low success) vetoes the spawn so
+        # we don't repeat a wasted investment. Advisory-by-default (consult_memory off).
+        if p.consult_memory and self.ledger is not None:
+            rec = self.ledger.recommend(chain=child_chain, scenario=child_scenario,
+                                        regime_on=self._signals.get("regime_on"),
+                                        strength=self._signals.get("strength"))
+            if getattr(rec, "verdict", "") == "caution":
+                self.ledger.record_skip(child_chain, child_scenario,
+                                        self._signals.get("regime_on"),
+                                        self._signals.get("strength"),
+                                        reason="memory veto: " + rec.reason)
+                return
+        eng.protector.state.reserve -= move       # value moves, it is not minted
+        eng._save()
+        child = self.add_bag(scenario=child_scenario, seed=move,
                              wallet=spec.wallet, parent=spec.id, chain=child_chain)
         self.spawns.append({"ts": int(time.time()), "parent": spec.id,
                             "child": child.id, "amount": move, "chain": child_chain})
+        if self.ledger is not None:               # the parent demonstrably worked — it reproduced
+            self.ledger.record_success(spec.id, multiple=(total / spec.seed if spec.seed > 0 else 0.0),
+                                       final_value=total)
 
     # ---- reporting -------------------------------------------------------
     def snapshot(self, bars_for: Optional[Callable[[str, str], List[Bar]]] = None) -> dict:
@@ -326,5 +363,11 @@ class Supervisor:
                   "child_scenario": self.policy.child_scenario,
                   "retire_enabled": self.retire.enabled, "survival_target": self.retire.survival_target,
                   "deadline_days": self.retire.deadline_days}
-        return {"bags": bags, "spawns": self.spawns[-50:], "retired": self.retired[-50:],
+        snap = {"bags": bags, "spawns": self.spawns[-50:], "retired": self.retired[-50:],
                 "morphs": self.morphs[-50:], "totals": totals, "policy": policy}
+        if self.ledger is not None:               # the tree's memory: lessons from what lived/died
+            try:
+                snap["memory"] = self.ledger.analyze()
+            except Exception:  # noqa: BLE001 — memory analysis never blocks the snapshot
+                pass
+        return snap

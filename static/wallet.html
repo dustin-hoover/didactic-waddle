@@ -132,6 +132,16 @@
     <div id="tree"></div>
   </div>
 
+  <div class="panel" id="memPanel" style="display:none">
+    <div class="row" style="align-items:baseline">
+      <b style="font-size:15px">Bag memory</b>
+      <span class="muted">— what survived, what died, and the conditions at birth. Lessons for future spawns.</span>
+    </div>
+    <div id="memSummary" class="muted" style="margin:8px 2px"></div>
+    <div id="memLessons" style="margin:8px 0"></div>
+    <div id="memBreak"></div>
+  </div>
+
   <div id="rebPanel" class="panel hide">
     <b style="font-size:15px">Rebalance <span class="muted" id="rebFor"></span></b>
     <p class="muted">Reallocate this bag across scenarios — like reallocating a 401k between funds.
@@ -758,6 +768,44 @@ function renderTree(tree){
         <span class="muted">seeded ${fmt$(s.amount)}</span></div>`).join("");
     host.appendChild(tl);
   }
+  renderMemory(tree.memory);
+}
+
+function renderMemory(mem){
+  const panel=document.getElementById("memPanel");
+  if(!panel) return;
+  if(!mem || mem.error || !mem.born){ panel.style.display="none"; return; }
+  panel.style.display="";
+  const pct=x=>Math.round((x||0)*100)+"%";
+  document.getElementById("memSummary").innerHTML =
+    `<b>${mem.born}</b> bags born · <b>${mem.resolved}</b> resolved `+
+    `(<span class="pos">${mem.successes} reproduced</span> · <span class="neg">${mem.resolved-mem.successes} culled</span>) · `+
+    `<b>${mem.open}</b> still open`+
+    (mem.resolved?` · base success rate <b>${pct(mem.base_success_rate)}</b>`:``)+
+    (mem.skips?` · <b>${mem.skips}</b> spawns vetoed by memory`:``);
+  // lessons
+  const L=document.getElementById("memLessons");
+  L.innerHTML = (mem.lessons||[]).map(s=>`<div class="kv" style="border-bottom:1px solid var(--line);padding:5px 0">💡 <span>${s}</span></div>`).join("");
+  // breakdown tables (only groups with data)
+  const grp=(title,obj)=>{
+    const rows=Object.entries(obj||{}).filter(([k,v])=>v.n>0);
+    if(!rows.length) return "";
+    return `<div style="margin-top:10px"><div class="muted" style="font-size:12px;margin-bottom:4px">${title}</div>`+
+      `<table><thead><tr><th>Condition</th><th>Resolved</th><th>Reproduced</th><th>Rate</th></tr></thead><tbody>`+
+      rows.map(([k,v])=>{
+        const cc=v.rate>=mem.base_success_rate?'pos':'neg';
+        return `<tr><td>${k}</td><td>${v.n}</td><td>${v.success}</td><td class="${cc}">${pct(v.rate)}</td></tr>`;
+      }).join("")+`</tbody></table></div>`;
+  };
+  let html = grp("By BTC regime at birth", mem.by_regime)
+           + grp("By chain", mem.by_chain)
+           + grp("By scenario", mem.by_scenario);
+  if((mem.top_failure_reasons||[]).length){
+    html += `<div style="margin-top:10px"><div class="muted" style="font-size:12px;margin-bottom:4px">Why bags were culled</div>`+
+      mem.top_failure_reasons.map(r=>`<div class="kv" style="padding:3px 0"><span>${r.reason}</span><span class="muted">${r.count}×</span></div>`).join("")+`</div>`;
+  }
+  document.getElementById("memBreak").innerHTML = html ||
+    `<div class="muted" style="font-size:12px">Breakdowns appear once bags start resolving.</div>`;
 }
 
 function firstBagKey(){
