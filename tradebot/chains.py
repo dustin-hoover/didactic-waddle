@@ -80,13 +80,13 @@ CHAINS: Dict[str, ChainSpec] = {
         rpc_env="SOLANA_RPC_URL", explorer="https://solscan.io", exec_venue="jupiter",
         exec_supported=True, screen_supported=True, screen_chainid=None,
         primary_vehicle="SOL", vehicle_coin="SOL", enabled=True),
-    # Robinhood Chain — EVM L2 (Arbitrum Orbit), chain id 4663, ETH gas, Uniswap v2-v4
-    # + Chainlink + stables (USDG/USDe). Mainnet since 2026-07. Adopted as a first-class
-    # chain; DATA/EXECUTION stay pending until its GeckoTerminal network slug and token
-    # contract addresses are verified (same discipline as Base/Solana — never trade
-    # unverified addresses). The BTC regime gate already governs it chain-agnostically.
+    # Robinhood Chain — EVM L2 (Arbitrum Orbit), chain id 4663, ETH gas, Uniswap v2-v4.
+    # Mainnet since 2026-07. DATA/UNIVERSE are live (GeckoTerminal slug "robinhood",
+    # stable USDG verified). EXECUTION stays pending a Uniswap-on-4663 swap adapter +
+    # verified vehicle token — same discipline as Base/Solana: never trade unverified
+    # addresses. The BTC regime gate already governs it chain-agnostically.
     "robinhood": ChainSpec(
-        id="robinhood", name="Robinhood Chain", kind="evm", gt_network="", native="ETH",
+        id="robinhood", name="Robinhood Chain", kind="evm", gt_network="robinhood", native="ETH",
         stable="USDG", rpc_env="ROBINHOOD_RPC_URL", explorer="https://robinhood.chain",
         exec_venue="uniswap", exec_supported=False, screen_supported=False, screen_chainid="4663",
         primary_vehicle="", vehicle_coin="BTC", enabled=True),
