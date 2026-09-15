@@ -6,8 +6,10 @@
    "seed": 1000.0,
    "wallet": null,
    "parent": null,
-   "created_ts": 1789083249
+   "created_ts": 1789083249,
+   "chain": "base"
   }
  ],
- "spawns": []
+ "spawns": [],
+ "retired": []
 }

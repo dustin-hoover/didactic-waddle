@@ -39,6 +39,7 @@ class BagSpec:
     wallet: Optional[str] = None      # 0x address this bag is associated with (UI only)
     parent: Optional[str] = None      # parent bag id; None for a root bag
     created_ts: int = 0
+    chain: str = "base"               # chain this bag lives on (children can be born elsewhere)
 
 
 @dataclass
@@ -58,6 +59,7 @@ class SpawnPolicy:
     fraction: float = 0.5             # move this fraction of the reserve into the child
     max_bags: int = 64                # safety cap on the tree size
     child_scenario: Optional[str] = None   # None -> child inherits the parent's scenario
+    cross_chain: bool = False         # child is born on the most opportunistic chain (needs a selector)
 
 
 @dataclass
@@ -84,11 +86,15 @@ class RetirePolicy:
 
 class Supervisor:
     def __init__(self, root_dir: str, policy: Optional[SpawnPolicy] = None,
-                 retire: Optional["RetirePolicy"] = None):
+                 retire: Optional["RetirePolicy"] = None,
+                 chain_selector: Optional[Callable[[], str]] = None):
         self.root = root_dir
         os.makedirs(root_dir, exist_ok=True)
         self.policy = policy or SpawnPolicy()
         self.retire = retire or RetirePolicy()
+        # Returns the most opportunistic chain id for a new child (opportunity.best_chain,
+        # wired by the runner). Injected so the bag engine stays pure/testable.
+        self.chain_selector = chain_selector
         self.specs: Dict[str, BagSpec] = {}
         self.spawns: List[dict] = []
         self.retired: List[dict] = []
@@ -131,10 +137,11 @@ class Supervisor:
         return f"{parent}.{k + 1}"
 
     def add_bag(self, scenario: str, seed: float, wallet: Optional[str] = None,
-                parent: Optional[str] = None, bag_id: Optional[str] = None) -> BagSpec:
+                parent: Optional[str] = None, bag_id: Optional[str] = None,
+                chain: str = "base") -> BagSpec:
         bid = bag_id or self._new_id(parent)
         spec = BagSpec(id=bid, scenario=scenario, seed=float(seed), wallet=wallet,
-                       parent=parent, created_ts=int(time.time()))
+                       parent=parent, created_ts=int(time.time()), chain=chain)
         self.specs[bid] = spec
         self._engine(spec)._save()      # persist the bag's initial state (seed as cash)
         self._save_index()
@@ -216,10 +223,17 @@ class Supervisor:
             return
         eng.protector.state.reserve -= move       # value moves, it is not minted
         eng._save()
+        # Cross-chain: a child can be born on the most opportunistic chain (else inherit).
+        child_chain = spec.chain
+        if p.cross_chain and self.chain_selector is not None:
+            try:
+                child_chain = self.chain_selector() or spec.chain
+            except Exception:  # noqa: BLE001 — a bad selector never blocks reproduction
+                child_chain = spec.chain
         child = self.add_bag(scenario=p.child_scenario or spec.scenario, seed=move,
-                             wallet=spec.wallet, parent=spec.id)
+                             wallet=spec.wallet, parent=spec.id, chain=child_chain)
         self.spawns.append({"ts": int(time.time()), "parent": spec.id,
-                            "child": child.id, "amount": move})
+                            "child": child.id, "amount": move, "chain": child_chain})
 
     # ---- reporting -------------------------------------------------------
     def snapshot(self, bars_for: Optional[Callable[[str, str], List[Bar]]] = None) -> dict:
@@ -241,6 +255,7 @@ class Supervisor:
             row = {"id": spec.id, "scenario": spec.scenario, "scenario_name": scn.name,
                    "realized_gain": round(_summ.realized_gain_usd, 2), "est_tax": _est["total_tax"],
                    "wallet": spec.wallet, "parent": spec.parent, "seed": spec.seed,
+                   "chain": getattr(spec, "chain", "base"),
                    "symbol": scn.symbol, "created_ts": spec.created_ts,
                    "trading": round(snap["trading_equity"], 2), "reserve": round(snap["reserve"], 2),
                    "total": round(snap["total"], 2), "exposure": snap["exposure"],

@@ -265,7 +265,31 @@ def build():
         policy = SpawnPolicy(
             trigger_multiple=float(os.environ.get("TB_SPAWN_TRIGGER", "2.0")),
             fraction=float(os.environ.get("TB_SPAWN_FRACTION", "0.5")),
-            child_scenario=(os.environ.get("TB_SPAWN_CHILD", "").strip() or None))
+            child_scenario=(os.environ.get("TB_SPAWN_CHILD", "").strip() or None),
+            cross_chain=os.environ.get("TB_CROSS_CHAIN", "").strip() in ("1", "true", "on"))
+        # Cross-chain selector: on a spawn, pick the most opportunistic executable chain
+        # (opportunity.best_chain over live per-chain breadth/liquidity, gated by the BTC
+        # regime). Lazy — only runs when a bag actually reproduces, so normal runs stay fast.
+        chain_selector = None
+        if policy.cross_chain:
+            from tradebot import opportunity as _opp
+            from tradebot.universe import discover as _disc
+            _minres = float(os.environ.get("TB_UNIVERSE_MIN_RESERVE", "250000"))
+            def chain_selector():   # noqa: E306
+                sig = {}
+                for c in chains.enabled():
+                    if not c.can_execute:
+                        continue
+                    try:
+                        u = _disc(c.gt_network, pages=1, min_reserve_usd=_minres) if c.can_discover else []
+                    except Exception:  # noqa: BLE001
+                        u = []
+                    avg_liq = (sum(v.reserve_usd for v in u) / len(u)) if u else 0.0
+                    sig[c.id] = dict(executable=True, regime_on=bool(regime.get("on")),
+                                     universe_count=len(u),
+                                     vehicle_trend=1.0 if regime.get("on") else 0.0,
+                                     avg_liquidity_usd=avg_liq)
+                return _opp.best_chain(sig, default=spec.id)
         # Evolutionary retirement: a bag that hasn't reached TB_SURVIVAL_TARGET x its
         # seed by TB_SURVIVAL_DEADLINE_DAYS is culled; the strongest always survive
         # (keep_min=1) and absorb the culled value. Default target 1.0 = "don't lose
@@ -277,7 +301,8 @@ def build():
             survival_target=float(os.environ.get("TB_SURVIVAL_TARGET", "1.0")),
             deadline_days=float(os.environ.get("TB_SURVIVAL_DEADLINE_DAYS", "90")),
             keep_min=int(os.environ.get("TB_SURVIVAL_KEEP_MIN", "1")))
-        sup = Supervisor(os.path.join(DOCS, "bags"), policy, retire=retire)
+        sup = Supervisor(os.path.join(DOCS, "bags"), policy, retire=retire,
+                         chain_selector=chain_selector)
         if not sup.specs:
             sup.add_bag("steady", seed=1000.0)      # root bag = the paper portfolio
         bag_tree = sup.advance(bars_for)
