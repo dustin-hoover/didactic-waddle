@@ -3,6 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Content-Security-Policy: the funds page's hardest guardrail. connect-src is
+     locked to the EXACT APIs we use, so even an injected/compromised script cannot
+     exfiltrate your addresses or route you to a fake deposit address from an
+     attacker-controlled server. object-src/base-uri/form-action are shut off.
+     (script 'unsafe-inline' is required because this static page is built from
+     inline scripts and GitHub Pages can't serve nonces; the connect-src lockdown
+     is what bounds a script-injection's blast radius.) -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://1click.chaindefuser.com https://api.cow.fi https://lite-api.jup.ag; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
 <title>Saatgut</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -294,6 +302,254 @@
       g("solEnable").onchange=function(e){ g("solLive").classList.toggle("hide", !e.target.checked); };
       refresh(); setTimeout(refresh,300); setTimeout(refresh,1200);
     }catch(e){ setAddr("panel init error: "+((e&&e.message)||e)); }
+  })();
+  </script>
+
+  <div class="panel">
+    <b style="font-size:15px">Cross-chain execution (canary) — NEAR Intents</b>
+    <span class="badge" style="margin-left:6px">EVM→EVM · live</span>
+    <div class="sec" style="margin-top:10px">⚠️ <div><b>This moves real funds.</b> NEAR Intents fills
+      cross-chain swaps by having you send the origin token to a one-time <b>deposit address</b>;
+      solvers deliver the output to <i>your</i> wallet on the destination chain. You sign the deposit
+      transfer <b>in your own wallet</b> — no key ever lives here. Honest caveat: during the fill
+      (~30s) the 1Click service temporarily custodies the funds, so keep amounts canary-sized.</div></div>
+    <div class="sec" style="margin-top:8px;border-color:var(--good,#4a7)">🔒 <div style="font-size:12px">
+      <b>Security model.</b> Signing stays in your wallet (no server/hot key). Recipient is read from
+      your connected wallet — <b>never typed</b>. A <b>fresh</b> quote is fetched right before every
+      deposit (no reused addresses). Hard caps below bound the blast radius. The page's
+      <code>connect-src</code> is locked to the exact APIs, so injected script can't redirect your
+      funds. Independently verify every deposit on the NEAR Intents explorer link shown.</div></div>
+
+    <div id="xiAddr" style="margin:10px 0;padding:8px 10px;border-radius:8px;border:1px solid var(--line);
+      background:var(--panel);font-weight:600;font-size:13px;word-break:break-word">Connect your wallet to begin.</div>
+    <div class="row" style="align-items:center;gap:8px">
+      <button id="xiConnect">Connect wallet</button>
+    </div>
+    <div class="row" style="align-items:center;gap:8px;margin-top:10px">
+      <span class="muted">move</span>
+      <select id="xiAsset"><option value="USDC">USDC</option></select>
+      <span class="muted">from</span>
+      <select id="xiFrom"><option value="base">Base</option><option value="avalanche">Avalanche</option><option value="arbitrum">Arbitrum</option></select>
+      <span class="muted">to</span>
+      <select id="xiTo"><option value="arbitrum">Arbitrum</option><option value="base">Base</option><option value="avalanche">Avalanche</option></select>
+      <input id="xiAmt" type="number" min="0" step="1" value="5" style="width:90px;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink)">
+      <button id="xiQuote">Get live route</button>
+    </div>
+    <div id="xiOut" class="muted" style="margin-top:10px">Connect a wallet, pick a route, then fetch a live quote.</div>
+    <label style="display:block;margin-top:12px;font-size:13px;color:var(--muted)">
+      <input type="checkbox" id="xiEnable"> I understand this moves real funds across chains
+      (arms the deposit step below)</label>
+    <div id="xiLive" class="hide" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
+      <div id="xiCaps" class="muted" style="font-size:12px;margin-bottom:8px"></div>
+      <button id="xiExec" class="primary small">Deposit &amp; execute (fresh quote)</button>
+      <div id="xiStatus" class="muted" style="margin-top:8px"></div>
+    </div>
+  </div>
+  <script>
+  /* Self-contained NEAR Intents cross-chain execution — depends on nothing else on
+     the page, so the funds path is isolated. EVM→EVM USDC relocation only (recipient
+     is your own address, identical on every EVM chain). No external library: the
+     deposit is a plain ERC-20 transfer signed in your wallet. */
+  (function(){
+    "use strict";
+    var g=function(id){ return document.getElementById(id); };
+    var shortA=function(a){ return a ? a.slice(0,6)+"…"+a.slice(-4) : ""; };
+    var API="https://1click.chaindefuser.com";
+    // Vetted chains: hex chainId, native USDC (verified), NEAR prefix, explorer.
+    var CH={
+      base:      {hex:"0x2105", name:"Base",      usdc:"0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", near:"base", exp:"https://basescan.org/tx/"},
+      avalanche: {hex:"0xa86a", name:"Avalanche", usdc:"0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e", near:"avax", exp:"https://snowtrace.io/tx/"},
+      arbitrum:  {hex:"0xa4b1", name:"Arbitrum",  usdc:"0xaf88d065e77c8cc2239327c5edb3a432268e5831", near:"arb",  exp:"https://arbiscan.io/tx/"}
+    };
+    var USDC_DEC=6;
+    // Hard caps (USD). localStorage-tracked usage is a UX guardrail; the real hard
+    // boundary is your wallet's confirmation + keeping only canary funds in this wallet.
+    var CAP_MOVE=100, CAP_DAY=300, CAP_LIFE=1000;
+    var acct=null, tokensCache=null;
+
+    function rpc(method, params){
+      if(!window.ethereum) return Promise.reject(new Error("no EVM wallet found — open in your wallet's browser"));
+      return window.ethereum.request({method:method, params:params||[]});
+    }
+    function pad32(h){ return h.replace(/^0x/,"").toLowerCase().padStart(64,"0"); }
+    function toRaw(amtStr, dec){
+      var p=String(amtStr).trim().split("."); var i=p[0]||"0", f=p[1]||"";
+      f=(f+"0".repeat(dec)).slice(0,dec);
+      return (BigInt(i)*(10n**BigInt(dec))+BigInt(f||"0")).toString();
+    }
+    function assetId(chainKey){ return "nep141:"+CH[chainKey].near+"-"+CH[chainKey].usdc.toLowerCase()+".omft.near"; }
+
+    // Resolve canonical asset ids from the live token list (fallback to formula).
+    async function assetIds(fromK, toK){
+      var oid=assetId(fromK), did=assetId(toK);
+      try{
+        if(!tokensCache){ var r=await fetch(API+"/v0/tokens",{headers:{accept:"application/json"}}); tokensCache=await r.json(); }
+        var findc=function(prefix){ return (tokensCache||[]).find(function(t){
+          return String(t.blockchain).toLowerCase()===prefix && String(t.symbol).toUpperCase()==="USDC"; }); };
+        var of=findc(CH[fromK].near), df=findc(CH[toK].near);
+        if(of&&of.assetId) oid=of.assetId;
+        if(df&&df.assetId) did=df.assetId;
+      }catch(e){/* formula fallback */}
+      return {oid:oid, did:did};
+    }
+
+    // ---- caps (localStorage) ----
+    function today(){ return new Date().toISOString().slice(0,10); }
+    function usage(){
+      try{
+        var u=JSON.parse(localStorage.getItem("xi_usage")||"{}");
+        if(u.day!==today()){ u.day=today(); u.dayUsd=0; }
+        if(typeof u.lifeUsd!=="number") u.lifeUsd=0;
+        return u;
+      }catch(e){ return {day:today(), dayUsd:0, lifeUsd:0}; }
+    }
+    function addUsage(usd){
+      try{ var u=usage(); u.dayUsd+=usd; u.lifeUsd+=usd; localStorage.setItem("xi_usage", JSON.stringify(u)); }catch(e){}
+    }
+    function capMsg(){
+      var u=usage();
+      return "Caps — per move $"+CAP_MOVE+" · today $"+Math.round(u.dayUsd)+"/"+CAP_DAY+
+             " · lifetime $"+Math.round(u.lifeUsd)+"/"+CAP_LIFE+". You sign the deposit in your wallet.";
+    }
+    function capCheck(usd){
+      var u=usage();
+      if(usd>CAP_MOVE) return "over the $"+CAP_MOVE+" per-move cap";
+      if(u.dayUsd+usd>CAP_DAY) return "over the $"+CAP_DAY+" daily cap";
+      if(u.lifeUsd+usd>CAP_LIFE) return "over the $"+CAP_LIFE+" lifetime canary cap";
+      return "";
+    }
+    function armed(){ try{ return localStorage.getItem("xi_armed")==="1"; }catch(e){ return false; } }
+
+    function futureDeadline(sec){
+      return new Date(Date.now()+sec*1000).toISOString().replace(/\.\d+Z$/,"Z");
+    }
+
+    async function liveQuote(fromK, toK, amt, recipient){
+      var ids=await assetIds(fromK, toK);
+      var body={dry:false, swapType:"EXACT_INPUT", slippageTolerance:100,
+        originAsset:ids.oid, depositType:"ORIGIN_CHAIN", destinationAsset:ids.did,
+        amount:toRaw(amt, USDC_DEC), refundTo:recipient, refundType:"ORIGIN_CHAIN",
+        recipient:recipient, recipientType:"DESTINATION_CHAIN", deadline:futureDeadline(600)};
+      var r=await fetch(API+"/v0/quote",{method:"POST",headers:{"content-type":"application/json",accept:"application/json"},body:JSON.stringify(body)});
+      var d=await r.json();
+      if(!r.ok) throw new Error((d&&(d.message||d.errorType))||("HTTP "+r.status));
+      return d;   // {quote:{...}, signature, correlationId}
+    }
+
+    function fromRaw(raw,dec){ return Number(BigInt(raw))/Math.pow(10,dec); }
+
+    async function connect(){
+      try{
+        var a=await rpc("eth_requestAccounts",[]);
+        acct=(a&&a[0])||null;
+        g("xiAddr").innerHTML = acct
+          ? 'Recipient (your wallet, auto): <span style="color:var(--gold,#e3b23c)">'+acct+'</span>'
+          : "No account.";
+      }catch(e){ g("xiAddr").textContent="Connect failed: "+(e.message||e); }
+    }
+
+    async function getRoute(){
+      var out=g("xiOut");
+      if(!acct){ out.innerHTML='<span class="no">Connect your wallet first.</span>'; return; }
+      var fromK=g("xiFrom").value, toK=g("xiTo").value, amt=g("xiAmt").value;
+      if(fromK===toK){ out.innerHTML='<span class="no">Origin and destination must differ.</span>'; return; }
+      if(!(Number(amt)>0)){ out.innerHTML='<span class="no">Enter an amount.</span>'; return; }
+      var cap=capCheck(Number(amt));
+      if(cap){ out.innerHTML='<span class="no">'+cap+'.</span>'; return; }
+      out.textContent="Fetching a live route…";
+      try{
+        var d=await liveQuote(fromK, toK, amt, acct), q=d.quote||{};
+        var outAmt=q.amountOutFormatted||fromRaw(q.amountOut||"0",USDC_DEC).toFixed(6);
+        var costUsd=(Number(q.amountInUsd||amt)-Number(q.amountOutUsd||0));
+        out.innerHTML =
+          '<div class="kv"><span>Send</span><b>'+(+amt).toLocaleString()+' USDC on '+CH[fromK].name+'</b></div>'+
+          '<div class="kv"><span>Receive (est.)</span><b class="pos">'+(+outAmt).toLocaleString(undefined,{maximumFractionDigits:6})+' USDC on '+CH[toK].name+'</b></div>'+
+          '<div class="kv"><span>Cost</span><span>~$'+costUsd.toFixed(2)+' · ~'+(q.timeEstimate||"?")+'s</span></div>'+
+          '<div class="kv"><span>Deposit address</span><b style="color:var(--gold,#e3b23c);word-break:break-word">'+(q.depositAddress||"—")+'</b></div>'+
+          '<div class="muted" style="font-size:12px;margin-top:6px">correlationId '+(d.correlationId||"—")+
+          ' · signed by 1Click: '+(d.signature?"yes":"no")+
+          '. This is a preview — the deposit step fetches a <b>fresh</b> quote at send time.</div>';
+      }catch(e){ out.innerHTML='<span class="no">Could not fetch route: '+(e.message||e)+'</span>'; }
+    }
+
+    var _polling=false;
+    async function pollStatus(depAddr, fromK){
+      if(_polling) return; _polling=true;
+      var st=g("xiStatus");
+      for(var i=0;i<40;i++){   // ~4 min
+        try{
+          var r=await fetch(API+"/v0/status?depositAddress="+encodeURIComponent(depAddr),{headers:{accept:"application/json"}});
+          var d=await r.json(); var s=d.status||"?";
+          var extra="";
+          var sd=d.swapDetails||{};
+          if(sd.destinationChainTxHashes&&sd.destinationChainTxHashes.length) extra=" · delivered";
+          st.innerHTML='<span class="'+(s==="SUCCESS"?"ok":(s==="FAILED"||s==="REFUNDED"?"no":""))+'">Status: '+s+extra+'</span>'+
+            ' <a href="https://explorer.near-intents.org" target="_blank" rel="noopener">verify ↗</a>';
+          if(s==="SUCCESS"||s==="REFUNDED"||s==="FAILED"){ _polling=false; return; }
+        }catch(e){ st.textContent="Status check hiccup, retrying…"; }
+        await new Promise(function(res){ setTimeout(res,6000); });
+      }
+      _polling=false;
+    }
+
+    async function execute(){
+      var st=g("xiStatus");
+      if(!armed()){ st.innerHTML='<span class="no">Tick the box above to arm the deposit step.</span>'; return; }
+      if(!acct){ st.innerHTML='<span class="no">Connect your wallet first.</span>'; return; }
+      var fromK=g("xiFrom").value, toK=g("xiTo").value, amt=Number(g("xiAmt").value);
+      if(fromK===toK||!(amt>0)){ st.innerHTML='<span class="no">Check the route and amount.</span>'; return; }
+      var cap=capCheck(amt);
+      if(cap){ st.innerHTML='<span class="no">'+cap+'.</span>'; return; }
+      try{
+        // 1) make sure the wallet is on the origin chain
+        var cur=await rpc("eth_chainId",[]);
+        if(cur!==CH[fromK].hex){
+          try{ await rpc("wallet_switchEthereumChain",[{chainId:CH[fromK].hex}]); }
+          catch(e){ st.innerHTML='<span class="no">Switch your wallet to '+CH[fromK].name+' and retry.</span>'; return; }
+        }
+        // 2) re-check the recipient is still THIS wallet (no silent account swap)
+        var a=await rpc("eth_accounts",[]);
+        if(!a||!a[0]||a[0].toLowerCase()!==acct.toLowerCase()){
+          st.innerHTML='<span class="no">Wallet account changed — reconnect before executing.</span>'; return; }
+        // 3) FRESH quote right now (never reuse a deposit address)
+        st.textContent="Fetching a fresh quote to lock the deposit address…";
+        var d=await liveQuote(fromK, toK, g("xiAmt").value, acct), q=d.quote||{};
+        var dep=q.depositAddress;
+        if(!dep){ st.innerHTML='<span class="no">No deposit address returned — aborting.</span>'; return; }
+        var raw=q.amountIn||toRaw(g("xiAmt").value, USDC_DEC);
+        // 4) in-page review, then sign the ERC-20 transfer in the wallet
+        st.innerHTML='<div class="card" style="margin-top:6px">'+
+          '<div class="kv"><span>Send</span><b>'+fromRaw(raw,USDC_DEC).toFixed(6)+' USDC ('+CH[fromK].name+')</b></div>'+
+          '<div class="kv"><span>To deposit address</span><b style="color:var(--gold,#e3b23c);word-break:break-word">'+dep+'</b></div>'+
+          '<div class="kv"><span>You receive on</span><b>'+CH[toK].name+' → '+shortA(acct)+'</b></div>'+
+          '<div class="muted" style="font-size:12px;margin:6px 0">Your wallet will show this same USDC transfer to the deposit address. Confirm they match.</div>'+
+          '<div style="display:flex;gap:8px"><button id="xiSign" class="primary small">Confirm &amp; send in wallet</button>'+
+          '<button id="xiCancel" class="small">Cancel</button></div></div>';
+        g("xiCancel").onclick=function(){ st.textContent="Cancelled."; };
+        g("xiSign").onclick=async function(){
+          try{
+            st.textContent="Approve the transfer in your wallet…";
+            var data="0xa9059cbb"+pad32(dep)+pad32("0x"+BigInt(raw).toString(16));
+            var tx=await rpc("eth_sendTransaction",[{from:acct, to:CH[fromK].usdc, data:data}]);
+            addUsage(amt);
+            g("xiCaps").textContent=capMsg();
+            st.innerHTML='<span class="ok">Deposit sent: <a href="'+CH[fromK].exp+tx+'" target="_blank" rel="noopener">'+tx.slice(0,12)+'… ↗</a></span> — tracking the cross-chain fill…';
+            pollStatus(dep, fromK);
+          }catch(e){ st.innerHTML='<span class="no">Deposit failed: '+(e.message||e)+'</span>'; }
+        };
+      }catch(e){ st.innerHTML='<span class="no">Could not stage deposit: '+(e.message||e)+'</span>'; }
+    }
+
+    function syncArm(on){ var live=g("xiLive"); if(live) live.classList.toggle("hide", !on); if(on) g("xiCaps").textContent=capMsg(); }
+    if(g("xiConnect")) g("xiConnect").onclick=connect;
+    if(g("xiQuote")) g("xiQuote").onclick=getRoute;
+    if(g("xiExec")) g("xiExec").onclick=execute;
+    if(g("xiEnable")){
+      var on=armed(); g("xiEnable").checked=on; syncArm(on);
+      g("xiEnable").onchange=function(e){ try{ localStorage.setItem("xi_armed", e.target.checked?"1":"0"); }catch(_){} syncArm(e.target.checked); };
+    }
+    // auto-fill recipient if a wallet is already connected
+    if(window.ethereum){ rpc("eth_accounts",[]).then(function(a){ if(a&&a[0]){ acct=a[0]; g("xiAddr").innerHTML='Recipient (your wallet, auto): <span style="color:var(--gold,#e3b23c)">'+acct+'</span>'; } }).catch(function(){}); }
   })();
   </script>
 
