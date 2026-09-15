@@ -1,0 +1,19 @@
+{
+ "exposure": {
+  "BTCB": 1.0
+ },
+ "decisions": [
+  {
+   "ts": 1789440177,
+   "asset": "BTCB",
+   "action": "buy",
+   "notional": 100.0,
+   "target": 1.0,
+   "current": 0.0,
+   "gate": "ON",
+   "price": 77864.93,
+   "reason": "WOULD buy $100.00 of BTCB (DRY-RUN)",
+   "blocked": null
+  }
+ ]
+}

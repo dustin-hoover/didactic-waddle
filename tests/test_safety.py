@@ -148,3 +148,10 @@ def test_non_evm_chain_returns_unknown_no_query(monkeypatch):
     monkeypatch.setattr(sf, "_etherscan", lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not query")))
     rep = sf.check("So11111111111111111111111111111111111111112", chain="solana")
     assert rep.verdict == "UNKNOWN" and "solana" in rep.notes.get("chain", "")
+
+
+def test_avalanche_known_safe_and_chainid():
+    assert sf._CHAIN_IDS["avalanche"] == "43114"
+    rep = sf.check("0x152b9d0fdc40c096757f570a51e494bd4b943e50", chain="avalanche")
+    assert rep.verified is True and rep.verdict == "OK" and rep.name == "BTC.b"
+    assert any("avax" in u for u in sf._chain_rpc_urls("avalanche"))

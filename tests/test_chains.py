@@ -49,3 +49,11 @@ def test_enabled_lists_only_toggled_chains():
 def test_rpc_url_reads_env(monkeypatch):
     monkeypatch.setenv("SOLANA_RPC_URL", "https://sol.example/x")
     assert chains.get("solana").rpc_url == "https://sol.example/x"
+
+
+def test_avalanche_fully_wired():
+    a = chains.get("avalanche")
+    assert a.enabled and a.kind == "evm"
+    assert a.can_discover and a.can_screen and a.can_execute
+    assert a.gt_network == "avax" and a.screen_chainid == "43114"
+    assert a.primary_vehicle == "BTCB" and a.vehicle_coin == "BTC" and a.exec_venue == "cow"

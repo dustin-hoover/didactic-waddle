@@ -62,7 +62,13 @@ KNOWN_SAFE_BASE = {
     "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf": "cbBTC",
 }
 
-KNOWN_SAFE_BY_CHAIN = {"ethereum": KNOWN_SAFE, "base": KNOWN_SAFE_BASE}
+# Avalanche C-Chain majors (chainid 43114) — verified via CoinGecko.
+KNOWN_SAFE_AVAX = {
+    "0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e": "USDC",
+    "0x152b9d0fdc40c096757f570a51e494bd4b943e50": "BTC.b",
+}
+
+KNOWN_SAFE_BY_CHAIN = {"ethereum": KNOWN_SAFE, "base": KNOWN_SAFE_BASE, "avalanche": KNOWN_SAFE_AVAX}
 
 # Capability patterns matched against ABI function names (authoritative) and,
 # as a fallback, the raw verified source. Each: (flag key, human note, regex).
@@ -92,19 +98,23 @@ def _http(url: str, tries: int = 3, timeout: int = 25):
 
 
 # Chain routing: Etherscan V2 is multichain via chainid (one key). eth_call needs a
-# chain-appropriate RPC. Base honors BASE_RPC_URL; falls back to public endpoints.
+# chain-appropriate RPC. Each chain honors its own RPC env, else public endpoints.
 _BASE_RPC = ["https://mainnet.base.org", "https://base-rpc.publicnode.com",
              "https://base.llamarpc.com"]
+_AVAX_RPC = ["https://api.avax.network/ext/bc/C/rpc", "https://avalanche-c-chain-rpc.publicnode.com"]
 
 
 def _chain_rpc_urls(chain: str) -> List[str]:
     if chain == "base":
         env = os.environ.get("BASE_RPC_URL", "").strip()
         return ([env] if env else []) + _BASE_RPC
+    if chain == "avalanche":
+        env = os.environ.get("AVALANCHE_RPC_URL", "").strip()
+        return ([env] if env else []) + _AVAX_RPC
     return _rpc_urls()
 
 
-_CHAIN_IDS = {"ethereum": "1", "base": "8453"}
+_CHAIN_IDS = {"ethereum": "1", "base": "8453", "avalanche": "43114"}
 
 
 def _etherscan(params: Dict[str, str], chainid: str = "1") -> Optional[dict]:

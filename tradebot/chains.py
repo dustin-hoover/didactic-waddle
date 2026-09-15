@@ -90,6 +90,14 @@ CHAINS: Dict[str, ChainSpec] = {
         stable="USDG", rpc_env="ROBINHOOD_RPC_URL", explorer="https://robinhood.chain",
         exec_venue="uniswap", exec_supported=False, screen_supported=False, screen_chainid="4663",
         primary_vehicle="", vehicle_coin="BTC", enabled=True),
+    # Avalanche C-Chain (id 43114) — EVM, CoW Swap live, GeckoTerminal slug "avax".
+    # Fully wired: discover + rug-screen (Etherscan V2 chainid 43114) + execute (cbBTC's
+    # analog here is BTC.b). All token addresses verified via CoinGecko.
+    "avalanche": ChainSpec(
+        id="avalanche", name="Avalanche", kind="evm", gt_network="avax", native="AVAX",
+        stable="USDC", rpc_env="AVALANCHE_RPC_URL", explorer="https://snowtrace.io",
+        exec_venue="cow", exec_supported=True, screen_supported=True, screen_chainid="43114",
+        primary_vehicle="BTCB", vehicle_coin="BTC", enabled=True),
     # --- ready to flip on as you choose them (enabled=False for now) ---
     "ethereum": ChainSpec(
         id="ethereum", name="Ethereum", kind="evm", gt_network="eth", native="ETH", stable="USDC",

@@ -40,6 +40,10 @@ TOKENS: Dict[str, Dict[str, tuple]] = {
         # via CoinGecko, 8 decimals.
         "CBBTC": ("0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf", 8),
     },
+    "avalanche": {   # C-Chain (id 43114); CoW Swap live here. Addresses verified via CoinGecko.
+        "USDC": ("0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e", 6),
+        "BTCB": ("0x152b9d0fdc40c096757f570a51e494bd4b943e50", 8),   # BTC.b — the BTC vehicle
+    },
 }
 
 def register_tokens(chain: str, mapping: Dict[str, tuple]) -> None:
@@ -63,6 +67,10 @@ VENUE_SPENDER = {
                  "1inch": "0x111111125421ca6dc452d289314280a0f8842a65"},  # 1inch router v6
     "base": {"cow": "0xc92e8bdf79f0507f65a392b0ab4667716bfe0110",
              "1inch": "0x111111125421ca6dc452d289314280a0f8842a65"},
+    # CoW's vault relayer is deterministic (same address on every CoW chain); CoW Swap
+    # is live on Avalanche. 1inch router v6 is likewise the same address cross-chain.
+    "avalanche": {"cow": "0xc92e8bdf79f0507f65a392b0ab4667716bfe0110",
+                  "1inch": "0x111111125421ca6dc452d289314280a0f8842a65"},
 }
 
 

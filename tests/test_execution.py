@@ -106,3 +106,12 @@ def test_cbbtc_tradeable_on_base():
     assert pr.buy_token == "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf"
     # 8-decimal token: ~100/77000 cbBTC in raw base units
     assert pr.min_buy_raw.isdigit() and int(pr.min_buy_raw) > 0
+
+
+def test_btcb_tradeable_on_avalanche():
+    pol = ExecutionPolicy(enabled=True, chain="avalanche", allowed_tokens=("USDC", "BTCB"),
+                          max_notional_usd=100)
+    pr = propose("b1", "0xabc", "USDC", "BTCB", 100.0, {"USDC": 1.0, "BTCB": 100000.0}, pol)
+    assert pr.ok is True
+    assert pr.buy_token == "0x152b9d0fdc40c096757f570a51e494bd4b943e50"
+    assert pr.spender == "0xc92e8bdf79f0507f65a392b0ab4667716bfe0110"   # CoW relayer
