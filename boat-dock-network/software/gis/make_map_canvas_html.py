@@ -10,6 +10,8 @@ import json, sys
 outdir, out_html = sys.argv[1], sys.argv[2]
 def rd(p): return open(f"{outdir}/{p}").read()
 lake, zones, premises, nodes = rd("lake.geojson"), rd("zones.geojson"), rd("premises.geojson"), rd("proposed_nodes.geojson")
+try: spine = rd("spine.geojson")
+except FileNotFoundError: spine = '{"type":"FeatureCollection","features":[]}'
 S = dict(premises=9571, shore=6144, zones=18, nodes=30, cov=84, median=410)
 
 HTML = f"""<title>Beaver Lake Network Map</title>
@@ -85,17 +87,18 @@ canvas.drag{{cursor:grabbing}}
     <label class="row"><input type="checkbox" id="L-zones" checked><span class="sw" style="background:#3f8fa688"></span>Service zones (18)</label>
     <label class="row"><input type="checkbox" id="L-cov" checked><span class="dot" style="background:var(--cov)"></span>Premises — LOS covered</label>
     <label class="row"><input type="checkbox" id="L-shadow" checked><span class="dot" style="background:var(--shadow)"></span>Premises — RF shadow</label>
+    <label class="row"><input type="checkbox" id="L-spine" checked><span class="sw" style="background:var(--node-ring);border-radius:0"></span>Backbone spine (41 hops)</label>
     <label class="row"><input type="checkbox" id="L-nodes" checked><span class="dot" style="background:var(--node-ring)"></span>Proposed nodes (30)</label>
-    <div class="foot">Drag to pan · scroll/buttons to zoom · click a zone or node for detail. Zone shade = build phase (1 darkest→4). ~13% of premises are in RF shadow.</div>
+    <div class="foot">Drag to pan · scroll/buttons to zoom · click a zone or node for detail. Zone shade = build phase (1 darkest→4). Solid spine = over-water licensed microwave; dashed = land. ~13% of premises are in RF shadow.</div>
   </div>
   <div id="pop"></div>
 </div>
 <script>
-const LAKE={lake}, ZONES={zones}, PREM={premises}, NODES={nodes};
+const LAKE={lake}, ZONES={zones}, PREM={premises}, NODES={nodes}, SPINE={spine};
 const cv=document.getElementById('cv'), ctx=cv.getContext('2d'), pop=document.getElementById('pop');
 const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const phaseCol=p=>cssv('--p'+(p||4));
-const vis={{zones:true,cov:true,shadow:true,nodes:true}};
+const vis={{zones:true,cov:true,shadow:true,nodes:true,spine:true}};
 
 // ---- geometry helpers ----
 function polys(geom){{ // -> array of rings (outer+holes flattened, each ring = [[lon,lat]...])
@@ -147,6 +150,13 @@ function draw(){{
     if(X<-5||X>W+5||Y<-5||Y>H+5) continue;
     ctx.fillStyle=p.los?cssv('--cov'):cssv('--shadow');
     ctx.fillRect(X-r/2,Y-r/2,r,r);}}
+  // spine
+  if(vis.spine){{ ctx.lineWidth=1.4;
+    for(const f of SPINE.features){{const c=f.geometry.coordinates, over=(f.properties.class||'').indexOf('water')===0;
+      ctx.beginPath(); ctx.moveTo(sx(c[0][0]),sy(c[0][1])); ctx.lineTo(sx(c[1][0]),sy(c[1][1]));
+      ctx.strokeStyle=cssv('--node-ring'); ctx.setLineDash(over?[]:[4,3]);
+      ctx.globalAlpha=over?0.9:0.65; ctx.stroke();}}
+    ctx.setLineDash([]); ctx.globalAlpha=1; }}
   // nodes
   if(vis.nodes){{ ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.font='600 11px ui-monospace,Menlo,monospace';
@@ -168,7 +178,7 @@ cv.addEventListener('wheel',e=>{{e.preventDefault();const f=e.deltaY<0?1.15:1/1.
 document.getElementById('zin').onclick=()=>{{zoom*=1.3;draw();}};
 document.getElementById('zout').onclick=()=>{{zoom/=1.3;draw();}};
 document.getElementById('zfit').onclick=fit;
-for(const k of ['zones','cov','shadow','nodes'])
+for(const k of ['zones','cov','shadow','nodes','spine'])
   document.getElementById('L-'+k).addEventListener('change',e=>{{vis[k]=e.target.checked;draw();}});
 
 function pointInRings(lon,lat,geom){{let inside=false;

@@ -17,58 +17,69 @@ re-run them.
 - This is why EBITDA turns positive well before cumulative cash does: the heavy spend is
   capital, funded by the blended stack (§6), not operating expense.
 
-## 2. Unit economics (steady state, planning)
+> **VERIFIED MODEL (this section supersedes the earlier fiber-default estimate).**
+> Regenerate with `python3 software/finance/model.py` (reads the GIS outputs). The
+> single biggest change: because the viewshed analysis shows **87% of premises are
+> reachable by wireless line-of-sight** from shoreline high points, the wireless-first
+> build has a **cost-per-passing of ~$402**, not the ~$1,800 a fiber overbuild assumes.
+> That collapses whole-lake CapEx from ~$24M to **~$6.6M** and the peak funding need to
+> **~$3.0M**.
 
-| Metric | Without grants | With ~40% CapEx grant |
-|--------|----------------|-----------------------|
-| Cost per premises passed | $1,800 | ~$1,080 |
-| Cost per connection (drop+CPE) | $900 | ~$540 |
-| Passing cost allocated per sub (42% take) | ~$4,286 | ~$2,571 |
-| All-in cost per subscriber | ~$5,186 | ~$3,111 |
-| ARPU (blended res+biz) | $100/mo ($1,200/yr) | same |
-| Annual contribution/sub (~70% margin) | ~$840 | ~$840 |
-| Simple payback per sub | ~6.2 yrs | ~3.7 yrs |
+## 2. Unit economics (verified, steady state)
 
-Host-node hosting further lowers passing cost (free/cheap sites + power + easement),
-and lifts take-rate — both improve the table above. Grants are the single biggest lever
-on payback; hence the funding strategy in doc 13.
+| Metric | Value | Note |
+|--------|-------|------|
+| Cost per premises passed | **~$402** | Wireless-first; infra shared across a zone's premises |
+| Cost per connection (CPE + install) | **~$650** | Blended 87% wireless / 13% fiber-or-relay |
+| All-in cost per subscriber (5-yr) | **~$1,564** | Total CapEx ÷ Year-5 subscribers |
+| ARPU (blended res + business/marina) | $105/mo ($1,260/yr) | Premium market: median home $410k, 522 >$1M |
+| Annual contribution/sub (~70% margin) | ~$882 | |
+| Simple payback per sub | **~1.8 yrs** | vs ~6.2 yrs in the fiber-default estimate |
 
-## 3. 5-year pro forma (planning, $000s)
+The premium shoreline market (verified median home value $410k) supports the $105 ARPU
+and a high ultimate take; the host-node program lowers site cost and lifts take further.
 
-Whole-lake, phased build. See CSV for the machine-readable version.
+## 3. 5-year pro forma (verified, $000s)
+
+Whole-lake, phased by the GIS build order (doc 04): P1 3,341 premises / 3 nodes,
+P2 2,957 / 10, P3 1,933 / 8, P4 1,340 / 9. Machine-readable in
+[`../data/financial/pro_forma.csv`](../data/financial/pro_forma.csv).
 
 | Line | Y1 | Y2 | Y3 | Y4 | Y5 |
 |------|----|----|----|----|----|
-| Premises passed (cum) | 500 | 2,000 | 4,500 | 7,000 | 9,000 |
-| Subscribers (cum) | 140 | 660 | 1,710 | 2,800 | 3,780 |
-| Take rate | 28% | 33% | 38% | 40% | 42% |
-| **Revenue** | 88 | 504 | 1,493 | 2,841 | 4,145 |
-| Transit/backhaul | 120 | 200 | 320 | 450 | 600 |
-| Operating payroll | 380 | 620 | 950 | 1,250 | 1,550 |
-| Site leases/pole attach | 40 | 90 | 160 | 220 | 280 |
-| SG&A/software/insurance/fuel | 220 | 350 | 550 | 750 | 900 |
-| **Total OpEx** | 760 | 1,260 | 1,980 | 2,670 | 3,330 |
-| **EBITDA** | (672) | (756) | (487) | 171 | 815 |
-| **CapEx** | 2,576 | 4,118 | 6,595 | 5,981 | 4,882 |
-| **Cash flow (pre-financing)** | (3,248) | (4,874) | (7,082) | (5,810) | (4,067) |
+| Premises passed (cum) | 3,341 | 6,298 | 8,231 | 9,571 | 9,571 |
+| Subscribers (cum) | 835 | 1,889 | 2,963 | 3,828 | 4,211 |
+| Take rate | 25% | 30% | 36% | 40% | 44% |
+| **Revenue** | 558 | 1,819 | 3,240 | 4,536 | 5,369 |
+| **Total OpEx** | 710 | 1,180 | 1,750 | 2,300 | 2,820 |
+| **EBITDA** | (152) | 639 | 1,490 | 2,236 | 2,549 |
+| **CapEx** | 2,103 | 1,343 | 1,169 | 921 | 1,049 |
+| **Cash flow (pre-financing)** | (2,255) | (704) | 321 | 1,315 | 1,500 |
+| **Cash flow (cumulative)** | (2,255) | (2,959) | (2,638) | (1,323) | **177** |
 
-- **EBITDA turns positive in Year 4** as subscribers mature against a fixed operating
-  base.
-- **Cumulative pre-financing cash need ≈ $25M** over 5 years for the whole-lake build —
-  this is the raise, *before* grants.
-- 5-year CapEx ≈ **$24M** (hybrid; all-fiber would be far higher — the wireless spine
-  and nLOS access are what make whole-lake financeable).
+- **EBITDA turns positive in Year 2.**
+- **Peak funding need ≈ $3.0M** (end of Year 2); **cumulative cash turns positive in
+  Year 5** — before any grants.
+- **5-year CapEx ≈ $6.6M** ($3.8M network infrastructure incl. the $1.37M spine + $2.7M
+  subscriber connections). CapEx per year in
+  [`../data/financial/capex_detail.csv`](../data/financial/capex_detail.csv).
 
 ## 4. What grants/subsidy do to the picture
 
-If grants (BEAD/USDA/state) cover ~40% of eligible CapEx (~$24M eligible → ~$9.6M):
-- Net equity + debt need drops to roughly **$15M + working capital**.
-- Per-sub payback drops from ~6.2 to ~3.7 years.
-- With deeper coverage in high-cost/low-density zones (grants target exactly those),
-  the long-tail zones flip from uneconomic to fundable.
+Because CapEx is now ~$6.6M (not ~$24M), grants make the raise almost trivial:
+- **~40% grant of eligible CapEx (~$2.6M)** cuts the peak funding need toward ~$1–1.5M
+  of equity/debt — well within owner + a small telecom loan.
+- Grants are best aimed at the **RF-shadow set (~1,292 premises)** and the long-tail
+  Phase-4 zones, where per-passing cost is highest (relays/fiber). Model grant coverage
+  per zone using the GIS cost outputs; doc 13 is the strategy.
 
-Grant coverage is location-specific — model it per zone, not lake-wide, using the GIS
-cost-per-passing output (doc 05). Doc 13 is the strategy to win it.
+> **Caveat (important):** the 87% LOS figure uses a bare-earth DEM (no tree canopy).
+> Real Ozark foliage will push some LOS premises into the shadow set, raising connection
+> and shadow CapEx. A conservative sensitivity — shadow doubles to ~26% and blended
+> connection cost rises to ~$850 — adds roughly **$1.5–2.0M** to 5-year CapEx (peak
+> need ~$4–4.5M) and pushes cash-positive into early Year 6. Still highly financeable.
+> Refining with the AR LiDAR **DSM** (doc 05) replaces this sensitivity with real
+> foliage numbers and is the highest-value next analysis for the model.
 
 ## 5. Sensitivity levers (in order of impact)
 

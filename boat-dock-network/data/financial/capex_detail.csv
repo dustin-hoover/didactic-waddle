@@ -1,10 +1,4 @@
-capex_category,basis,Y1,Y2,Y3,Y4,Y5
-premises_passed_added,count,500,1500,2500,2500,2000
-new_subscribers_added,count,140,520,1050,1090,980
-passing_capex_at_1800_per,usd_000s,900,2700,4500,4500,3600
-connection_capex_at_900_per,usd_000s,126,468,945,981,882
-core_spine_headends_crossings,usd_000s,1200,800,1000,400,300
-fleet_tools_test_gear_startup,usd_000s,350,150,150,100,100
-capex_total,usd_000s,2576,4118,6595,5981,4882
-capex_cumulative,usd_000s,2576,6694,13289,19270,24152
-note,,"Y1 core includes 2 head-end POPs + initial ring segment + first lake crossing(s) + licensing","spine expansion","ring closure segment","","",
+capex_line_$000s,Y1,Y2,Y3,Y4,Y5
+network_infrastructure,1560,658,471,359,800
+subscriber_connections,543,685,698,562,249
+capex_total,2103,1343,1169,921,1049

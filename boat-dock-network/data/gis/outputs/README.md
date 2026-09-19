@@ -80,7 +80,8 @@ Full table in `zone_build_order.csv`.
 ## Files
 | File | Contents |
 |------|----------|
-| `beaver_lake_network_map.html` | **Interactive map** — zones, premises (LOS vs shadow), nodes |
+| `beaver_lake_network_map.html` | **Interactive map** — zones, premises (LOS vs shadow), nodes, spine |
+| `spine.geojson` / `spine_edges.csv` | Backbone spine: 41 hops (25 over-water), 140 km, $1.37M; over-water long hops = licensed microwave |
 | `premises_passed_by_county.csv` | County × distance-band premises + vacant |
 | `premises_by_parceltype.csv` | Premises by CAMA type |
 | `premises_value_profile.csv` | Value stats by band |
