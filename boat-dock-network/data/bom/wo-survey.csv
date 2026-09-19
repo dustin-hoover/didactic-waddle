@@ -1,0 +1,6 @@
+item,category,spec,qty,unit,unit_cost_est_usd,vendor_primary,vendor_alt,notes
+survey labor,labor,site + link survey, dock access, LOS photos, GPS,1,lot,350,,,per site/link; feeds GIS
+RF test,labor,spectrum scan + link trial (nLOS),1,lot,150,,,for wireless candidate links
+GNSS capture,misc,RTK/GPS point capture,1,lot,50,,,node + address geopoints
+boat mobilization,transport,vessel + fuel,1,lot,120,,,water-access sites
+consumables,misc,markers, flags, photos storage,1,lot,20,,,

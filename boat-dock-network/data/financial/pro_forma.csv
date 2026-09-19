@@ -1,0 +1,11 @@
+line_item,Y1,Y2,Y3,Y4,Y5
+premises_passed_cumulative,3341,6298,8231,9571,9571
+subscribers_cumulative,835,1889,2963,3828,4211
+take_rate,0.25,0.30,0.36,0.40,0.44
+avg_subscribers,418,1362,2426,3396,4020
+revenue_total_$000s,558,1819,3240,4536,5369
+opex_total_$000s,710,1180,1750,2300,2820
+ebitda_$000s,-152,639,1490,2236,2549
+capex_total_$000s,2165,1422,1250,986,1628
+cash_flow_pre_financing_$000s,-2317,-783,240,1250,921
+cash_flow_cumulative_$000s,-2317,-3100,-2860,-1610,-689
