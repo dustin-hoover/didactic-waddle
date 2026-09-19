@@ -116,10 +116,16 @@ customers and draw the outage polygon → feeds the NOC + boat dispatch (doc 14)
 
 ## 7. Deliverables checklist (what "GIS is done for v1" means)
 
-- [ ] PostGIS up; schema loaded (`software/db/schema.sql`).
-- [ ] Benton + Washington (+ Carroll) parcels/addresses imported.
-- [ ] USACE shoreline + AR LiDAR DEM/DSM imported.
-- [ ] Zones drawn; premises-passed computed per zone.
-- [ ] Candidate nodes + LOS/link budgets for pilot zones.
-- [ ] Ranked build backlog feeding the pro forma.
-- [ ] Web map + Felt planning map published for stakeholders.
+Status as of the first analysis run (see `data/gis/outputs/` and the reproducible
+scripts `software/gis/setup_and_run.sh` + `node_siting_and_map.sh`):
+
+- [x] PostGIS up; schema loaded (`software/db/schema.sql`).
+- [x] Benton + Washington + Carroll (+ Madison) parcels imported (AR GIS CAMA).
+- [x] Shoreline imported (USGS NHD); **3DEP DEM** imported for viewshed.
+- [x] Zones derived (18) via clustering; **premises-passed computed (9,571 ≤1mi)**.
+- [x] Candidate nodes (30) selected + **viewshed-ranked** with greedy set-cover.
+- [x] Ranked build backlog (`zone_build_order.csv`) — feeds the pro forma next.
+- [x] Interactive web map published (`beaver_lake_network_map.html` + artifact).
+- [ ] **Refine LOS with AR LiDAR DSM** (canopy) — bare-earth DEM is optimistic.
+- [ ] Benton E-911 address points for sub-address precision.
+- [ ] Full link budgets (fade margin) per spine hop; Felt map for stakeholders.

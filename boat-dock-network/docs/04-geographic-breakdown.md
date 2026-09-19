@@ -6,10 +6,17 @@ operated by the USACE Little Rock District — roughly 28,000 acres of surface w
 (long main channel plus many coves, fingers, and named creek arms) is exactly why a
 zoned, boat-served, hybrid network fits.
 
-> The zones below are a **planning partition** built from well-known lake regions and
-> public-access/marina anchors. Real zone boundaries, premises counts, and node counts
-> come from the GIS parcel + shoreline analysis in doc 05. Coordinates and counts are
-> intentionally omitted until GIS is loaded — see `data/gis/` templates.
+> **UPDATE — this is now done with real data.** The GIS analysis (doc 05) produced
+> **18 data-derived service zones** with real premises counts, values, and a build
+> order, plus **30 viewshed-ranked candidate node sites**. See
+> [`../data/gis/outputs/README.md`](../data/gis/outputs/README.md), the CSVs there
+> (`zones_summary.csv`, `zone_build_order.csv`, `proposed_nodes.csv`), and the
+> interactive map (`beaver_lake_network_map.html`). The named planning zones below are
+> retained as regional context; the operational zones are Z-01…Z-18 in the outputs.
+>
+> Headline: **9,571 premises ≤1mi**; build **Phase 1 = Prairie Creek, Beaver Shores,
+> Monte Ne**; **6 nodes cover 60% of premises, 30 cover 84%**; **~13% of premises are
+> in RF shadow** and need relays/fiber.
 
 ## 1. Zoning method
 
