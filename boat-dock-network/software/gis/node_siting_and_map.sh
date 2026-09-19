@@ -71,7 +71,6 @@ GJ "SELECT json_build_object('type','FeatureCollection','features',coalesce(json
 GJ "SELECT json_build_object('type','FeatureCollection','features',coalesce(json_agg(json_build_object('type','Feature','properties',json_build_object('z',zone_id,'v',totalvalue,'b',dist_band,'los',los_covered),'geometry',ST_AsGeoJSON(geom)::json)),'[]'::json)) FROM premises" premises.geojson
 GJ "SELECT json_build_object('type','FeatureCollection','features',coalesce(json_agg(json_build_object('type','Feature','properties',json_build_object('priority',priority,'zone',zone_id,'elev_ft',round(elev*3.28084),'new',new_premises,'cum',cumulative,'vis8km',total_visible_8km,'site',site_type,'owner',ownername,'primary',is_primary),'geometry',ST_AsGeoJSON(geom)::json)),'[]'::json)) FROM proposed_nodes" proposed_nodes.geojson
 
-echo "== 7. Build interactive map =="
-curl -s --max-time 40 "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" -o leaflet.min.css
-python3 "$HERE/make_map_html.py" "$OUT" leaflet.min.css "$OUT/beaver_lake_network_map.html"
+echo "== 7. Build interactive map (self-contained canvas — no external deps) =="
+python3 "$HERE/make_map_canvas_html.py" "$OUT" "$OUT/beaver_lake_network_map.html"
 echo "== DONE — see $OUT =="
