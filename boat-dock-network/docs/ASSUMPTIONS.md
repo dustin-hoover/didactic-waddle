@@ -8,13 +8,16 @@ a value here and note which documents/models depend on it.
 
 | Key | Assumed value | Source of truth to replace it |
 |-----|---------------|-------------------------------|
-| Shoreline length | ~449 miles | USACE Beaver Lake data / GIS shoreline measure |
-| Surface area | ~28,000 acres (normal pool) | USACE |
+| Shoreline length | **445 miles (VERIFIED)** | USGS NHD polygon (`data/gis/outputs/`) |
+| Surface area | **28,026 acres (VERIFIED)** | USGS NHD polygon |
 | Normal pool elevation | ~1,120 ft MSL | USACE (matters for antenna heights over water) |
-| Addressable premises (whole-lake) | 9,000 *(estimate)* | Benton + Washington + Carroll parcel + address points within service buffer |
-| Share within 1 mi of shoreline | ~60% | GIS buffer analysis |
-| Year-round vs seasonal mix | 55% / 45% | County parcel homestead flags + occupancy |
-| Businesses/marinas/resorts | ~120 *(estimate)* | County commercial parcels + marina list |
+| Addressable premises (≤1 mi, whole-lake) | **9,571 (VERIFIED)** | AR GIS Office CAMA parcels, `impvalue>0`; see `data/gis/outputs/README.md` |
+| Addressable premises (≤0.25 mi shoreline) | **6,144 (VERIFIED)** | Same source |
+| County split (≤1 mi premises) | **Benton 7,190 · Washington 1,318 · Carroll 1,044 · Madison 19 (VERIFIED)** | Drives phasing: Benton first |
+| Vacant shoreline parcels (≤0.25 mi) | **5,943 (VERIFIED)** | Growth + host-node land |
+| Year-round vs seasonal mix | 55% / 45% *(estimate)* | County parcel homestead flags + occupancy (not yet pulled) |
+| Businesses/marinas/resorts (≤1 mi) | **~162 (VERIFIED)** | AR CAMA commercial parcel types (CI/CG/CR/CP) |
+| Median shoreline home value (≤0.25 mi) | **$410k; 522 homes >$1M (VERIFIED)** | Supports premium-service pricing thesis |
 
 ## Adoption & revenue (verify against pilot results)
 

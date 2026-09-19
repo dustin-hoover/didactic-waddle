@@ -72,8 +72,10 @@ go. Every assumption is listed in [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md).
 
 - **Service area:** ~449 miles of Beaver Lake shoreline; Benton, Washington, and
   Carroll counties, NW Arkansas.
-- **Target passings:** whole-lake, phased. Planning envelope ~8,000–11,000
-  addressable premises *(estimate — to be firmed from parcel data)*.
+- **Target passings:** whole-lake, phased. **VERIFIED from live GIS: 9,571 improved
+  premises within 1 mile of shoreline (6,144 within ¼ mile)** — Benton 7,190 ·
+  Washington 1,318 · Carroll 1,044 · Madison 19. See
+  [`data/gis/outputs/README.md`](data/gis/outputs/README.md).
 - **On-ramps:** two diverse dedicated-internet handoffs (locations you've identified)
   form a protected core; the transport spine rings the lake.
 - **Access:** XGS-PON fiber where economic; non-LOS + PtMP fixed wireless elsewhere.
