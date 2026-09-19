@@ -1,0 +1,10 @@
+item,category,spec,qty,unit,unit_cost_est_usd,vendor_primary,vendor_alt,notes
+backhaul radio,radio,PtP link to dock node,1,ea,600,Ubiquiti,Cambium,
+access radio/sector,radio,small sector or repeater,1,ea,1200,Cambium,Tarana,covers cove shadow
+small enclosure,enclosure,NEMA-4X compact,1,ea,900,TBD,,
+mast,mount,mast 20-40ft + base,1,ea,1000,TBD,,
+solar + battery,power,300-600W solar + LiFePO4 + MPPT,1,set,3000,TBD,,off-grid typical
+grounding/surge,power,ground + surge,1,set,400,TBD,,
+install labor,labor,build + align + test,1,lot,2200,,,capitalized; boat crew
+permit,permit,site permit/easement,1,lot,800,,,
+mobilization,transport,boat + fuel,1,lot,400,,,

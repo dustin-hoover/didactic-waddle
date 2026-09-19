@@ -1,0 +1,8 @@
+item,category,spec,qty,unit,unit_cost_est_usd,vendor_primary,vendor_alt,notes
+PtMP CPE radio,radio,Cambium/Ubiquiti subscriber module,1,ea,180,Cambium,Ubiquiti,clean-LOS
+CPE mount,mount,J-mount + hardware,1,set,50,TBD,,
+router/gateway,radio,Wi-Fi 6/7 router,1,ea,150,TBD,,
+ethernet/PoE + cable,misc,outdoor CAT6 + PoE,1,lot,40,TBD,,
+grounding/surge,power,surge + ground,1,set,30,TBD,,
+install labor,labor,mount, aim, activate,1,lot,150,,,
+boat mobilization (if water),transport,vessel + fuel share,1,lot,40,,,batch nearby jobs

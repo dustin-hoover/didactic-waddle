@@ -1,0 +1,13 @@
+item,category,spec,qty,unit,unit_cost_est_usd,vendor_primary,vendor_alt,notes
+licensed MW radio,radio,Aviat/Ceragon/RADWIN 6-23GHz 1-10Gbps,2,ea,9000,Aviat,Ceragon,one per end
+main antenna/dish,radio,high-gain dish sized to hop length,2,ea,2200,TBD,,per end
+diversity antenna,radio,space-diversity dish (over-water multipath),2,ea,2200,TBD,,vertical separation per end
+waveguide/cabling,optics,elliptical waveguide + connectors,2,set,900,TBD,,
+mast/tower,mount,tall mast/tower per clearance calc,2,ea,6000,TBD,,height accounts for max lake pool
+FCC frequency coordination + license,permit,path coordination + FCC Part 101 license,1,lot,4500,,,licensed spectrum
+grounding/surge,power,tower grounding + surge suppression,2,set,800,TBD,,
+power + UPS,power,radio power + UPS per end,2,set,1000,TBD,,
+path calc/engineering,labor,link budget + space-diversity design,1,lot,3000,,,RF engineer
+install + alignment labor,labor,crew install, align, commission,1,lot,7000,,,capitalized; boat + climb
+USACE/site permits,permit,shoreline/tower permits both ends,1,lot,3000,,,see doc 12
+boat + equipment mobilization,transport,vessels + lift + fuel,1,lot,1500,,,

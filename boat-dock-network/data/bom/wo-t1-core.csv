@@ -1,0 +1,11 @@
+item,category,spec,qty,unit,unit_cost_est_usd,vendor_primary,vendor_alt,notes
+aggregation router,radio,ring-node router (10G+),1,ea,9000,Juniper,MikroTik,ring transport
+licensed MW radio (spine),radio,per lake-crossing kit if applicable,0,ea,0,,,use wo-lake-crossing-mw when hop is over water
+fiber transport optics,optics,10/100G optics + patch,1,set,1500,TBD,,
+outdoor cabinet/shelter,enclosure,NEMA-4X or small shelter,1,ea,4000,TBD,,high-ground site
+mast/tower,mount,tower/mast per LOS,1,ea,7000,TBD,,
+UPS + solar option,power,UPS 3kVA + optional solar,1,set,3500,TBD,,autonomy for remote
+grounding/surge,power,tower ground + surge,1,set,1000,TBD,,
+install + commissioning,labor,build + ring turn-up,1,lot,6000,,,capitalized
+site lease/permit,permit,land lease/easement + permit,1,lot,2500,,,host-node candidate
+mobilization,transport,boat/vehicle + equipment,1,lot,1000,,,
