@@ -126,6 +126,8 @@ scripts `software/gis/setup_and_run.sh` + `node_siting_and_map.sh`):
 - [x] Candidate nodes (30) selected + **viewshed-ranked** with greedy set-cover.
 - [x] Ranked build backlog (`zone_build_order.csv`) — feeds the pro forma next.
 - [x] Interactive web map published (`beaver_lake_network_map.html` + artifact).
-- [ ] **Refine LOS with AR LiDAR DSM** (canopy) — bare-earth DEM is optimistic.
+- [x] **Refine LOS with a canopy DSM** — NLCD 2021 land-cover → tree height added to the
+      DEM (`software/gis/build_dsm.py`); foliage LOS 75% (vs 87% bare-earth), shadow 25%.
+      (Next refinement: true LiDAR first-return DSM for per-parcel canopy.)
 - [ ] Benton E-911 address points for sub-address precision.
 - [ ] Full link budgets (fade margin) per spine hop; Felt map for stakeholders.

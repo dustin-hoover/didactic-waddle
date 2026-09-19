@@ -6,6 +6,6 @@ avg_subscribers,418,1362,2426,3396,4020
 revenue_total_$000s,558,1819,3240,4536,5369
 opex_total_$000s,710,1180,1750,2300,2820
 ebitda_$000s,-152,639,1490,2236,2549
-capex_total_$000s,2103,1343,1169,921,1049
-cash_flow_pre_financing_$000s,-2255,-704,321,1315,1500
-cash_flow_cumulative_$000s,-2255,-2959,-2638,-1323,177
+capex_total_$000s,2165,1422,1250,986,1628
+cash_flow_pre_financing_$000s,-2317,-783,240,1250,921
+cash_flow_cumulative_$000s,-2317,-3100,-2860,-1610,-689

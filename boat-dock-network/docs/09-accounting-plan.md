@@ -17,24 +17,25 @@ re-run them.
 - This is why EBITDA turns positive well before cumulative cash does: the heavy spend is
   capital, funded by the blended stack (§6), not operating expense.
 
-> **VERIFIED MODEL (this section supersedes the earlier fiber-default estimate).**
-> Regenerate with `python3 software/finance/model.py` (reads the GIS outputs). The
-> single biggest change: because the viewshed analysis shows **87% of premises are
-> reachable by wireless line-of-sight** from shoreline high points, the wireless-first
-> build has a **cost-per-passing of ~$402**, not the ~$1,800 a fiber overbuild assumes.
-> That collapses whole-lake CapEx from ~$24M to **~$6.6M** and the peak funding need to
-> **~$3.0M**.
+> **VERIFIED MODEL — foliage base case (supersedes the fiber-default estimate).**
+> Regenerate with `python3 software/finance/model.py` (reads the GIS outputs). A
+> **canopy-aware (NLCD/LiDAR) viewshed** shows **75% of premises are reachable by
+> wireless line-of-sight through Ozark foliage** (bare-earth optimistic is 87%). Even
+> so, cost-per-passing is **~$460**, not the ~$1,800 a fiber overbuild assumes — holding
+> whole-lake CapEx to **~$7.5M** and the peak funding need to **~$3.1M**. The remaining
+> ~25% RF-shadow set (~2,417 premises) is served by relays or fiber; non-line-of-sight
+> radios (Tarana) recover part of that gap (upside toward the 87% case).
 
-## 2. Unit economics (verified, steady state)
+## 2. Unit economics (verified, foliage base case)
 
 | Metric | Value | Note |
 |--------|-------|------|
-| Cost per premises passed | **~$402** | Wireless-first; infra shared across a zone's premises |
-| Cost per connection (CPE + install) | **~$650** | Blended 87% wireless / 13% fiber-or-relay |
-| All-in cost per subscriber (5-yr) | **~$1,564** | Total CapEx ÷ Year-5 subscribers |
+| Cost per premises passed | **~$460** | Wireless-first; infra shared across a zone's premises |
+| Cost per connection (CPE + install) | **~$725** | Blended 75% wireless @ $500 / 25% fiber-relay @ $1,400 |
+| All-in cost per subscriber (5-yr) | **~$1,769** | Total CapEx ÷ Year-5 subscribers |
 | ARPU (blended res + business/marina) | $105/mo ($1,260/yr) | Premium market: median home $410k, 522 >$1M |
 | Annual contribution/sub (~70% margin) | ~$882 | |
-| Simple payback per sub | **~1.8 yrs** | vs ~6.2 yrs in the fiber-default estimate |
+| Simple payback per sub | **~2.0 yrs** | vs ~6.2 yrs in the fiber-default estimate |
 
 The premium shoreline market (verified median home value $410k) supports the $105 ARPU
 and a high ultimate take; the host-node program lowers site cost and lifts take further.
@@ -53,33 +54,37 @@ P2 2,957 / 10, P3 1,933 / 8, P4 1,340 / 9. Machine-readable in
 | **Revenue** | 558 | 1,819 | 3,240 | 4,536 | 5,369 |
 | **Total OpEx** | 710 | 1,180 | 1,750 | 2,300 | 2,820 |
 | **EBITDA** | (152) | 639 | 1,490 | 2,236 | 2,549 |
-| **CapEx** | 2,103 | 1,343 | 1,169 | 921 | 1,049 |
-| **Cash flow (pre-financing)** | (2,255) | (704) | 321 | 1,315 | 1,500 |
-| **Cash flow (cumulative)** | (2,255) | (2,959) | (2,638) | (1,323) | **177** |
+| **CapEx** | 2,165 | 1,422 | 1,250 | 986 | 1,628 |
+| **Cash flow (pre-financing)** | (2,317) | (783) | 240 | 1,250 | 921 |
+| **Cash flow (cumulative)** | (2,317) | (3,100) | (2,860) | (1,610) | (689) |
 
 - **EBITDA turns positive in Year 2.**
-- **Peak funding need ≈ $3.0M** (end of Year 2); **cumulative cash turns positive in
-  Year 5** — before any grants.
-- **5-year CapEx ≈ $6.6M** ($3.8M network infrastructure incl. the $1.37M spine + $2.7M
+- **Peak funding need ≈ $3.1M** (end of Year 2); **cumulative cash turns positive in
+  ~Year 6** (still −$0.7M at end of Y5; Year-6 EBITDA ~$2.5M clears it) — before grants.
+- **5-year CapEx ≈ $7.5M** ($4.4M network infrastructure incl. the $1.37M spine + $3.1M
   subscriber connections). CapEx per year in
   [`../data/financial/capex_detail.csv`](../data/financial/capex_detail.csv).
 
 ## 4. What grants/subsidy do to the picture
 
-Because CapEx is now ~$6.6M (not ~$24M), grants make the raise almost trivial:
-- **~40% grant of eligible CapEx (~$2.6M)** cuts the peak funding need toward ~$1–1.5M
-  of equity/debt — well within owner + a small telecom loan.
-- Grants are best aimed at the **RF-shadow set (~1,292 premises)** and the long-tail
+Because CapEx is ~$7.5M (not ~$24M), grants make the raise very manageable:
+- **~40% grant of eligible CapEx (~$3.0M)** cuts the peak funding need toward ~$1.5–2M
+  of equity/debt — within owner + a small telecom loan.
+- Grants are best aimed at the **RF-shadow set (~2,417 premises)** and the long-tail
   Phase-4 zones, where per-passing cost is highest (relays/fiber). Model grant coverage
   per zone using the GIS cost outputs; doc 13 is the strategy.
 
-> **Caveat (important):** the 87% LOS figure uses a bare-earth DEM (no tree canopy).
-> Real Ozark foliage will push some LOS premises into the shadow set, raising connection
-> and shadow CapEx. A conservative sensitivity — shadow doubles to ~26% and blended
-> connection cost rises to ~$850 — adds roughly **$1.5–2.0M** to 5-year CapEx (peak
-> need ~$4–4.5M) and pushes cash-positive into early Year 6. Still highly financeable.
-> Refining with the AR LiDAR **DSM** (doc 05) replaces this sensitivity with real
-> foliage numbers and is the highest-value next analysis for the model.
+### Scenarios (LOS is the key swing)
+
+| Scenario | Wireless LOS | 5-yr CapEx | Peak need | Cash-positive |
+|----------|--------------|-----------|-----------|---------------|
+| **Base (foliage, NLCD DSM)** | **75%** | **~$7.5M** | **~$3.1M** | **~Y6** |
+| Optimistic (bare-earth DEM) | 87% | ~$6.6M | ~$3.0M | ~Y5 |
+| With nLOS radios (Tarana) | 75%→~82%* | between the two | ~$3.0M | ~Y5–6 |
+
+\* nLOS radios penetrate light-to-moderate foliage, recovering part of the shadow set;
+the true figure sits between the DSM and bare-earth bounds. Refine further with true
+LiDAR first-return DSM (vs the NLCD-canopy model used here) for per-parcel precision.
 
 ## 5. Sensitivity levers (in order of impact)
 

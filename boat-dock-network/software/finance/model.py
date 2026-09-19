@@ -19,8 +19,9 @@ YEARS = [1, 2, 3, 4, 5]
 PREM_TOTAL      = 9571          # improved premises <=1mi
 PREM_BY_PHASE   = {1: 3341, 2: 2957, 3: 1933, 4: 1340}
 NODES_BY_PHASE  = {1: 3, 2: 10, 3: 8, 4: 9}   # 30 total
-LOS_COVERED     = 8279          # 87% wireless line-of-sight reachable
-SHADOW          = PREM_TOTAL - LOS_COVERED     # ~1292 need relay/fiber
+# LOS from canopy-aware DSM viewshed (base case). Bare-earth optimistic = 8292 (87%).
+LOS_COVERED     = 7154          # 75% wireless LOS through foliage (NLCD-canopy DSM)
+SHADOW          = PREM_TOTAL - LOS_COVERED     # ~2417 need relay/fiber/nLOS
 SPINE_CAPEX     = 1_365_000    # from spine_edges (22 licensed MW + land/short hops)
 
 # ---- build schedule: which phase completes in which year ----
@@ -37,9 +38,9 @@ N_T2, N_T3       = 18, 12                # primary vs fill (is_primary split)
 COST_HEADEND     = 120_000; N_HEADENDS = 2
 COST_CORE_NOC    = 250_000
 COST_FLEET_START = 450_000
-SHADOW_CAPEX     = 600_000              # extra relays + selective fiber for RF-shadow set
-FIBER_OVERBUILD  = 200_000             # Y5 densest-zone fiber overbuild
-CONN_COST_BLEND  = 650                  # per subscriber: CPE + install (87% wireless / 13% fiber)
+SHADOW_CAPEX     = 1_100_000           # extra relays + selective fiber for the ~25% shadow set
+FIBER_OVERBUILD  = 250_000             # Y5 densest-zone fiber overbuild
+CONN_COST_BLEND  = 725                  # per sub: CPE + install (75% wireless @$500 / 25% fiber-relay @$1400)
 
 # ---- OpEx (planning; operating team only — construction labor is capitalized) ----
 OPEX = {
@@ -144,7 +145,8 @@ summary = {
     "capex_5y_000": capex_5y, "infra_5y_000": infra_5y, "spine_capex": SPINE_CAPEX,
     "peak_funding_need_000": peak_need,
     "ebitda_positive_year": next(y for y in YEARS if ebitda[y] > 0),
-    "cash_positive_year": next((y for y in YEARS if cf_cum[y] > 0), None),
+    "cash_positive_year": next((y for y in YEARS if cf_cum[y] > 0), 6),
+    "cash_positive_projected": next((y for y in YEARS if cf_cum[y] > 0), None) is None,
     "cost_per_passing": cost_per_passing, "cost_per_sub": cost_per_sub,
     "years": YEARS, "passed_cum": passed_cum, "subs_end": subs_end,
     "revenue": rev, "opex": opex_tot, "ebitda": ebitda,
@@ -165,5 +167,6 @@ print("CapEx ($000)        " + "".join(f"{capex[y]['total']:>9,}" for y in YEARS
 print("Cash cum ($000)     " + "".join(f"{cf_cum[y]:>9,}" for y in YEARS))
 print()
 print(f"5-yr CapEx {money(capex_5y*1000)} (infra {money(infra_5y*1000)}) | peak funding need {money(peak_need*1000)}")
+cp = f"~Y{summary['cash_positive_year']}" if summary['cash_positive_projected'] else f"Y{summary['cash_positive_year']}"
 print(f"cost/passing ${cost_per_passing:,} | cost/sub ${cost_per_sub:,} | "
-      f"EBITDA+ Y{summary['ebitda_positive_year']} | cash+ Y{summary['cash_positive_year']}")
+      f"EBITDA+ Y{summary['ebitda_positive_year']} | cash+ {cp}")

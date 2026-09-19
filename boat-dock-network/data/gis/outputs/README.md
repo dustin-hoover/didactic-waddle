@@ -47,8 +47,15 @@ For each zone, the 6 highest near-shore parcels were tested with `gdal_viewshed`
 (10 m mast, 4 m CPE, 8 km range). Then a **greedy set-cover** picked the node build
 order. See `proposed_nodes.csv` / `.geojson` and `node_coverage_curve.csv`.
 
-> **8,279 of 9,571 premises (87%) are wireless line-of-sight-reachable** from shoreline
-> high points. The other ~13% sit in RF shadow → relays or fiber.
+> **Bare-earth: 8,292 of 9,571 (87%)** wireless LOS-reachable.
+> **Canopy-aware (foliage) base case: 7,154 of 9,571 (75%)** — the other **~25% (2,417
+> premises) sit in RF shadow** and need relays or fiber. The map's orange "shadow"
+> premises now reflect the foliage (DSM) result.
+>
+> The foliage surface is a canopy height model: **NLCD 2021 land cover → tree height
+> (~22 m forest) added to the 3DEP bare-earth DEM** (`software/gis/build_dsm.py`), then
+> re-run through `gdal_viewshed`. nLOS radios (Tarana) penetrate light foliage and
+> recover part of the gap; true LiDAR first-return DSM would refine per-parcel.
 
 Node coverage curve (greedy):
 

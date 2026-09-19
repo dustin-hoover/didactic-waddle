@@ -113,8 +113,9 @@ TILES = [
     (f"${S['peak_funding_need_000']/1000:.1f}M", "peak funding need"),
     (f"${S['cost_per_passing']:,}", "cost / passing"),
     (f"Y{S['ebitda_positive_year']}", "EBITDA positive"),
-    (f"Y{S['cash_positive_year']}", "cash-flow positive"),
+    (("~Y" if S.get('cash_positive_projected') else "Y") + str(S['cash_positive_year']), "cash-flow positive"),
 ]
+lospct = round(100 * S['los_covered'] / S['premises_total'])
 tiles = "".join(f'<div class="tile"><b>{v}</b><span>{k}</span></div>' for v, k in TILES)
 
 HTML = f"""<title>Boat Dock Network Pro Forma</title>
@@ -153,13 +154,13 @@ svg{{width:100%;height:auto;display:block;overflow:visible}}
 <div class="wrap">
 <header>
   <h1>Boat Dock Network — 5-Year Pro Forma</h1>
-  <p class="mono">Whole-lake, wireless-first · grounded in verified GIS (9,571 premises · 30 nodes · 87% LOS)</p>
+  <p class="mono">Whole-lake, wireless-first · verified GIS ({S['premises_total']:,} premises · 30 nodes · {lospct}% LOS through foliage)</p>
 </header>
 <div class="tiles">{tiles}</div>
 
 <div class="grid2">
   <figure><figcaption>Cumulative cash flow (pre-financing)</figcaption>
-    <div class="sub">Peak funding need ${S['peak_funding_need_000']/1000:.1f}M (end Y2); turns positive Y5.</div>{chartA}</figure>
+    <div class="sub">Peak funding need ${S['peak_funding_need_000']/1000:.1f}M (end Y2); cumulative positive {"~Y" if S.get('cash_positive_projected') else "Y"}{S['cash_positive_year']}.</div>{chartA}</figure>
   <figure><figcaption>Revenue · OpEx · EBITDA</figcaption>
     <div class="sub">EBITDA positive from Year 2.</div>{chartB}
     {leg([("Revenue","var(--s1)"),("OpEx","var(--s2)"),("EBITDA","var(--s3)")])}</figure>
@@ -170,11 +171,12 @@ svg{{width:100%;height:auto;display:block;overflow:visible}}
     <div class="sub">Infrastructure incl. $1.37M spine; connections scale with subscribers.</div>{chartD}
     {leg([("Network infrastructure","var(--s1)"),("Subscriber connections","var(--s3)")])}</figure>
 </div>
-<p class="note"><b>Why so much cheaper than a fiber build:</b> the viewshed analysis shows 87% of premises
-are reachable by wireless line-of-sight from shoreline high points, so cost-per-passing is
-~${S['cost_per_passing']:,} (vs ~$1,800 for a fiber overbuild) — collapsing whole-lake CapEx to
-~${S['capex_5y_000']/1000:.1f}M. Planning-grade; the bare-earth LOS is optimistic (real foliage adds relays/fiber).
-Regenerate with <span class="mono">software/finance/model.py</span> + <span class="mono">make_dashboard.py</span>.</p>
+<p class="note"><b>Why so much cheaper than a fiber build:</b> a canopy-aware (LiDAR/NLCD) viewshed shows
+{lospct}% of premises are reachable by wireless line-of-sight through Ozark foliage from shoreline high
+points, so cost-per-passing is ~${S['cost_per_passing']:,} (vs ~$1,800 for a fiber overbuild) — holding whole-lake
+CapEx to ~${S['capex_5y_000']/1000:.1f}M. This is the conservative foliage base case; the remaining ~{100-lospct}% RF-shadow
+premises take relays or fiber. Optimistic bare-earth LOS is 87%; non-line-of-sight radios (Tarana) recover part
+of the gap. Regenerate with <span class="mono">software/finance/model.py</span> + <span class="mono">make_dashboard.py</span>.</p>
 </div>
 """
 open(out_html, "w").write(HTML)

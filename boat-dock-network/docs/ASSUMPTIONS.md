@@ -15,6 +15,9 @@ a value here and note which documents/models depend on it.
 | Addressable premises (≤0.25 mi shoreline) | **6,144 (VERIFIED)** | Same source |
 | County split (≤1 mi premises) | **Benton 7,190 · Washington 1,318 · Carroll 1,044 · Madison 19 (VERIFIED)** | Drives phasing: Benton first |
 | Vacant shoreline parcels (≤0.25 mi) | **5,943 (VERIFIED)** | Growth + host-node land |
+| Wireless LOS reachable (foliage/DSM) | **75% = 7,154 (VERIFIED)** | Canopy-aware viewshed; base case |
+| Wireless LOS reachable (bare-earth) | **87% = 8,292 (VERIFIED)** | Optimistic bound |
+| RF-shadow premises (need relay/fiber) | **25% = 2,417 (VERIFIED)** | Drives connection + shadow CapEx |
 | Year-round vs seasonal mix | 55% / 45% *(estimate)* | County parcel homestead flags + occupancy (not yet pulled) |
 | Businesses/marinas/resorts (≤1 mi) | **~162 (VERIFIED)** | AR CAMA commercial parcel types (CI/CG/CR/CP) |
 | Median shoreline home value (≤0.25 mi) | **$410k; 522 homes >$1M (VERIFIED)** | Supports premium-service pricing thesis |
