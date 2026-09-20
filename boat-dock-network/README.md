@@ -57,6 +57,8 @@ go. Every assumption is listed in [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md).
 | 13 | [`docs/13-grants-and-financing.md`](docs/13-grants-and-financing.md) | BEAD, USDA ReConnect/RUS, state grants, low-interest telecom loans, pipeline |
 | 14 | [`docs/14-software-architecture.md`](docs/14-software-architecture.md) | DockOS platform, services, stack, the AR compliance "brain" |
 | 15 | [`docs/15-roadmap-and-phasing.md`](docs/15-roadmap-and-phasing.md) | Sequenced build: pilot → region → whole lake, plus software milestones |
+| 16 | [`docs/16-governance-and-tokenomics.md`](docs/16-governance-and-tokenomics.md) | Member cooperative + DAO: the non-transferable, tenure-earned WAKE governance unit, patronage-dividend economics, voting design |
+| — | [`BACKLOG.md`](BACKLOG.md) | Live build backlog we work through one by one |
 
 ## 2. Data & code map
 

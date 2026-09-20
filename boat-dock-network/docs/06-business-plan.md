@@ -107,6 +107,12 @@ take-rate.
   **BDC (Broadband Data Collection)** obligations once operating.
 - Consider a **holding structure**: OpCo (ISP) + PropCo (owns strategic lakeside
   parcels/towers) for tax and financing flexibility — discuss with counsel/CPA.
+- **Cooperative + DAO ownership (see doc 16).** BDN is designed as a **member
+  cooperative**: members earn a non-transferable, tenure-weighted governance unit
+  (**WAKE**, 1/month, capped) and share surplus via **patronage dividends**. This
+  separates governance (token, non-security) from economics (dividends) so the co-op
+  gets a genuine community-ownership story without triggering securities law or
+  scaring lenders/grantors. Host-node members accrue WAKE at 1.5×.
 
 ## 9. Milestones (ties to doc 15)
 
