@@ -27,7 +27,10 @@ We work these **one by one**. Status: ✅ done · 🔨 in progress · ⬜ queued
 - ⬜ **Billing + provisioning + RADIUS** (DockOS step 6)
 - ⬜ **Boat-dispatch PWA + work-order engine** (DockOS steps 4–5)
 - ⬜ **NOC monitoring + outage management** (DockOS step 7)
-- ⬜ **AR/Benton/Washington compliance advisor + grants NOFO scanner** (DockOS step 8)
+- ⬜ **AR/Benton/Washington compliance advisor** (DockOS step 8) — grants NOFO scanner
+  deferred (no government money in the base case; revisit only if programs return)
+- ⬜ **Member-capital campaign tooling** (membership shares, founding-member drive,
+  pre-sales deposits) — the grant-free funding engine (ties to signup portal + WAKE)
 - ⬜ **True LiDAR first-return DSM** (per-parcel canopy precision for the shadow set)
 - ⬜ **Entity formation checklist** (AR cooperative filing, bylaws, ASN/IP, transit LOIs)
 

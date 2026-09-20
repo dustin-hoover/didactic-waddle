@@ -1,91 +1,103 @@
-# 13 — Grants & Low-Interest Financing
+# 13 — Financing (Grant-Independent)
 
-> Program details, funding levels, and deadlines change frequently. Everything here is a
-> planning map as of early 2026 — **verify current NOFOs, eligibility, and rules** with
-> each program before relying on them. A dedicated Grants & Financing Manager (doc 08)
-> owns this.
+> **Base case assumes NO government money** — no BEAD, no USDA, no state grants, and no
+> federal (RUS) loans. The plan stands on private + member + commercial-cooperative
+> capital. Grants/subsidies are treated only as **optional upside** if the landscape
+> changes (§6), never as a dependency. Not financial/legal advice; confirm terms with
+> counsel, a CPA, and lenders.
 
-Grants are the single biggest lever on the raise and on payback (doc 09). The strategy
-is a **blended stack** — non-dilutive grants for the high-cost/low-density passings,
-low-interest telecom debt for the bulk of CapEx, and equity as first-in risk capital
-and grant match.
+The verified pro forma (doc 09) already excludes grants: whole-lake CapEx **~$7.5M**,
+**peak funding need ~$3.1M**, **EBITDA-positive Year 2**. This document is how we cover
+that ~$3.1M peak without public money — and why the cooperative structure makes that
+achievable.
 
-## 1. Federal grant programs
+## 1. The grant-free capital stack
 
-| Program | Agency | Fit | Notes |
-|---------|--------|-----|-------|
-| **BEAD** (Broadband Equity, Access & Deployment) | NTIA → **Arkansas State Broadband Office** | Primary target for unserved/underserved shoreline | ~$1B+ AR allocation; program rules revised in 2025 ("Benefit of the Bargain"). State-run subgrants; **verify current AR NOFO, match, and tech-neutrality rules** |
-| **USDA ReConnect** | USDA RUS | Rural build grants/loans | Rounds recur; rural eligibility by service level |
-| **USDA RUS Telecom Infrastructure / Farm Bill Broadband** | USDA RUS | Low-interest **loans** | Telecom-specialized, long term |
-| **FCC RDOF** | FCC | Mostly awarded | Check for defaults/re-auctions in your census blocks |
-| **Treasury Capital Projects Fund / ARPA remnants** | State | Possible state sub-programs | Verify availability |
-| **EDA / CDBG / ARC** | EDA/HUD | Ancillary (facilities, econ dev) | Situational |
+| Source | Role | Indicative size | Notes |
+|--------|------|-----------------|-------|
+| **Founder / owner equity** | First-in risk capital | $0.75–1.25M | Anchors the raise; funds entity, GIS, pilot |
+| **Member capital** (co-op) | The grant replacement | $0.6–1.2M | Membership shares + founding-member capital campaign + patronage retention |
+| **Pre-sales deposits** | Working capital per zone | rolling | Refundable deposits gate each build; reduces peak need |
+| **Commercial + cooperative debt** | Bulk of infrastructure CapEx | $1.0–2.0M | CoBank, RTFC/CFC (private cooperative lenders — not government), local banks |
+| **Equipment financing / leasing** | Radios, OLT, fleet | $0.5–1.0M | Vendor/lease finance preserves cash |
+| **Anchor prepayments** | Marina/resort multi-year deals | situational | Lighthouse accounts prepay for capacity |
 
-## 2. Arkansas state programs
+A representative way to cover the **~$3.1M peak**: ~$1.0M owner equity + ~$0.8M member
+capital & pre-sales + ~$1.0M cooperative/commercial debt + ~$0.3M equipment finance.
+No public dollars required.
 
-- **Arkansas State Broadband Office (Arkansas Department of Commerce)** administers
-  **BEAD** subgrants and prior **Arkansas Rural Connect (ARC)** grants. Register as a
-  provider, submit to the state challenge/map process, and target eligible shoreline
-  census blocks.
-- Watch for **state matching** and **middle-mile** sub-programs.
+## 2. Member capital — the cooperative's superpower
 
-## 3. Low-interest telecom lenders (the debt layer)
+A member cooperative can raise capital *from the community it serves* — the natural
+substitute for grants, and a perfect fit with the WAKE governance design (doc 16):
+
+- **Membership share:** a one-time member buy-in (e.g., $100–300, partially refundable)
+  — at ~4,000 members that's $0.4–1.2M of patient capital.
+- **Founding-member capital campaign:** early lakeshore residents/marinas invest a
+  larger founding contribution (member capital certificates / subordinated member
+  loans) in exchange for founding status + WAKE — community ownership, not a security
+  sold to the public (structure with counsel).
+- **Patronage capital retention:** once operating (EBITDA+ in Y2), retain a slice of
+  member patronage as revolving capital — the century-old co-op self-funding mechanism.
+- **Pre-sales deposits:** every zone is pre-sold before it's built; deposits fund that
+  zone's working capital and prove demand to lenders.
+
+This keeps control local, aligns members as owners, and de-risks the debt.
+
+## 3. Debt — private and cooperative (no government)
 
 | Lender | Role |
 |--------|------|
-| **USDA RUS loans** | Long-term, low-rate infrastructure debt |
-| **CoBank** | Rural/telecom cooperative bank; construction + term debt |
-| **RTFC / CFC** (Rural Telephone Finance Cooperative / National Rural Utilities Cooperative Finance Corp) | Telecom-specialized lending |
-| **Equipment finance / leasing** | Radios, OLT, fleet — preserve cash |
-| **Local/regional banks** | Working capital, SBA (504/7a) for facilities |
+| **CoBank** | Private cooperative bank; construction + term debt for rural telecom/co-ops |
+| **RTFC / CFC** | Cooperative-owned telecom/utility finance (member-owned lender, not a government agency) |
+| **Local / regional banks** | Working-capital lines; equipment loans; owner-guaranteed term debt |
+| **Equipment vendors / lessors** | Finance radios, OLT, ONTs, vehicles/boats |
+| **SBA 504 / 7(a)** | Facilities (shoreline yard/warehouse), fleet — bank-issued, SBA-backed |
 
-Target blended cost of capital ~5% by leaning on RUS/CoBank/RTFC + grants.
+Target a conservative capital structure (e.g., ≤50% debt) so debt service is covered
+comfortably by the Year-2+ EBITDA in the model. CoBank/RTFC underwriting will want the
+pre-sales evidence and the verified GIS/market data (docs 05–06) — which we have.
 
-## 4. Equity & community capital
+## 4. Capital-light phasing (lower the peak without grants)
 
-- **Owner/private equity:** first-in risk capital and the **grant match** most programs
-  require; funds the pilot before grants/debt close.
-- **Host-node / member model:** deposits and site contributions reduce passing cost;
-  a **co-op structure** can turn hosts into members (community capital + loyalty).
-- **PropCo:** an entity that owns strategic lakeside parcels/towers can raise
-  real-estate-backed capital and lease sites to the OpCo (tax/financing flexibility —
-  confirm with CPA/counsel).
+Because there's no grant cushion, we manage the **peak funding need** down by pacing the
+build to cash generation:
 
-## 5. What wins broadband grants (the playbook)
+- **Gate every zone on pre-sales** — build only where deposits clear a threshold.
+- **Right-size Phase 1** to what owner + member capital can fund alone (a smaller pilot
+  than the full 3,341-premises Phase-1 zone set if needed), prove EBITDA, then let
+  Year-2 cash + debt fund Phases 2–3.
+- **Defer the high-cost tail:** the RF-shadow set and Phase-4 long-tail coves — the most
+  expensive per passing — wait until they can be **self-funded from operating cash**
+  (EBITDA is positive from Year 2). No grant means these are demand-gated, not dropped.
+- **Wireless-first everywhere feasible** (already the design) keeps cost/passing at ~$460
+  so each zone reaches cash-flow contribution fast.
 
-1. **A defensible map** of unserved/underserved passings (your GIS output, doc 05, is
-   exactly the evidence reviewers want) and accurate cost-per-passing per zone.
-2. **Community support:** letters from lake associations, marinas, counties, chambers.
-3. **Matching funds committed** (equity/debt LOIs).
-4. **Technical + financial credibility:** the architecture (doc 03), pro forma (doc 09),
-   and a real team (doc 08).
-5. **Compliance readiness:** segregated accounting (doc 09), BABA/domestic-content plan
-   (doc 11), environmental (doc 12), and reporting capacity.
-6. **Speed + coverage commitments** that meet program thresholds (symmetric gig helps).
+A self-funded variant (owner + member capital fund Phase 1; debt + cash fund the rest)
+can hold the external raise well under the $3.1M gross peak. (Model it as a scenario in
+`software/finance/model.py` by shrinking Phase-1 scope and adding a member-capital line.)
 
-## 6. Funding sequence (match to phases, doc 15)
+## 5. What winning capital needs (the playbook)
 
-1. **Equity** funds entity + GIS + pilot design + first pilot zone.
-2. **Pilot proof** (customers, actual costs) → strengthens grant apps + debt underwriting.
-3. **Grants + RUS/CoBank/RTFC debt** close to fund region + ring build.
-4. **Equipment finance** smooths radio/OLT/fleet CapEx.
-5. **Refinance** to lower-cost long-term debt once cash-flowing.
+1. **Pre-sales traction** per zone (deposits) — the single most persuasive input for
+   lenders and member investors alike.
+2. **The verified data room** — GIS coverage, cost-per-passing, the pro forma, the map
+   and dashboard artifacts (already produced).
+3. **A credible team** (doc 08) and clean **co-op governance** (doc 16) that lenders
+   trust (reserved matters protect covenants).
+4. **Conservative coverage** — debt sized to Year-2+ EBITDA with headroom.
 
-## 7. Grants pipeline (run it like a sales pipeline)
+## 6. Optional upside (only if it returns)
 
-Track every opportunity as a record: program, deadline, eligible zones, ask amount,
-match required, status, owner, next action. Fields defined for DockOS in doc 14; a
-simple CSV/board works at first.
+If public programs become available again, they are pure upside — they would *reduce*
+the private/member raise and let us reach the high-cost tail faster. Keep a light watch
+(a periodic scan of BEAD/USDA/state notices) but **build the business as if they won't
+come.** Nothing in the plan depends on them.
 
-**Automation:** set up a recurring **Claude Code Routine** (see roadmap, doc 15) to scan
-for new/updated NOFOs (BEAD state updates, USDA ReConnect rounds, state programs),
-summarize eligibility changes, and flag deadlines — a near-free "grant seeker." Ask and
-I'll configure it.
+## 7. Compliance reminders (still apply)
 
-## 8. Compliance reminders (do not skip)
-
-- **Segregated fund accounting + documented match** before drawing any grant dollar.
-- **BABA / Build America Buy America** sourcing checks *before* buying grant-funded gear.
-- **Environmental & historic-preservation** reviews (NEPA/Section 106) can apply to
-  federally funded construction — bake into timelines.
-- **Reporting cadence** per program; DockOS captures the CapEx-by-work-order evidence.
+- Member-capital instruments (shares, certificates, member loans) can implicate
+  **securities law** — structure with counsel (co-op exemptions often apply, but confirm).
+- Segregated accounting and clear member agreements (doc 09).
+- Debt covenants must be honored — the governance design (doc 16) reserves
+  covenant-critical matters to the board for exactly this reason.

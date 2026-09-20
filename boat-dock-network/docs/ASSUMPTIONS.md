@@ -59,8 +59,9 @@ a value here and note which documents/models depend on it.
 
 | Key | Assumed value | Notes |
 |-----|---------------|-------|
-| Blended cost of capital | 5% *(target)* | RUS/CoBank/RTFC low-interest telecom debt + grants reduce this |
-| Grant coverage of eligible CapEx | 30–70% | BEAD/USDA/state; highly location-dependent |
+| Blended cost of capital | ~6–8% *(target)* | Private + cooperative debt (CoBank/RTFC) + member capital; no government money assumed |
+| Grant coverage of eligible CapEx | **0% (base case)** | No BEAD/USDA/state/RUS assumed; pure upside only if programs return (doc 13) |
+| Peak external raise | ~$3.1M | Covered by owner equity + member capital + pre-sales + co-op/commercial debt |
 | Discount rate for NPV | 10% | |
 
 ## How to firm these up (in order of leverage)

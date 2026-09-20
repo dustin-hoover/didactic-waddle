@@ -80,7 +80,7 @@ SL.append(f"""<section class="slide title"><div>
   <div class="pill-row"><span class="pill">{S['premises_total']:,} premises in reach</span>
    <span class="pill">~${cap5:.1f}M to build the whole lake</span>
    <span class="pill">EBITDA-positive Year {S['ebitda_positive_year']}</span></div>
-  <div class="foot-note">Verified from public GIS · planning-grade financials · seeking blended grant + debt + member capital</div>
+  <div class="foot-note">Verified from public GIS · planning-grade financials · funded by member, private &amp; cooperative-debt capital (no government money required)</div>
 </div></section>""")
 # 2 problem
 SL.append(f"""<section class="slide"><div>
@@ -164,21 +164,21 @@ SL.append(f"""<section class="slide"><div>
 </div></section>""")
 # 10 ask
 SL.append(f"""<section class="slide"><div>
-  <div class="kicker">The ask — blended capital</div>
-  <h2>~$3.5M to build and reach cash-flow positive</h2>
+  <div class="kicker">The ask — no government money required</div>
+  <h2>~${peak:.1f}M peak, covered by private + member + co-op debt</h2>
   <div class="two">
-    <ul class="ticks"><li><b>Grants (BEAD / USDA / AR state):</b> target the high-cost RF-shadow &amp; long-tail zones — non-dilutive.</li>
-      <li><b>Low-interest telecom debt (RUS / CoBank / RTFC):</b> the bulk of infrastructure CapEx.</li>
-      <li><b>Member + owner capital:</b> first-in risk capital and grant match.</li></ul>
-    <div class="stat-callout"><b>${peak:.1f}M</b><span>peak funding need (pre-grants); ~40% grant coverage cuts equity/debt to ~$1.5–2M</span></div>
+    <ul class="ticks"><li><b>Member capital (the grant replacement):</b> membership shares, a founding-member campaign, and patronage retention &mdash; capital from the community it serves.</li>
+      <li><b>Cooperative &amp; commercial debt:</b> CoBank, RTFC/CFC (member-owned lenders, not government), plus equipment financing.</li>
+      <li><b>Owner equity + pre-sales deposits:</b> first-in capital; every zone pre-sold before it's built.</li></ul>
+    <div class="stat-callout"><b>${peak:.1f}M</b><span>peak funding need (Year 2). EBITDA-positive from Year 2 self-funds later phases and the high-cost tail.</span></div>
   </div>
 </div></section>""")
-# 11 grant fit
+# 11 the funding engine (co-op / member capital)
 SL.append(f"""<section class="slide"><div>
-  <div class="kicker">For grant reviewers</div>
-  <h2>Built for BEAD / USDA / state scoring</h2>
-  {tiles([("Unserved","mapped, parcel-level evidence"),("Symmetric gig","exceeds program thresholds"),("Co-op","local, community-owned"),("Match ready","blended stack + owner capital"),("Whole-lake","coherent, phased buildout"),("Compliance","BABA + segregated accounting planned")])}
-  <p class="src">GIS coverage maps, per-zone cost-per-passing, and community-benefit narrative are already produced (docs 05, 13).</p>
+  <div class="kicker">The funding engine</div>
+  <h2>The cooperative <em>is</em> the capital strategy</h2>
+  {tiles([("Member shares","patient capital from ~4,000 members"),("Founding members","early lakeshore + marina investors"),("Pre-sales","deposits gate &amp; fund each zone"),("Patronage capital","co-op self-funding once EBITDA+"),("Co-op lenders","CoBank / RTFC — not government"),("Self-funded tail","cash from Y2 funds high-cost coves")])}
+  <p class="src">Grant-independent by design. If public programs ever return they are pure upside that shrinks the raise. See docs/13.</p>
 </div></section>""")
 # 12 roadmap
 SL.append(f"""<section class="slide"><div>

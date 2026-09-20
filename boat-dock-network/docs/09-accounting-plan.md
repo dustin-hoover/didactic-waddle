@@ -65,14 +65,19 @@ P2 2,957 / 10, P3 1,933 / 8, P4 1,340 / 9. Machine-readable in
   subscriber connections). CapEx per year in
   [`../data/financial/capex_detail.csv`](../data/financial/capex_detail.csv).
 
-## 4. What grants/subsidy do to the picture
+## 4. Covering the raise WITHOUT government money
 
-Because CapEx is ~$7.5M (not ~$24M), grants make the raise very manageable:
-- **~40% grant of eligible CapEx (~$3.0M)** cuts the peak funding need toward ~$1.5–2M
-  of equity/debt — within owner + a small telecom loan.
-- Grants are best aimed at the **RF-shadow set (~2,417 premises)** and the long-tail
-  Phase-4 zones, where per-passing cost is highest (relays/fiber). Model grant coverage
-  per zone using the GIS cost outputs; doc 13 is the strategy.
+**Base case assumes no grants and no federal (RUS) loans.** The ~$3.1M peak funding
+need is covered by a grant-free stack (doc 13): owner equity, **member capital**
+(the cooperative's grant replacement — membership shares, founding-member capital,
+patronage retention), **pre-sales deposits**, and **private + cooperative debt**
+(CoBank, RTFC/CFC — member-owned lenders, not government) plus equipment financing.
+
+Representative cover of the ~$3.1M peak: ~$1.0M owner equity + ~$0.8M member capital &
+pre-sales + ~$1.0M cooperative/commercial debt + ~$0.3M equipment finance. Because
+EBITDA is positive from Year 2, later phases (and the high-cost RF-shadow tail) can be
+**demand-gated and self-funded from operating cash** rather than needing external
+capital. If public programs ever return, they are pure upside that shrinks this raise.
 
 ### Scenarios (LOS is the key swing)
 
