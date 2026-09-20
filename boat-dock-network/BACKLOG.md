@@ -17,9 +17,12 @@ We work these **one by one**. Status: ✅ done · 🔨 in progress · ⬜ queued
   (1/mo, 1.5× host, cap 120), patronage-dividend economics, tokenomics sim, governance
   schema, explainer artifact
 
+## Done (cont.)
+- ✅ **Investor / grant deck** (dual-purpose, self-contained HTML, 13 slides, embedded
+  map + charts) — `data/deck/investor_grant_deck.html`
+
 ## Queued (recommended order — next up)
-- ⬜ **Investor / grant one-pager + deck** (capstone of the plan) ← next
-- ⬜ **Serviceability + signup portal** (DockOS step 3 — start pre-selling zones)
+- ⬜ **Serviceability + signup portal** (DockOS step 3 — start pre-selling zones) ← next
 - ⬜ **Governance module in DockOS** (unit ledger, proposals, Snapshot-style voting)
 - ⬜ **Billing + provisioning + RADIUS** (DockOS step 6)
 - ⬜ **Boat-dispatch PWA + work-order engine** (DockOS steps 4–5)
