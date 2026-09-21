@@ -80,11 +80,13 @@ table{width:100%;border-collapse:collapse;font-size:13px} th,td{text-align:left;
     <div style="flex:2;min-width:220px"><label class="fld">Property address / dock</label><input id="f_addr" autocomplete="street-address"></div></div>
   <label class="fld">I want to…</label>
   <div class="opts">
-    <label class="opt"><input type="checkbox" id="o_presale" checked><span><b>Reserve my spot</b>a refundable pre-sale deposit that helps fund my zone</span></label>
-    <label class="opt"><input type="checkbox" id="o_member" checked><span><b>Become a member</b>join the co-op &amp; start earning WAKE voting units</span></label>
-    <label class="opt"><input type="checkbox" id="o_founding"><span><b>Be a founding member</b>invest founding capital (contact me with details)</span></label>
+    <label class="opt"><input type="checkbox" id="o_presale" checked><span><b>Reserve my spot — $100</b>a refundable deposit, credited to your first bill, that funds your zone</span></label>
+    <label class="opt"><input type="checkbox" id="o_member" checked><span><b>Become a member — $200</b>a refundable co-op share; starts your WAKE voting units</span></label>
+    <label class="opt"><input type="checkbox" id="o_founding"><span><b>Be a founding member</b>early risk capital from lakeshore supporters
+      <select id="f_tier" style="margin-top:6px;width:auto"><option value="500">$500</option><option value="1500">$1,500</option><option value="5000">$5,000</option></select></span></label>
     <label class="opt"><input type="checkbox" id="o_host"><span><b>Host a node</b>put a dish/cabinet on my property for 1.5&times; WAKE + a discount</span></label>
   </div>
+  <div id="pledgeSum" class="wake" style="background:linear-gradient(180deg,transparent,#0e7c8b12)"></div>
   <div class="wake"><b>What's WAKE?</b> A non-transferable membership unit — you earn 1 per month as a
   member (1.5&times; if you host a node). It's your vote in the co-op, not a tradable token. Economics come
   from member patronage dividends. <span id="pii"></span></div>
@@ -97,6 +99,15 @@ table{width:100%;border-collapse:collapse;font-size:13px} th,td{text-align:left;
   <div class="step">CO-OP ADMIN (owner only)</div><h2>Sign-up pipeline</h2>
   <div class="tiles" id="adminTiles"></div>
   <div style="overflow-x:auto"><table id="adminTbl"><thead><tr><th>When</th><th>Zone</th><th>Plan</th><th>Wants</th><th>Contact</th></tr></thead><tbody></tbody></table></div>
+</div>
+
+<div class="card admin" id="campaignCard">
+  <div class="step">CAMPAIGN COCKPIT (owner only)</div><h2>Member capital vs the build-gate</h2>
+  <div class="tiles" id="capTiles"></div>
+  <div id="capMix" class="note" style="margin:2px 0 10px"></div>
+  <div style="overflow-x:auto"><table id="capTbl"><thead><tr><th>Zone</th><th>Reservations</th><th>Capital</th><th>Gate ($75/prem)</th><th>Status</th></tr></thead><tbody></tbody></table></div>
+  <p class="note">Build-gate (doc 18): a zone releases to construction when reservations &ge; 25% of premises
+  <b>and</b> committed capital &ge; premises &times; $75. Deposits &amp; shares are refundable, held in escrow until then.</p>
 </div>
 
 <p class="note">Prototype front door for the cooperative. Sign-ups are stored for this artifact's
@@ -116,6 +127,9 @@ const PLANS=[
  {id:'business',name:'Business / Marina',sp:'1 Gbps – multi-gig',pr:'$199+'},
 ];
 const PHASE={1:['Building now','Phase 1','b1'],2:['Next up','Phase 2','b2'],3:['Planned','Phase 3','b3'],4:['Future (demand-gated)','Phase 4','b4']};
+// member-capital instruments + build-gate dials (doc 18)
+const DEPOSIT=100, SHARE=200;
+const GATE_PER_PREMISE=75, RES_PCT=0.25, PEAK_NEED=3300000;
 let state={zone:null, plan:null};
 
 // ---------- map ----------
@@ -182,6 +196,29 @@ function checkReady(){const ok=state.zone&&state.plan&&document.getElementById('
  document.getElementById('submit').disabled=!ok;}
 ['f_name','f_email'].forEach(id=>document.getElementById(id).addEventListener('input',checkReady));
 
+// ---------- member-capital pledges (doc 18) ----------
+function pledgeItems(){
+  const it=[];
+  if(document.getElementById('o_presale').checked) it.push({kind:'reservation_deposit',amount:DEPOSIT});
+  if(document.getElementById('o_member').checked)  it.push({kind:'membership_share',amount:SHARE});
+  if(document.getElementById('o_founding').checked) it.push({kind:'founding_capital',amount:+document.getElementById('f_tier').value});
+  return it;
+}
+const KLBL={reservation_deposit:'deposit',membership_share:'share',founding_capital:'founding capital'};
+function updatePledge(){
+  const items=pledgeItems(), tot=items.reduce((s,i)=>s+i.amount,0), el=document.getElementById('pledgeSum');
+  el.innerHTML = tot
+    ? '<b>Your commitment today: $'+tot.toLocaleString()+'</b> — '+
+      items.map(i=>'$'+i.amount.toLocaleString()+' '+KLBL[i.kind]).join(' + ')+
+      '. Deposits &amp; shares are refundable, held in escrow until your zone\'s build-gate clears.'
+    : 'No paid commitment selected — you\'ll join the interest list for your zone.';
+  const b=document.getElementById('submit');
+  if(!b.disabled||b.textContent==='Reserve my spot'||b.textContent.startsWith('Reserve &'))
+    b.textContent = tot? 'Reserve & commit $'+tot.toLocaleString() : 'Join the list';
+}
+['o_presale','o_member','o_founding','f_tier'].forEach(id=>document.getElementById(id).addEventListener('change',updatePledge));
+updatePledge();
+
 // ---------- capabilities ----------
 let DB=null, USER=null;
 (async()=>{
@@ -206,16 +243,32 @@ document.getElementById('submit').addEventListener('click', async ()=>{
     presale:document.getElementById('o_presale').checked, member:document.getElementById('o_member').checked,
     founding:document.getElementById('o_founding').checked, host:document.getElementById('o_host').checked,
   };
+  const items=pledgeItems(); const tot=items.reduce((s,i)=>s+i.amount,0);
+  rec.pledge_total_usd=tot;
   btn.disabled=true; btn.textContent='Saving…';
   try{
     if(!DB) throw {code:'not_granted'};
-    await DB.collection('signups').add(rec);
+    const ref=await DB.collection('signups').add(rec);
+    const sid=(ref&&ref.id)||null;
+    // one pledge record per selected capital instrument (doc 18); production
+    // Stripe flow (software/api/capital.py) flips these to 'collected' on payment.
+    for(const it of items){
+      await DB.collection('pledges').add({
+        ts:new Date().toISOString(), signup_ref:sid,
+        zone_id:rec.zone_id, zone_name:rec.zone_name,
+        premises:Number(state.zone.premises)||null,
+        kind:it.kind, amount_usd:it.amount, status:'committed', refundable:true,
+        name:rec.name, email:rec.email
+      });
+    }
     document.getElementById('ok').className='ok show';
-    document.getElementById('ok').innerHTML='<b>You\'re on the list for '+rec.zone_name+'.</b> We\'ll confirm serviceability at survey and reach out about '+
+    document.getElementById('ok').innerHTML='<b>You\'re on the list for '+rec.zone_name+'.</b>'+
+      (tot?' Your $'+tot.toLocaleString()+' commitment is recorded — we\'ll send a secure payment link and hold it in escrow until your zone\'s build-gate clears.':'')+
+      ' We\'ll confirm serviceability at survey and reach out about '+
       (rec.founding?'founding membership and ':'')+'your reservation. Welcome to the co-op. 🚤';
-    btn.textContent='Reserved ✓'; note.textContent='';
+    btn.textContent=tot?'Committed ✓':'On the list ✓'; note.textContent='';
   }catch(err){
-    btn.disabled=false; btn.textContent='Reserve my spot';
+    btn.disabled=false; btn.textContent='Reserve my spot'; updatePledge();
     note.textContent = (err&&err.code==='not_granted')
       ? 'This preview can\'t save sign-ups. Email hello@boatdock.network and we\'ll reserve your spot.'
       : 'Something went wrong saving that — please try again in a moment.';
@@ -238,6 +291,43 @@ function initAdmin(){
         || '<tr><td colspan="5" style="color:var(--muted)">No sign-ups yet.</td></tr>';
     }, err=>{ /* terminal db error: leave panel as-is */ });
   }catch(e){}
+  // campaign cockpit: capital vs the build-gate, per zone (doc 18 §5)
+  try{
+    DB.collection('pledges').limit(2000).onSnapshot(snap=>{
+      renderCockpit(snap.docs.map(d=>d.data()).filter(Boolean));
+    }, err=>{});
+  }catch(e){}
+}
+
+function renderCockpit(pls){
+  document.getElementById('campaignCard').className='admin card show';
+  const byZone={};
+  ZONES.features.forEach(f=>{const p=f.properties;byZone[p.zone_id]={name:p.name,premises:Number(p.premises)||0,cap:0,res:0};});
+  let totCap=0,totDep=0,totSh=0,totFnd=0;
+  for(const p of pls){
+    const amt=Number(p.amount_usd)||0; totCap+=amt; const z=byZone[p.zone_id];
+    if(z) z.cap+=amt;
+    if(p.kind==='reservation_deposit'){ totDep+=amt; if(z) z.res++; }
+    else if(p.kind==='membership_share') totSh+=amt;
+    else if(p.kind==='founding_capital') totFnd+=amt;
+  }
+  const gateMet=z=>z.premises&&z.res>=Math.ceil(z.premises*RES_PCT)&&z.cap>=z.premises*GATE_PER_PREMISE;
+  const nMet=Object.values(byZone).filter(gateMet).length;
+  document.getElementById('capTiles').innerHTML=[
+    ['$'+Math.round(totCap).toLocaleString(),'Capital committed'],
+    [(100*totCap/PEAK_NEED).toFixed(1)+'%','of $3.3M peak need'],
+    [nMet,'Zones at build-gate'],
+    ['$'+Math.round(totDep+totSh).toLocaleString(),'Refundable (dep+share)']
+  ].map(([v,k])=>'<div class="tile"><b>'+v+'</b><span>'+k+'</span></div>').join('');
+  document.getElementById('capMix').innerHTML='Funding mix — deposits $'+Math.round(totDep).toLocaleString()+
+    ' · shares $'+Math.round(totSh).toLocaleString()+' · founding $'+Math.round(totFnd).toLocaleString()+'.';
+  const rows=Object.values(byZone).filter(z=>z.cap>0||z.res>0).sort((a,b)=>b.cap-a.cap);
+  document.querySelector('#capTbl tbody').innerHTML = rows.map(z=>{
+    const rt=Math.ceil(z.premises*RES_PCT), gt=z.premises*GATE_PER_PREMISE, met=gateMet(z);
+    return '<tr><td>'+z.name+'</td><td>'+z.res+' / '+rt+'</td><td>$'+Math.round(z.cap).toLocaleString()+
+      '</td><td>$'+Math.round(gt).toLocaleString()+'</td><td>'+
+      (met?'<b style="color:var(--good)">GATE MET</b>':'building demand')+'</td></tr>';
+  }).join('') || '<tr><td colspan="5" style="color:var(--muted)">No pledges yet.</td></tr>';
 }
 
 addEventListener('resize',fit); fit();

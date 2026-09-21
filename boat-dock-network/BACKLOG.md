@@ -39,18 +39,24 @@ We work these **one by one**. Status: ✅ done · 🔨 in progress · ⬜ queued
   capacity sizing (`transit_sizing.py` → `transit_plan.csv`: 2×10G→2×100G, ~$58k→$213k/yr);
   ready-to-send RFQ + weighted provider scorecard (`procurement/`).
 
+## Done (cont.)
+- ✅ **Member-capital campaign tooling** (doc 18): the grant-free funding engine.
+  Three instruments (reservation deposit $100 · membership share $200 · founding capital
+  $500/$1,500/$5,000) + per-zone build-gate (reservations ≥ 25% of premises AND capital ≥
+  premises × $75). Portal now captures pledge amounts to a `pledges` db collection and
+  shows an owner **Campaign cockpit** (per-zone capital vs gate, total vs $3.3M peak,
+  funding mix); Stripe-backed reference API (`software/api/capital.py`: pledge → Checkout →
+  webhook → collected → enroll member/WAKE) + schema (`capital_campaigns`, `member_shares`,
+  Stripe fields on `pledges`, `campaign_progress` view). Portal artifact republished (v2).
+
 ## Queued (recommended order — next up)
-- ⬜ **Member-capital campaign tooling** (deposits/shares/founding capital + Stripe) ← next
-- ⬜ **Execute middle-mile**: get ARIN ASN/IP; send RFQ; confirm A/B path diversity (ops)
+- ⬜ **Execute middle-mile**: get ARIN ASN/IP; send RFQ; confirm A/B path diversity (ops) ← next
 - ⬜ **Governance module in DockOS** (unit ledger, proposals, Snapshot-style voting)
 - ⬜ **Billing + provisioning + RADIUS** (DockOS step 6)
 - ⬜ **Boat-dispatch PWA + work-order engine** (DockOS steps 4–5)
 - ⬜ **NOC monitoring + outage management** (DockOS step 7)
 - ⬜ **AR/Benton/Washington compliance advisor** (DockOS step 8) — grants NOFO scanner
   deferred (no government money in the base case; revisit only if programs return)
-- ⬜ **Member-capital campaign tooling** (membership shares, founding-member drive,
-  pre-sales deposits) — the grant-free funding engine (ties to signup portal + WAKE)
-- ⬜ **True LiDAR first-return DSM** (per-parcel canopy precision for the shadow set)
 - ⬜ **Entity formation checklist** (AR cooperative filing, bylaws, ASN/IP, transit LOIs)
 
 _Update this file as items complete._
