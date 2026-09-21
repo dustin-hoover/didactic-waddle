@@ -5,15 +5,15 @@
   "subs_year5": 4211,
   "ultimate_take": 0.44,
   "arpu_mo": 105,
-  "capex_5y_000": 7451,
-  "infra_5y_000": 4398,
+  "capex_5y_000": 8310,
+  "infra_5y_000": 4942,
   "spine_capex": 1365000,
-  "peak_funding_need_000": 3100,
+  "peak_funding_need_000": 3326,
   "ebitda_positive_year": 2,
   "cash_positive_year": 6,
   "cash_positive_projected": true,
-  "cost_per_passing": 460,
-  "cost_per_sub": 1769,
+  "cost_per_passing": 516,
+  "cost_per_sub": 1973,
   "years": [
     1,
     2,
@@ -57,17 +57,17 @@
     "5": 2549
   },
   "capex": {
-    "1": 2165,
-    "2": 1422,
-    "3": 1250,
-    "4": 986,
-    "5": 1628
+    "1": 2248,
+    "2": 1565,
+    "3": 1382,
+    "4": 1109,
+    "5": 2006
   },
   "cf_cum": {
-    "1": -2317,
-    "2": -3100,
-    "3": -2860,
-    "4": -1610,
-    "5": -689
+    "1": -2400,
+    "2": -3326,
+    "3": -3218,
+    "4": -2091,
+    "5": -1548
   }
 }

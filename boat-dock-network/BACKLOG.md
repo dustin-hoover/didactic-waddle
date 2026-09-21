@@ -27,8 +27,16 @@ We work these **one by one**. Status: ✅ done · 🔨 in progress · ⬜ queued
   artifact `db` with an owner pipeline panel; + production FastAPI serviceability API and
   signup/pledge schema for the public launch. `data/portal/signup_portal.html`
 
+## Done (cont.)
+- ✅ **True LiDAR surface model** (3DEP point cloud → first-return DSM, `ept_build.py`):
+  validated LOS — real canopy blocks ~half of clean LOS (Phase-1: 26% vs 44% NLCD proxy).
+  30–45 m towers + nLOS radios recover it. Model made LiDAR-informed
+  (CapEx ~$8.3M, peak ~$3.3M). `data/gis/outputs/lidar_validation.csv`
+
 ## Queued (recommended order — next up)
-- ⬜ **Member-capital campaign tooling** (deposits/shares/founding capital + Stripe) ← next
+- ⬜ **Middle-mile / internet transit procurement** (doc 17): quotes from OzarksGo DWDM +
+  a diverse 2nd provider, ASN/IP, handoff siting ← circle back (user-flagged)
+- ⬜ **Member-capital campaign tooling** (deposits/shares/founding capital + Stripe)
 - ⬜ **Governance module in DockOS** (unit ledger, proposals, Snapshot-style voting)
 - ⬜ **Billing + provisioning + RADIUS** (DockOS step 6)
 - ⬜ **Boat-dispatch PWA + work-order engine** (DockOS steps 4–5)

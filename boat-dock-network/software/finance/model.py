@@ -33,14 +33,18 @@ ARPU_MO      = 105            # blended residential + business/marina; premium m
 OTHER_REV    = 0.06          # install + add-ons uplift on subscription
 
 # ---- CapEx unit costs (planning; from BOM kits) ----
-COST_T2, COST_T3 = 32_000, 14_000       # dock/agg node, relay/fill node
+COST_T2, COST_T3 = 40_000, 18_000       # dock/agg node, relay/fill node
+# LiDAR-informed: true canopy cuts clean-LOS to ~26% (Phase-1, 10m); 30-45m TOWERS
+# (not 15m masts) recover it to ~40-45%, and nLOS radios (Tarana) carry the rest.
+# T2/T3 costs raised for taller towers; connection blend + shadow raised for more
+# nLOS/fiber. See data/gis/outputs/lidar_validation.csv + docs/05.
 N_T2, N_T3       = 18, 12                # primary vs fill (is_primary split)
 COST_HEADEND     = 120_000; N_HEADENDS = 2
 COST_CORE_NOC    = 250_000
 COST_FLEET_START = 450_000
-SHADOW_CAPEX     = 1_100_000           # extra relays + selective fiber for the ~25% shadow set
-FIBER_OVERBUILD  = 250_000             # Y5 densest-zone fiber overbuild
-CONN_COST_BLEND  = 725                  # per sub: CPE + install (75% wireless @$500 / 25% fiber-relay @$1400)
+SHADOW_CAPEX     = 1_400_000           # extra relays + fiber (LiDAR: canopy heavier than proxied)
+FIBER_OVERBUILD  = 300_000             # Y5 densest-zone fiber overbuild
+CONN_COST_BLEND  = 800                  # per sub: nLOS-default + more fiber/relay (LiDAR-informed)
 
 # ---- OpEx (planning; operating team only — construction labor is capitalized) ----
 OPEX = {

@@ -17,25 +17,25 @@ re-run them.
 - This is why EBITDA turns positive well before cumulative cash does: the heavy spend is
   capital, funded by the blended stack (§6), not operating expense.
 
-> **VERIFIED MODEL — foliage base case (supersedes the fiber-default estimate).**
-> Regenerate with `python3 software/finance/model.py` (reads the GIS outputs). A
-> **canopy-aware (NLCD/LiDAR) viewshed** shows **75% of premises are reachable by
-> wireless line-of-sight through Ozark foliage** (bare-earth optimistic is 87%). Even
-> so, cost-per-passing is **~$460**, not the ~$1,800 a fiber overbuild assumes — holding
-> whole-lake CapEx to **~$7.5M** and the peak funding need to **~$3.1M**. The remaining
-> ~25% RF-shadow set (~2,417 premises) is served by relays or fiber; non-line-of-sight
-> radios (Tarana) recover part of that gap (upside toward the 87% case).
+> **VERIFIED MODEL — LiDAR-informed base case (supersedes the fiber-default estimate).**
+> Regenerate with `python3 software/finance/model.py`. Validating against **real 3DEP
+> LiDAR canopy** (Phase-1) showed clean wireless line-of-sight is only ~26% at short
+> masts — real trees block more than the NLCD proxy assumed. The engineering answer is
+> **30–45 m towers** (recover LOS to ~40–45%) plus **non-line-of-sight radios (Tarana)**
+> and more fiber/relay. Folding that in: cost-per-passing **~$516** (still a fraction of
+> the ~$1,800 a fiber overbuild assumes), whole-lake CapEx **~$8.3M**, peak funding need
+> **~$3.3M**, EBITDA-positive Year 2. See `data/gis/outputs/lidar_validation.csv`.
 
-## 2. Unit economics (verified, foliage base case)
+## 2. Unit economics (verified, LiDAR-informed)
 
 | Metric | Value | Note |
 |--------|-------|------|
-| Cost per premises passed | **~$460** | Wireless-first; infra shared across a zone's premises |
-| Cost per connection (CPE + install) | **~$725** | Blended 75% wireless @ $500 / 25% fiber-relay @ $1,400 |
-| All-in cost per subscriber (5-yr) | **~$1,769** | Total CapEx ÷ Year-5 subscribers |
+| Cost per premises passed | **~$516** | Wireless-first + taller towers; infra shared across a zone |
+| Cost per connection (CPE + install) | **~$800** | nLOS-default + more fiber/relay (LiDAR-informed) |
+| All-in cost per subscriber (5-yr) | **~$1,973** | Total CapEx ÷ Year-5 subscribers |
 | ARPU (blended res + business/marina) | $105/mo ($1,260/yr) | Premium market: median home $410k, 522 >$1M |
 | Annual contribution/sub (~70% margin) | ~$882 | |
-| Simple payback per sub | **~2.0 yrs** | vs ~6.2 yrs in the fiber-default estimate |
+| Simple payback per sub | **~2.2 yrs** | vs ~6.2 yrs in the fiber-default estimate |
 
 The premium shoreline market (verified median home value $410k) supports the $105 ARPU
 and a high ultimate take; the host-node program lowers site cost and lifts take further.
@@ -54,15 +54,15 @@ P2 2,957 / 10, P3 1,933 / 8, P4 1,340 / 9. Machine-readable in
 | **Revenue** | 558 | 1,819 | 3,240 | 4,536 | 5,369 |
 | **Total OpEx** | 710 | 1,180 | 1,750 | 2,300 | 2,820 |
 | **EBITDA** | (152) | 639 | 1,490 | 2,236 | 2,549 |
-| **CapEx** | 2,165 | 1,422 | 1,250 | 986 | 1,628 |
-| **Cash flow (pre-financing)** | (2,317) | (783) | 240 | 1,250 | 921 |
-| **Cash flow (cumulative)** | (2,317) | (3,100) | (2,860) | (1,610) | (689) |
+| **CapEx** | 2,248 | 1,565 | 1,382 | 1,109 | 2,006 |
+| **Cash flow (pre-financing)** | (2,400) | (926) | 108 | 1,127 | 543 |
+| **Cash flow (cumulative)** | (2,400) | (3,326) | (3,218) | (2,091) | (1,548) |
 
 - **EBITDA turns positive in Year 2.**
-- **Peak funding need ≈ $3.1M** (end of Year 2); **cumulative cash turns positive in
-  ~Year 6** (still −$0.7M at end of Y5; Year-6 EBITDA ~$2.5M clears it) — before grants.
-- **5-year CapEx ≈ $7.5M** ($4.4M network infrastructure incl. the $1.37M spine + $3.1M
-  subscriber connections). CapEx per year in
+- **Peak funding need ≈ $3.3M** (end of Year 2); **cumulative cash turns positive in
+  ~Year 6** (−$1.5M at end of Y5; Year-6 EBITDA ~$2.5M clears it) — before grants.
+- **5-year CapEx ≈ $8.3M** ($4.9M network infrastructure incl. the $1.37M spine + 30–45 m
+  towers + $3.4M subscriber connections). CapEx per year in
   [`../data/financial/capex_detail.csv`](../data/financial/capex_detail.csv).
 
 ## 4. Covering the raise WITHOUT government money
@@ -79,17 +79,35 @@ EBITDA is positive from Year 2, later phases (and the high-cost RF-shadow tail) 
 **demand-gated and self-funded from operating cash** rather than needing external
 capital. If public programs ever return, they are pure upside that shrinks this raise.
 
-### Scenarios (LOS is the key swing)
+### Line-of-sight, validated against real LiDAR (the key engineering swing)
 
-| Scenario | Wireless LOS | 5-yr CapEx | Peak need | Cash-positive |
-|----------|--------------|-----------|-----------|---------------|
-| **Base (foliage, NLCD DSM)** | **75%** | **~$7.5M** | **~$3.1M** | **~Y6** |
-| Optimistic (bare-earth DEM) | 87% | ~$6.6M | ~$3.0M | ~Y5 |
-| With nLOS radios (Tarana) | 75%→~82%* | between the two | ~$3.0M | ~Y5–6 |
+Clean wireless LOS to Phase-1 premises (same 18 candidates, 3,341 premises;
+`data/gis/outputs/lidar_validation.csv`):
 
-\* nLOS radios penetrate light-to-moderate foliage, recovering part of the shadow set;
-the true figure sits between the DSM and bare-earth bounds. Refine further with true
-LiDAR first-return DSM (vs the NLCD-canopy model used here) for per-parcel precision.
+| Surface / config | Clean wireless LOS |
+|------------------|--------------------|
+| Bare-earth DEM (optimistic) | 55% |
+| NLCD-canopy proxy | 44% |
+| **True 3DEP LiDAR DSM, 15 m mast** | **26%** |
+| True LiDAR + **30 m (100 ft) tower** | 40% |
+| True LiDAR + **45 m (150 ft) tower** | 45% |
+
+Real canopy blocks roughly **half** of clean LOS — worse than the proxy. Two levers
+recover it: **taller towers** (26%→45%) and **nLOS radios (Tarana)**, which serve many
+premises with no clean LOS at all; the deep-shadow remainder takes fiber/relay. The
+model is now **LiDAR-informed**: T2/T3 node costs raised for 30–45 m towers, and the
+connection blend + shadow CapEx raised for an nLOS-default access layer.
+
+| Scenario | 5-yr CapEx | Peak need | Cash-positive |
+|----------|-----------|-----------|---------------|
+| **LiDAR-informed base (towers + nLOS + fiber)** | **~$8.3M** | **~$3.3M** | **~Y6** |
+| NLCD-proxy (prior) | ~$7.5M | ~$3.1M | ~Y6 |
+| Bare-earth (optimistic) | ~$6.6M | ~$3.0M | ~Y5 |
+
+> Note on absolute %: this LiDAR test is at 10 m with 18 sites over Phase-1, so its
+> figures are lower than the 30 m whole-lake run — use the **ratios** (canopy vs bare,
+> tower lift) as the signal. A whole-lake LiDAR pass (other counties' 3DEP projects)
+> and a real nLOS-propagation model are the next refinements.
 
 ## 5. Sensitivity levers (in order of impact)
 

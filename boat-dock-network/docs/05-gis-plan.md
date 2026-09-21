@@ -128,6 +128,13 @@ scripts `software/gis/setup_and_run.sh` + `node_siting_and_map.sh`):
 - [x] Interactive web map published (`beaver_lake_network_map.html` + artifact).
 - [x] **Refine LOS with a canopy DSM** — NLCD 2021 land-cover → tree height added to the
       DEM (`software/gis/build_dsm.py`); foliage LOS 75% (vs 87% bare-earth), shadow 25%.
-      (Next refinement: true LiDAR first-return DSM for per-parcel canopy.)
+- [x] **Validate against TRUE 3DEP LiDAR** — built a real first-return DSM from the USGS
+      `USGS_LPC_AR_Benton_Co_2015` point cloud (`software/gis/ept_build.py`, 9.2M pts,
+      10 m). Phase-1 result: clean LOS **26%** at 15 m mast (vs 44% NLCD proxy, 55% bare)
+      → real canopy blocks ~half of LOS. **30–45 m towers** recover it to 40–45%; nLOS
+      radios carry the rest. Model made LiDAR-informed (docs/09). See
+      `data/gis/outputs/lidar_validation.csv`.
+- [ ] Whole-lake LiDAR pass (Washington/Carroll/Madison 3DEP projects) + nLOS-propagation
+      model for per-parcel access-tech assignment.
 - [ ] Benton E-911 address points for sub-address precision.
 - [ ] Full link budgets (fade margin) per spine hop; Felt map for stakeholders.
