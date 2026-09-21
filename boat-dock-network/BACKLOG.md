@@ -21,8 +21,14 @@ We work these **one by one**. Status: ✅ done · 🔨 in progress · ⬜ queued
 - ✅ **Investor / grant deck** (dual-purpose, self-contained HTML, 13 slides, embedded
   map + charts) — `data/deck/investor_grant_deck.html`
 
+## Done (cont.)
+- ✅ **Serviceability + member signup portal** (DockOS step 3): pin-drop serviceability
+  by zone, plan selection, member/reservation/founding/host signup persisted to the
+  artifact `db` with an owner pipeline panel; + production FastAPI serviceability API and
+  signup/pledge schema for the public launch. `data/portal/signup_portal.html`
+
 ## Queued (recommended order — next up)
-- ⬜ **Serviceability + signup portal** (DockOS step 3 — start pre-selling zones) ← next
+- ⬜ **Member-capital campaign tooling** (deposits/shares/founding capital + Stripe) ← next
 - ⬜ **Governance module in DockOS** (unit ledger, proposals, Snapshot-style voting)
 - ⬜ **Billing + provisioning + RADIUS** (DockOS step 6)
 - ⬜ **Boat-dispatch PWA + work-order engine** (DockOS steps 4–5)
