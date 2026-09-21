@@ -13,10 +13,19 @@ buying **redundant middle-mile transport and IP transit** into **two diverse hea
 POPs**.
 
 ## 2. Head-end locations
-- **POP A:** [address / lat-long / carrier-hotel or our facility] — near [area].
-- **POP B:** [address / lat-long] — near [area], on a **physically diverse route** from POP A.
+We will run **two diverse head-end POPs** on opposite sides of the lake so a single fiber
+cut or POP outage never darkens the whole system. Candidate areas (exact sites being
+finalized — quote to the nearest on-net handoff to each and state the lateral cost):
+- **POP A — NW / fiber-rich metro side:** Rogers–Bentonville–Lowell area (Benton County).
+  Dense OzarksGo / DSN / Cox fiber; likely our primary transit on-ramp. [exact site TBD]
+- **POP B — diverse route:** eastern/southern approach on a **physically separate path** —
+  e.g., Eureka Springs / Berryville (Carroll County) or the Fayetteville–Springdale
+  corridor (Washington County). Chosen specifically so its route to the internet does
+  **not** share conduit/right-of-way with POP A. [exact site TBD]
 
-(If you cannot reach a location, propose the nearest on-net handoff and the build/lateral cost.)
+(If you cannot reach a candidate site, propose the nearest on-net handoff and the
+build/lateral cost. We may buy or lease a small lakeside parcel near your POP to shorten
+the lateral — tell us where that helps.)
 
 ## 3. What we're requesting — please quote each separately
 ### A. Transport (to each head-end)

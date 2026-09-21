@@ -72,16 +72,31 @@ head-end**, **upgrade path to 100G+**, **install lead time**, **SLA/latency**,
 on path A + one diverse carrier on path B**, with a proven physically-separate route map
 between the two head-ends.
 
-## 6. The plan (for execution)
+## 6. The plan (for execution) — packaged & ready to send
 
-1. **Get the ASN + IP space now** (ARIN) — long lead; org-wide asset (see doc 03).
-2. **Send the RFQ** (`../procurement/transit_rfq.md`) to DSN/OzarksGo + Uniti + Lumen/Cox
-   for 10G/25G/100G, with and without transport to each of the two head-end sites.
-3. **Confirm physical path maps** to prove diversity between the two head-ends; this can
-   drive the "buy a small lakeside parcel near a fiber-rich POP" decision (doc 04 §3).
-4. **Score + choose** two providers/paths; sign transport + transit.
+Execution artifacts are built and in `../procurement/`:
+
+1. **Get the ASN + IP space now** (ARIN) — long lead; org-wide asset (doc 03).
+   → **`../procurement/arin_resource_request.md`** — full worksheet with verified 2026
+   ARIN process & fees: request **1 ASN + IPv6 /36 + IPv4 /24 (waitlist)**, lease a /24–/23
+   as a launch bridge (v4 is exhausted; waitlist is >1 yr). RSP ≈ **$275/yr** in 2026
+   (IPv6 fee waiver) + $50 Org Create. **Apply in 2026 to lock the waiver.**
+2. **Send the RFQ** (`../procurement/transit_rfq.md`, head-ends now scoped to candidate
+   NW + diverse-route areas). → **`../procurement/rfq_outreach.md`** has the provider
+   contacts (DSN contact@diamondstatenetworks.com + Uniti/Lumen/Cox/Aristotle), a
+   ready-to-send cover message, and an outreach tracker.
+3. **Confirm physical path maps** to prove diversity between the two head-ends.
+   → **`../procurement/path_diversity_checklist.md`** — the 4-layer diversity test
+   (route/entrance/optical/upstream) + failover drill; can drive the "buy a small lakeside
+   parcel near a fiber-rich POP" decision (doc 04 §3).
+4. **Score + choose** two providers/paths (`../procurement/provider_scorecard.csv`); sign
+   transport + transit; schedule turn-up against the ASN/IP timeline.
 5. **Feed real $/Mbps + transport lease** into `docs/ASSUMPTIONS.md` and re-run the
    pro forma (`transit_sizing.py` + `model.py`).
+
+**What needs a human (can't be automated):** creating the ARIN Org (needs the co-op's
+legal entity + EIN), finalizing the two exact head-end sites, and actually sending the RFQ
+from a named contact — everything up to those points is prepared.
 
 ## 7. Model hooks
 - `data/financial/transit_plan.csv` — capacity + indicative cost by year.

@@ -49,8 +49,17 @@ We work these **one by one**. Status: ✅ done · 🔨 in progress · ⬜ queued
   webhook → collected → enroll member/WAKE) + schema (`capital_campaigns`, `member_shares`,
   Stripe fields on `pledges`, `campaign_progress` view). Portal artifact republished (v2).
 
+## Done (cont.)
+- ✅ **Execute middle-mile** (doc 17 §6): packaged the whole path to signed transit.
+  `procurement/arin_resource_request.md` (verified 2026 ARIN process/fees: ASN + IPv6 /36
+  + IPv4 /24 waitlist + lease bridge, ~$275/yr RSP), `procurement/rfq_outreach.md`
+  (provider contacts incl. DSN, ready-to-send cover message, outreach tracker), RFQ
+  head-ends scoped to candidate NW + diverse-route POPs, and
+  `procurement/path_diversity_checklist.md` (4-layer A/B diversity acceptance test +
+  failover drill). Remaining steps need a human: ARIN Org (legal entity + EIN), exact POP
+  sites, and actually sending the RFQ / filing with ARIN.
+
 ## Queued (recommended order — next up)
-- ⬜ **Execute middle-mile**: get ARIN ASN/IP; send RFQ; confirm A/B path diversity (ops) ← next
 - ⬜ **Governance module in DockOS** (unit ledger, proposals, Snapshot-style voting)
 - ⬜ **Billing + provisioning + RADIUS** (DockOS step 6)
 - ⬜ **Boat-dispatch PWA + work-order engine** (DockOS steps 4–5)
