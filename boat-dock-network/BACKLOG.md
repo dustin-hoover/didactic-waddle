@@ -33,10 +33,15 @@ We work these **one by one**. Status: ✅ done · 🔨 in progress · ⬜ queued
   30–45 m towers + nLOS radios recover it. Model made LiDAR-informed
   (CapEx ~$8.3M, peak ~$3.3M). `data/gis/outputs/lidar_validation.csv`
 
+## Done (cont.)
+- ✅ **Middle-mile / transit procurement package** (doc 17): found Diamond State Networks
+  (13-co-op wholesale middle-mile incl. OzarksGo) as lead path A + diverse carrier path B;
+  capacity sizing (`transit_sizing.py` → `transit_plan.csv`: 2×10G→2×100G, ~$58k→$213k/yr);
+  ready-to-send RFQ + weighted provider scorecard (`procurement/`).
+
 ## Queued (recommended order — next up)
-- ⬜ **Middle-mile / internet transit procurement** (doc 17): quotes from OzarksGo DWDM +
-  a diverse 2nd provider, ASN/IP, handoff siting ← circle back (user-flagged)
-- ⬜ **Member-capital campaign tooling** (deposits/shares/founding capital + Stripe)
+- ⬜ **Member-capital campaign tooling** (deposits/shares/founding capital + Stripe) ← next
+- ⬜ **Execute middle-mile**: get ARIN ASN/IP; send RFQ; confirm A/B path diversity (ops)
 - ⬜ **Governance module in DockOS** (unit ledger, proposals, Snapshot-style voting)
 - ⬜ **Billing + provisioning + RADIUS** (DockOS step 6)
 - ⬜ **Boat-dispatch PWA + work-order engine** (DockOS steps 4–5)

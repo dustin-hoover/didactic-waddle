@@ -1,60 +1,89 @@
-# 17 — Middle-Mile & Internet Transit (to firm up)
+# 17 — Middle-Mile & Internet Transit
 
-> Captured for the circle-back. Goal: buy the actual internet capacity that feeds the
-> two head-end POPs (doc 03) — diverse, scalable, and priced right. Verify all provider
-> specifics and pricing with quotes; this is a planning map, not a quote.
+> Goal: buy the internet capacity that feeds the two head-end POPs (doc 03) —
+> diverse, scalable, cost-effective, and (ideally) co-op-aligned. Pricing is not public;
+> the numbers here are planning-grade — send the RFQ (`../procurement/transit_rfq.md`)
+> to get real quotes. Not legal/financial advice.
 
-## What we're buying
+## 1. Key finding: a co-op wholesale middle-mile already exists
 
-Two things, often from different vendors:
-1. **IP transit** — the actual route to the internet (a blend of upstreams, or a
-   transit provider), delivered as Gbps at a handoff. Start **2 × 10 GbE**, scale to
-   **N × 100 GbE**. Bring our **own ASN + IPv4/IPv6** (ARIN) and run **BGP** so we're
-   carrier-independent and can multi-home (doc 03 §2).
-2. **Transport / wavelengths (DWDM)** — getting that capacity from a carrier POP to our
-   two head-ends on **diverse physical paths**. This is where OzarksGo's DWDM fits: a
-   lit wavelength (10G/100G) or dark fiber between their POP and ours.
+**Diamond State Networks (DSN)** is a wholesale, carrier-neutral middle-mile provider
+formed by **13 Arkansas electric cooperatives — OzarksGo/Ozarks Electric among them** —
+with **50,000+ route-miles** of fiber (800G-capable) covering ~64% of the state, built
+specifically to sell transport to ISPs and WISPs. That is almost exactly our need, and
+it's **co-op-to-co-op** — aligned with BDN's cooperative model and the grant-free,
+community-owned story (doc 16). OzarksGo's DWDM you mentioned is part of this fabric.
 
-Diversity is the whole point: two providers *and* two physical paths so no single cut
-or vendor outage darkens the lake.
+**Implication:** lead with **DSN / OzarksGo for transport on one path**, and pair it
+with a **physically diverse second carrier** (national or regional) for the other path,
+so we are never single-vendor or single-route.
 
-## Candidate providers (NW Arkansas — verify current offerings)
+## 2. What we're actually buying (two things, often two vendors)
 
-| Provider | Role | Notes |
-|----------|------|-------|
-| **OzarksGo / Ozarks Electric** | Transport (DWDM), possibly transit | Fiber-rich in NWA; you noted they have DWDM. Likely wavelength or dark-fiber handoff near the lake. Co-op-to-co-op relationship is a plus. |
-| **Carroll Electric / fiber** | Transport (east/Carroll side) | Serves the Eureka/Carroll shoreline; possible second-path handoff. |
-| **Uniti Fiber** | Dark fiber / wavelengths / transit | Large regional wholesale fiber; Little Rock–NWA routes. |
-| **Aristotle** | Transit / transport | Arkansas ISP/wholesale. |
-| **Cox Business / Cox Wholesale** | Transit + transport | Metro fiber in Rogers/Bentonville/Fayetteville. |
-| **AT&T Wholesale / Lumen (CenturyLink)** | Transit + long-haul transport | National backbones through the region. |
-| **Ritter Communications / others** | Regional wholesale | Check footprint near the lake. |
+1. **Transport / wavelengths (DWDM) or dark fiber** — getting capacity from a carrier
+   POP to each of our two head-ends, on **diverse physical paths**. DSN/OzarksGo fits
+   here (lit 10/100G waves or dark fiber).
+2. **IP transit** — the actual route to the internet (blended upstreams). Bring our
+   **own ARIN ASN + IPv4 block + IPv6 /32** and run **BGP** so we multi-home and stay
+   carrier-independent (doc 03 §2). Buy transit from whoever is cheapest/best per Mbps;
+   it can ride the DSN transport or come from the second carrier.
 
-> ARE-ON (Arkansas Research & Education Optical Network) is education/research only —
-> not available to a commercial ISP; note but don't plan on it.
+Diversity is the whole point: **two vendors AND two physical paths** so no single cut or
+provider outage darkens the lake.
 
-## The decision (why we may not use OzarksGo alone)
+## 3. How much to buy (capacity plan)
 
-- **Path/vendor diversity:** if both head-ends buy from OzarksGo on the same route,
-  we're single-vendor / single-path. Pair OzarksGo (one head-end/path) with a **second
-  provider on a physically diverse route** (e.g., Uniti / Cox / Lumen) for the other.
-- **Transit vs transport split:** OzarksGo DWDM may be great **transport** but not the
-  cheapest **IP transit**; we can buy a wavelength from them and blended IP transit from
-  a transit specialist, terminating both at our head-ends.
-- **Scalability:** confirm a clean 10G→100G upgrade path and pricing tiers (cost/Mbps
-  drops sharply at 10G+ and again at 100G — model per the ASSUMPTIONS transit dial).
+From `software/finance/transit_sizing.py` → `../data/financial/transit_plan.csv`
+(busy-hour demand × business uplift × headroom; **each of two on-ramps sized to carry
+the whole load if the other fails — 1+1 redundancy**):
 
-## Action list (for the circle-back)
-1. Get quotes from **≥3**: OzarksGo (DWDM wavelength + transit if offered), one national
-   (Lumen/Cox/AT&T), one regional wholesale (Uniti/Aristotle). Ask for 10G and 100G,
-   with and without transport to each of our two head-end sites.
-2. Confirm **physical path maps** to prove diversity between the two head-ends.
-3. Get **ARIN ASN + IPv4 block + IPv6 /32** in parallel (long lead; do early).
-4. Nail down **handoff locations** — this may drive the "buy a small lakeside parcel
-   near a fiber-rich POP" decision (doc 04 §3).
-5. Feed real $/Mbps into `docs/ASSUMPTIONS.md` (transit dial) and re-run the pro forma.
+| Year | Subs | Peak (Gbps) | Provision (Gbps) | Ports (each path) | Est. $/yr |
+|------|------|-------------|------------------|-------------------|-----------|
+| Y1 | 835 | 2.7 | 3.8 | 10G ×2 | ~$58k |
+| Y2 | 1,889 | 6.9 | 9.6 | 10G ×2 | ~$92k |
+| Y3 | 2,963 | 12.3 | 17.3 | 25G ×2 | ~$127k |
+| Y4 | 3,828 | 17.9 | 25.1 | 25G ×2 | ~$157k |
+| Y5 | 4,211 | 21.9 | 30.7 | 100G ×2 | ~$213k |
 
-## Model hook
-The pro forma's `opex_transit_backhaul` line (doc 09) is the placeholder for this. Once
-we have quotes, replace the planning estimate ($0.30–1.50/Mbps tiered) with real
-committed-rate + overage terms and per-head-end transport lease costs.
+Start **2 × 10 GbE**, step to **2 × 25G** (~Y3), and **2 × 100G** (~Y5). This bottoms-up
+cost is *below* the pro forma's conservative `opex_transit_backhaul` line (doc 09) — good
+headroom; keep the conservative line until quotes land.
+
+## 4. Candidate providers (NW Arkansas — verify offerings + pricing)
+
+| Provider | Best for | Notes |
+|----------|----------|-------|
+| **Diamond State Networks / OzarksGo** | Transport (waves/dark fiber), maybe transit | Co-op wholesale, 800G, statewide; contact contact@diamondstatenetworks.com. **Lead candidate, path A.** |
+| **Uniti Fiber** | Dark fiber / waves / transit | Regional wholesale; possible diverse path B. |
+| **Lumen (CenturyLink)** | IP transit + long-haul | National backbone; strong diverse transit. |
+| **Cox Business / Wholesale** | Transit + metro transport | Fiber in Rogers/Bentonville/Fayetteville. |
+| **Aristotle** | Transit / transport | Arkansas provider. |
+| **AT&T Wholesale** | Transit + transport | National. |
+
+> ARE-ON (research/education network) is not available to a commercial ISP — note but
+> don't plan on it.
+
+## 5. Decision framework
+
+Score candidates (`../procurement/provider_scorecard.csv`) on: **path/route diversity**
+(vs the other on-ramp), **$/Mbps at 10/25/100G**, **transport lease $/mo to each
+head-end**, **upgrade path to 100G+**, **install lead time**, **SLA/latency**,
+**contract term/flexibility**, and **co-op alignment**. Target outcome: **DSN/OzarksGo
+on path A + one diverse carrier on path B**, with a proven physically-separate route map
+between the two head-ends.
+
+## 6. The plan (for execution)
+
+1. **Get the ASN + IP space now** (ARIN) — long lead; org-wide asset (see doc 03).
+2. **Send the RFQ** (`../procurement/transit_rfq.md`) to DSN/OzarksGo + Uniti + Lumen/Cox
+   for 10G/25G/100G, with and without transport to each of the two head-end sites.
+3. **Confirm physical path maps** to prove diversity between the two head-ends; this can
+   drive the "buy a small lakeside parcel near a fiber-rich POP" decision (doc 04 §3).
+4. **Score + choose** two providers/paths; sign transport + transit.
+5. **Feed real $/Mbps + transport lease** into `docs/ASSUMPTIONS.md` and re-run the
+   pro forma (`transit_sizing.py` + `model.py`).
+
+## 7. Model hooks
+- `data/financial/transit_plan.csv` — capacity + indicative cost by year.
+- `opex_transit_backhaul` (doc 09) — the pro forma line this feeds; currently
+  conservative vs the bottoms-up sizing.
