@@ -22,8 +22,8 @@ the lower fee. Plus one-time **Org Create $50**.
 ## 1. Prerequisites (create these at arin.net)
 1. **ARIN Online account** (individual) → then **create an Org ID** (Org Create, $50).
 2. **Legal entity:** ARIN needs the cooperative to be a registered legal entity —
-   coordinate with the entity-formation checklist (AR cooperative filing). Have the
-   incorporation doc / EIN ready; ARIN validates org identity.
+   coordinate with **`docs/19-entity-formation-checklist.md`** (AR cooperative filing →
+   EIN). Have the incorporation doc / EIN ready; ARIN validates org identity.
 3. **Point of contact (POC)** handles: Admin, Tech, Abuse. Use role accounts
    (admin@, noc@, abuse@ boatdock.network), not a personal address.
 4. **Sign the RSA** (Registration Services Agreement) — required for all resources.

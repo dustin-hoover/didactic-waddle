@@ -59,6 +59,15 @@ We work these **one by one**. Status: ✅ done · 🔨 in progress · ⬜ queued
   failover drill). Remaining steps need a human: ARIN Org (legal entity + EIN), exact POP
   sites, and actually sending the RFQ / filing with ARIN.
 
+## Done (cont.)
+- ✅ **Entity formation checklist** (doc 19): the ordered path to a chartered Arkansas
+  cooperative — recommends the **Telecommunications Cooperative** vehicle (Rural Telephone
+  Cooperative Act, Articles $10 at the SoS), Subchapter T tax posture, bylaws wiring WAKE +
+  capped voting (doc 16) and capital≠governance (doc 18), EIN → ARIN Org, DFA/sales-tax,
+  FCC FRN + BDC (Form 499/USF only if voice), and the **Beaver Lake specifics** (USACE
+  shoreline permits for a dock-served network, pole attachments, ROW, 811, FAA). Critical
+  path unblocks the ARIN Org and transit signing. Fees/forms verified vs AR SoS + FCC.
+
 ## Queued (recommended order — next up)
 - ⬜ **Governance module in DockOS** (unit ledger, proposals, Snapshot-style voting)
 - ⬜ **Billing + provisioning + RADIUS** (DockOS step 6)
