@@ -1,5 +1,5 @@
 {
- "cash": 1.7456468639768365,
+ "cash": 1.4882375830221752,
  "units": 0.01232366552650061,
  "fills": [
   {
@@ -39,21 +39,21 @@
   }
  ],
  "risk": {
-  "peak_equity": 1002.4911521580798,
+  "peak_equity": 1005.9774891807007,
   "entry_price": 76790.8,
   "stop_price": 70229.0418970506,
   "halted": false,
   "halt_price": null
  },
  "reserve": {
-  "reserve": 52.666568985053175,
+  "reserve": 52.93263578419716,
   "hwm": 999.1505945837914,
   "skims": 0,
-  "yield_earned": 0.0832289087785702,
+  "yield_earned": 0.09188642696789401,
   "reinvests": 0,
   "total_reinvested": 0.0,
   "trading_base": 1000.0
  },
- "last_ts": 1789862400000,
+ "last_ts": 1789948800000,
  "started_ts": 1788998400000
 }
