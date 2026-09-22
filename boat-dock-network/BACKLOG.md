@@ -68,6 +68,15 @@ We work these **one by one**. Status: ✅ done · 🔨 in progress · ⬜ queued
   shoreline permits for a dock-served network, pole attachments, ROW, 811, FAA). Critical
   path unblocks the ARIN Org and transit signing. Fees/forms verified vs AR SoS + FCC.
 
+## Done (cont.)
+- ✅ **Site acquisition & real estate** (doc 20): buy-vs-lease framework for comm huts /
+  head-ends / node sites. Recommendation — **own the two T0 head-end POPs fee-simple**
+  (permanent control + loan collateral), **lease/easement** T1 core and the ~30 edge nodes
+  (host-a-node WAKE 1.5× covers member sites). Lakeside-parcel triple-use (head-end + boat/
+  ops base + showcase), siting criteria, buy-vs-lease money model + pro-forma/collateral
+  hooks, and the legal wrapper (title/survey/zoning/USACE shoreline/Phase I/flood). Cross-
+  linked from doc 04 §3; sequenced after entity formation (doc 19).
+
 ## Queued (recommended order — next up)
 - ⬜ **Governance module in DockOS** (unit ledger, proposals, Snapshot-style voting)
 - ⬜ **Billing + provisioning + RADIUS** (DockOS step 6)

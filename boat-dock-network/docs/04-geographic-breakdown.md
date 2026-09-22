@@ -78,7 +78,9 @@ If neither of your two locations is ideally placed to anchor the ring, that's th
 scenario where **buying a small lakeside parcel near a fiber-rich provider** (your
 "OzarksGo-adjacent" idea) pays off — it becomes a permanent T0/T1 asset and a
 host-node showcase. Evaluate this as a real-estate + network decision jointly (doc 09
-carries a line item for it).
+carries a line item for it). **Full buy-vs-lease strategy, siting criteria, and the
+boat/ops-base synergy are in `20-site-acquisition-and-real-estate.md`** — recommendation:
+**own the two head-end comm huts in fee simple, lease/easement everything else.**
 
 ## 4. Phasing by geography (summary; full plan in doc 15)
 
