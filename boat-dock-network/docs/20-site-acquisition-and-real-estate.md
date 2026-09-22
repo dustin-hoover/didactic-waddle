@@ -22,6 +22,26 @@ they carry the most expensive gear, and — critically for a grant-free, debt-fi
 (doc 13) — **owned real estate + facilities are the collateral** that unlocks CoBank / RTFC
 / RUS lending on good terms. Leasing the heart of the network puts it at a landlord's mercy.
 
+## 1.5 Enclosure: hut (shelter) vs. cabinet vs. pole-mount
+Owning the *land* is a separate decision from what you *put on it*. Most sites do **not**
+need a walk-in building — an outdoor cabinet is cheaper, faster to permit, and boat-
+deliverable. Match the enclosure to the tier:
+
+| Enclosure | Use it for | What it is | Rough cost | Notes |
+|-----------|-----------|------------|-----------|-------|
+| **Walk-in shelter / "comm hut"** | A **primary T0 head-end** with lots of gear, generator, and staff visits | Prefab concrete/FRP building or a small slab structure; HVAC, fire, security | $$$ (tens of $k + sitework) | Only where gear density + O&M frequency justify it; pairs with an owned ops-base parcel |
+| **Outdoor equipment cabinet (pad-mount)** | **Most T0/T1 and dense T2** | NEMA-4X/-3R cabinet on a concrete pad; thermostatic fans or A/C, battery shelf, gen plug | $$ (single-digit $k + pad) | The workhorse. "Data-center-in-a-box." Far cheaper than a building |
+| **Pole/tower-mount cabinet** | **T2/T3 edge nodes, relays** | Small NEMA-4X box strapped to mast/pole, PoE gear, battery, solar | $ | Lightest footprint; ideal for host-node and shoreline sites |
+| **CPE enclosure** | **T4** | Radio/ONT + small indoor router | minimal | Premises power |
+
+**Guidance:** default to a **pad-mounted NEMA-4X cabinet** even at the head-ends unless a
+site clearly warrants a building (a lot of equipment, generator, and regular staff
+presence — often the one that doubles as the ops base, §2). A cabinet still wants: a
+**concrete pad or elevated platform above the floodplain**, **grounding/lightning
+protection** (lakeside = exposed), **thermal management**, **battery + generator inlet**,
+and **physical security** (locks, tamper/intrusion alarm to the NOC). Full environmental,
+power, and grounding specs per tier live in **`21-network-architecture-specs.md` §7**.
+
 ## 2. The boat-served synergy (why a lakeside parcel is worth more to us)
 A single owned lakeside parcel can be **three assets at once**:
 1. a **T0 head-end comm hut** (if fiber-reachable / short lateral),

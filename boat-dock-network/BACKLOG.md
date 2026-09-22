@@ -77,6 +77,15 @@ We work these **one by one**. Status: ✅ done · 🔨 in progress · ⬜ queued
   hooks, and the legal wrapper (title/survey/zoning/USACE shoreline/Phase I/flood). Cross-
   linked from doc 04 §3; sequenced after entity formation (doc 19).
 
+## Done (cont.)
+- ✅ **Network architecture specs** (doc 21): engineering design spec behind doc 03 —
+  tier-by-tier equipment classes, IPv6 /36 hierarchical addressing + IPv4 CGNAT, BGP
+  multihoming/IS-IS/SR-MPLS-or-EVPN routing, XGS-PON + licensed-µW + nLOS-CBRS transport/
+  access with loss/link budgets & tower heights, site power/grounding/environmental (NEMA,
+  solar autonomy), capacity/latency/availability targets, QoS, AAA/telemetry/provisioning,
+  security (RPKI/MANRS/CoPP/DDoS), and per-tier commissioning tests. Vendor-neutral,
+  standards-referenced. Enclosure hut-vs-cabinet spectrum added to doc 20 §1.5.
+
 ## Queued (recommended order — next up)
 - ⬜ **Governance module in DockOS** (unit ledger, proposals, Snapshot-style voting)
 - ⬜ **Billing + provisioning + RADIUS** (DockOS step 6)

@@ -51,7 +51,8 @@ not a rebuild. This is how the outside plant stays adaptable for decades.
 ## 2. The protected core (your two on-ramps)
 
 - Both on-ramps run **BGP** advertising our own ARIN IP space (get an **ASN + IPv4
-  block + IPv6 /32**). If either provider or path fails, traffic reroutes automatically.
+  block + IPv6 /36** — /36 per doc 17/19 for the ARIN fee waiver). If either provider or
+  path fails, traffic reroutes automatically.
 - Each head-end POP has border router, core router, transport gear, UPS + generator
   hookup, and is the "root" of the ring in its half of the lake.
 - Head-ends are also the natural home for shared services: DNS, CGNAT (if needed
@@ -105,7 +106,11 @@ using this precedence (implemented as code in doc 14):
 
 ## 7. IP, transport & services architecture
 
-- **Own ASN + IPv6-first** (dual-stack), CGNAT only as a bridge.
+> **Engineering-grade specs** (equipment classes, optical/RF budgets, full IP addressing
+> plan, power/grounding, NMS, security, acceptance tests) are in
+> **`21-network-architecture-specs.md`**. This section is the summary.
+
+- **Own ASN + IPv6-first** (dual-stack, /36 hierarchical plan — doc 21 §3), CGNAT only as a bridge.
 - **L2/L3:** MPLS or EVPN/VXLAN overlay on the ring for clean multi-service transport
   and per-zone VLAN/VRF separation; simpler routed design acceptable at pilot scale.
 - **AAA:** RADIUS for wireless CPE and PPPoE/IPoE fiber sessions, integrated with
