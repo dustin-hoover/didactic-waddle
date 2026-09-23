@@ -45,9 +45,11 @@ weight(member) = 1  +  min(WAKE_units, 120)
 - **+1 base** = a democratic floor (every active member always has a vote).
 - **1 unit/month, linear** — your loyalty literally is your voice, as intended.
 - **Capped at 120** (≈10 years) so the earliest members can't entrench permanently.
-- **Anti-capture:** at tally time, no single member may exceed **2%** of total active
-  weight (excess is clipped), and members may **delegate** their weight to another
-  member (liquid democracy).
+- **Anti-capture:** at tally time, no single member may exceed the **greater of 2% or one
+  equal share** of total active weight (excess is clipped). The `1/N` floor keeps the rule
+  coherent below ~50 members (a flat 2% would clip everyone), converging to the 2%
+  anti-whale cap at scale — implemented and unit-tested in `software/api/governance.py`.
+  Members may also **delegate** their weight to another member (liquid democracy).
 
 | Tenure | Votes | | Tenure | Votes |
 |--------|-------|-|--------|-------|
@@ -122,7 +124,16 @@ New tables (see `software/db/governance_schema.sql`): `members` (links `customer
 `wake_ledger` (accrual/forfeit/redistribute events), `wake_balances` (materialized),
 `commons_pool`, `proposals`, `votes`, `delegations`. Accrual is a monthly job off the
 billing/subscription state; voting weight is computed from `wake_balances` with the cap
-+ anti-whale clip at tally time. Full governance app is a backlog item (BACKLOG.md).
++ anti-whale clip at tally time.
+
+**Now built:** `software/api/governance.py` (FastAPI reference) implements the WAKE ledger
+mechanics — monthly accrual (`/wake/accrue-month`, idempotent per period; hosts ×1.5),
+forfeiture to the Commons Pool on exit (`/members/leave`), 50% annual redistribution
+(`/wake/redistribute`), and Snapshot-style proposals + weighted, whale-clipped voting
+(`/proposals`, `/proposals/{id}/vote`, `/close`). A self-contained **member voting portal**
+(`software/governance/make_governance_portal.py` → `data/governance/governance_portal.html`,
+`db`+`user` capabilities) lets members see their WAKE voice and vote; stewards create/run
+proposals. SQL validated on PostGIS; weight/clip math unit-tested; portal verified offline.
 
 ## 8. Why this is a genuine advantage
 

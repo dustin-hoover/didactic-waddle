@@ -86,8 +86,16 @@ We work these **one by one**. Status: ✅ done · 🔨 in progress · ⬜ queued
   security (RPKI/MANRS/CoPP/DDoS), and per-tier commissioning tests. Vendor-neutral,
   standards-referenced. Enclosure hut-vs-cabinet spectrum added to doc 20 §1.5.
 
+## Done (cont.)
+- ✅ **Governance module in DockOS** (doc 16): `software/api/governance.py` — WAKE ledger
+  mechanics (monthly accrual idempotent per period, host ×1.5, forfeiture→Commons Pool on
+  exit, 50% annual redistribution) + Snapshot-style proposals with tenure-weighted,
+  anti-whale-capped voting and quorum/pass finalization. Anti-whale rule refined to
+  max(2%, one equal share) so it's coherent at any membership size (unit-tested N=2→4000).
+  SQL validated on PostGIS. Member voting portal artifact (`db`+`user`, auto-enroll,
+  steward tools) published + verified. `data/governance/governance_portal.html`
+
 ## Queued (recommended order — next up)
-- ⬜ **Governance module in DockOS** (unit ledger, proposals, Snapshot-style voting)
 - ⬜ **Billing + provisioning + RADIUS** (DockOS step 6)
 - ⬜ **Boat-dispatch PWA + work-order engine** (DockOS steps 4–5)
 - ⬜ **NOC monitoring + outage management** (DockOS step 7)
