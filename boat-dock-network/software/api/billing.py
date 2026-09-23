@@ -336,31 +336,36 @@ async def subscribe(s: SubscribeIn):
             "radius_username": user, "radius_password": pw if s.access == "pppoe" else None,
             "ipv6_pd": str(pd), "deposits_credited": credited}
 
+async def activate_service(c, service_id: int, today: dt.date) -> dict:
+    """Start billing for an installed service (run inside the caller's transaction).
+    Shared by the endpoint below and the work-order engine (dispatch.py), which calls it
+    when a crew completes the install WO in the field PWA."""
+    si = await c.fetchrow("SELECT * FROM service_instances WHERE service_id=$1 FOR UPDATE", service_id)
+    if not si:
+        raise HTTPException(404, "service not found")
+    if si["state"] == "active":
+        return {"ok": True, "already_active": True}
+    if si["state"] not in ("pending", "provisioned"):
+        raise HTTPException(400, f"cannot activate from state {si['state']}")
+    await c.execute("""UPDATE service_instances SET state='active', activated_at=$2,
+        provisioned_at=COALESCE(provisioned_at,$2), updated_at=now() WHERE service_id=$1""",
+        service_id, dt.datetime.combine(today, dt.time()))
+    await c.execute("UPDATE subscriptions SET status='active', start_date=$2 WHERE sub_id=$1",
+                    si["sub_id"], today)
+    await c.execute("UPDATE members SET status='active' WHERE customer_id=$1 AND status='suspended'",
+                    si["customer_id"])
+    _, nxt = month_bounds(today)
+    inv = await _build_invoice(c, si["sub_id"], today, nxt, today)
+    await _event(c, "activated", si["customer_id"], si["sub_id"], service_id, on=today)
+    return {"ok": True, "service_id": service_id, "first_invoice": inv}
+
 @app.post("/services/{service_id}/activate")
 async def activate(service_id: int, as_of: Optional[dt.date] = None):
     """Install confirmed (tech/boat crew closes the install WO): start billing, issue the
     prorated first bill (one-time charges + deposit credit), mark the member active."""
-    today = as_of or dt.date.today()
     async with (await pool()).acquire() as c:
         async with c.transaction():
-            si = await c.fetchrow("SELECT * FROM service_instances WHERE service_id=$1 FOR UPDATE", service_id)
-            if not si:
-                raise HTTPException(404, "service not found")
-            if si["state"] == "active":
-                return {"ok": True, "already_active": True}
-            if si["state"] not in ("pending", "provisioned"):
-                raise HTTPException(400, f"cannot activate from state {si['state']}")
-            await c.execute("""UPDATE service_instances SET state='active', activated_at=$2,
-                provisioned_at=COALESCE(provisioned_at,$2), updated_at=now() WHERE service_id=$1""",
-                service_id, dt.datetime.combine(today, dt.time()))
-            await c.execute("UPDATE subscriptions SET status='active', start_date=$2 WHERE sub_id=$1",
-                            si["sub_id"], today)
-            await c.execute("UPDATE members SET status='active' WHERE customer_id=$1 AND status='suspended'",
-                            si["customer_id"])
-            _, nxt = month_bounds(today)
-            inv = await _build_invoice(c, si["sub_id"], today, nxt, today)
-            await _event(c, "activated", si["customer_id"], si["sub_id"], service_id, on=today)
-    return {"ok": True, "service_id": service_id, "first_invoice": inv}
+            return await activate_service(c, service_id, as_of or dt.date.today())
 
 class RunIn(BaseModel):
     period: str                    # 'YYYY-MM'

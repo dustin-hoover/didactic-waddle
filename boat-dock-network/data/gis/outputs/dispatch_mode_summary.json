@@ -1,0 +1,54 @@
+{
+  "premises": 9571,
+  "yards": {
+    "BASE-NW": [
+      -94.05786,
+      36.35481
+    ],
+    "BASE-E": [
+      -93.83939,
+      36.40094
+    ]
+  },
+  "ramps_used": 12,
+  "yard_to_job_boat_wins_pct": 23.8,
+  "yard_to_job_boat_wins_count": 2281,
+  "median_saving_where_boat_wins_min": 13.8,
+  "dock_reachable_pct": 71.3,
+  "median_truck_from_yard_min": 32.7,
+  "boat_wins_pct_by_dock_turnaround": {
+    "tieup_15min": 23.8,
+    "tieup_10min": 36.7,
+    "tieup_8min": 43.6,
+    "tieup_5min": 51.5
+  },
+  "zones_boat_first": [
+    "Z-05",
+    "Z-08",
+    "Z-13",
+    "Z-14",
+    "Z-16"
+  ],
+  "zones_mixed": [
+    "Z-04",
+    "Z-09",
+    "Z-11",
+    "Z-17",
+    "Z-18"
+  ],
+  "zones_truck_first": [
+    "Z-01",
+    "Z-02",
+    "Z-03",
+    "Z-06",
+    "Z-07",
+    "Z-10",
+    "Z-12",
+    "Z-15"
+  ],
+  "assumptions": {
+    "boat": "center console 25 kn, 5 kn no-wake within 50 m of shore, 15 min tie-up/leg, walk 60 m/min, dock-to-house <= 600 m",
+    "truck": "OSM network, posted x0.85 or class defaults, 10 min/leg",
+    "trailer": "tow x1.15, 20 min launch, OSM slipways within 300 m of lake"
+  }
+}

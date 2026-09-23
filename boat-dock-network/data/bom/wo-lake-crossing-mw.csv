@@ -8,6 +8,6 @@ FCC frequency coordination + license,permit,path coordination + FCC Part 101 lic
 grounding/surge,power,tower grounding + surge suppression,2,set,800,TBD,,
 power + UPS,power,radio power + UPS per end,2,set,1000,TBD,,
 path calc/engineering,labor,link budget + space-diversity design,1,lot,3000,,,RF engineer
-install + alignment labor,labor,crew install, align, commission,1,lot,7000,,,capitalized; boat + climb
+install + alignment labor,labor,"crew install, align, commission",1,lot,7000,,,capitalized; boat + climb
 USACE/site permits,permit,shoreline/tower permits both ends,1,lot,3000,,,see doc 12
 boat + equipment mobilization,transport,vessels + lift + fuel,1,lot,1500,,,

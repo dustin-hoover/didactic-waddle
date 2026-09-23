@@ -113,8 +113,9 @@ templates in `data/gis/` define the spatial tables.
 2. **GIS analysis** (serviceability, LOS/link budget, passings) — unlocks the pro forma
    and grant maps immediately.
 3. **Signup/serviceability portal** — start pre-sales before building.
-4. **Work-order + BOM + procurement** — run the pilot build cleanly.
-5. **Field dispatch PWA** — boat-native ops.
+4. **Work-order + BOM + procurement** — run the pilot build cleanly. ✅ **Built** — doc 23
+5. **Field dispatch PWA** — boat-native ops. ✅ **Built** — doc 23 (real water + road routing,
+   weather gate, offline crew app; 43-check e2e sign-up → dispatch → first bill).
 6. **Billing + provisioning + RADIUS** — turn on paying customers. ✅ **Built** — doc 22
    (RADIUS authorize tables are views over billing state; 46-check e2e vs live FreeRADIUS).
 7. **NOC monitoring + outage** — operate reliably.

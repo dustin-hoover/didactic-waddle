@@ -11,7 +11,7 @@ guy/anchor kit,mount,guy wires + anchors + hardware,1,set,400,TBD,,
 rack UPS,power,rack UPS 3kVA + batteries,1,ea,1200,TBD,,grid sites
 solar array (remote option),power,600-1200W panels + LiFePO4 + MPPT,1,set,4500,TBD,,off-grid sites; 2-3 day autonomy
 grounding kit,power,ground rods + bonding + surge,1,set,600,TBD,,lightning protection
-cabling/connectors,misc,CAT6 STP, fiber patch, PoE, hardware,1,lot,700,TBD,,
+cabling/connectors,misc,"CAT6 STP, fiber patch, PoE, hardware",1,lot,700,TBD,,
 site prep + concrete pad,labor,pad/pier mount prep,1,lot,1500,,,contractor or crew
 install labor (capitalized),labor,crew build + test + as-built,1,lot,4000,,,boat crew; capitalized to plant
 USACE/site permit,permit,shoreline/site permit + easement,1,lot,1500,,,varies; see doc 12

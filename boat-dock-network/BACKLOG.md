@@ -105,8 +105,18 @@ We work these **one by one**. Status: ✅ done · 🔨 in progress · ⬜ queued
   e2e vs live FreeRADIUS 3.2.5** (`software/tests/test_billing_e2e.py`). Fixed doc 21 IPv6
   zone size (/48 → /44).
 
+## Done (cont.)
+- ✅ **Work-order engine + boat/truck dispatch + crew PWA** (DockOS steps 4–5, doc 23):
+  water routing on the real lake (50 m grid, no-wake band, smoothed tracks) + real OSM drive
+  times; install WOs from sign-ups with BOM kits → reservation → PO shortfall; permits gate;
+  NWS weather go/no-go per boat class (live-tested); least-added-travel day planner; P1 outage
+  inserted as next stop; offline-first crew app (run sheet, chart, checklists, readings, scan,
+  outbox) whose install completion starts billing. **43-check e2e** incl. the app in headless
+  Chromium. **Finding:** boat beats truck for ~24% of premises at 15-min dock turnaround,
+  ~52% at 5 min → hybrid fleet; dock turnaround ≤ 8 min is the KPI (measured, fed back to the
+  planner). Repaired 15 malformed BOM kit rows. Preview artifact: "DockOS Crew".
+
 ## Queued (recommended order — next up)
-- ⬜ **Boat-dispatch PWA + work-order engine** (DockOS steps 4–5)
 - ⬜ **NOC monitoring + outage management** (DockOS step 7)
 - ⬜ **AR/Benton/Washington compliance advisor** (DockOS step 8) — grants NOFO scanner
   deferred (no government money in the base case; revisit only if programs return)

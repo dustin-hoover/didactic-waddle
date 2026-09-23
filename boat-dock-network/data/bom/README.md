@@ -11,6 +11,10 @@ item, category, spec, qty, unit, unit_cost_est_usd, vendor_primary, vendor_alt, 
   substitutes from the survey record.
 - `unit_cost_est_usd` is **planning-grade** — replace with real quotes during procurement.
 
+**CSV rule:** quote any field that contains a comma (e.g. `"clamps, span/dead-end, NID"`).
+The work-order engine (`software/api/dispatch.py`) parses these kits directly; 15 unquoted rows
+were repaired when it became the first consumer.
+
 Costs here are illustrative planning estimates (see `docs/ASSUMPTIONS.md`), not quotes.
 Edit freely; git tracks every change (that's the "always adaptable" mechanism, doc 10).
 

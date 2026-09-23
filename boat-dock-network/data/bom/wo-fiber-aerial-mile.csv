@@ -2,7 +2,7 @@ item,category,spec,qty,unit,unit_cost_est_usd,vendor_primary,vendor_alt,notes
 ADSS fiber cable,fiber,OS2 ADSS 144-288ct,5280,ft,2.20,TBD,,per mile
 pole make-ready,labor,make-ready per pole (utility),18,ea,450,,,heavy variable; Ozarks/Carroll/SWEPCO
 pole attachment fee,permit,annual attachment per pole,18,ea,20,,,recurring; see doc 12
-hardware,mount,dead-ends, suspensions, downguys,1,lot,1800,TBD,,
+hardware,mount,"dead-ends, suspensions, downguys",1,lot,1800,TBD,,
 splice closures,fiber,aerial closures + splicing,3,ea,600,TBD,,
 strand/messenger (if needed),mount,messenger + lashing,5280,ft,0.40,TBD,,ADSS may not need messenger
 install labor,labor,placement + splicing + test,1,lot,9000,,,capitalized

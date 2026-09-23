@@ -3,8 +3,8 @@ armored/microduct drop,fiber,direct-bury armored drop or microduct+blown,LEN_FT,
 ONT,optics,XGS-PON ONT,1,ea,120,TBD,,
 router/gateway,radio,Wi-Fi 6/7 router,1,ea,150,TBD,,
 NID/enclosure,mount,network interface device,1,ea,45,TBD,,
-splice/connectorization,fiber,pigtails, sleeves, connectors,1,lot,40,TBD,,
+splice/connectorization,fiber,"pigtails, sleeves, connectors",1,lot,40,TBD,,
 trenching/boring,labor,micro-trench or HDD driveway bore,LEN_FT,ft,4.50,,,rock dependent; largest variable
-install labor,labor,pull, terminate, activate, test,1,lot,350,,,
+install labor,labor,"pull, terminate, activate, test",1,lot,350,,,
 locate (811),permit,Arkansas 811 locate request,1,lot,0,AR811,,required before digging
 boat mobilization (if water),transport,vessel + fuel share,1,lot,60,,,

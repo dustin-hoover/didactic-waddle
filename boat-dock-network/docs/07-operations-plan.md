@@ -4,6 +4,14 @@ The operating premise: **the lake is the road.** Field work is dispatched, deliv
 and repaired by boat. Operations are organized around three engines — **Build**,
 **Service/Repair**, and the **NOC** — all coordinated by DockOS (doc 14).
 
+> **Measured refinement (doc 23 §2).** Against the real road network, a boat from two yards
+> is faster for ~24% of premises at a 15-min dock turnaround, and ~52% at 5 min; five arms
+> (Lost Bridge, Township of Prairie, Huffman Ford, Vista Shores, Ventris — 1,905 premises)
+> are boat-first, while eight zones including the three largest are truck-first. So: **boats
+> own the boat-first arms and all waterside work; service trucks are primary elsewhere; and
+> dock turnaround (target ≤ 8 min) is the KPI that decides how far the boat model reaches.**
+> The dispatch planner chooses per job from real routes and measures turnaround as it goes.
+
 ## 1. Marine field operations
 
 ### Fleet
