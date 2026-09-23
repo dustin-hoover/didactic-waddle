@@ -30,10 +30,13 @@ security, and acceptance. Design to these standards:
 ## 3. IP addressing & numbering plan
 - **ASN:** one ARIN ASN (doc 17), multihomed to ≥2 upstreams on 2 diverse paths.
 - **IPv6 (primary):** ARIN **/36** (doc 17/19). Hierarchical, nibble-aligned:
-  - `/36` → **`/40` per region/head-end domain** → **`/48` per T1/POP or zone** →
+  - `/36` → **`/40` per region** (16) → **`/44` per service zone** (4,096 × /56 each) →
     **`/56` per subscriber** (256 × /64 for the customer LAN). A /36 holds ~1,048,576 /56s
-    vs ~9,571 premises — ~100× headroom. Reserve separate /48s for **infrastructure**
-    (loopbacks, P2P links as /127, mgmt) and **services** (DNS/CGNAT/NOC).
+    vs ~9,571 premises — ~100× headroom. *(Corrected: a /48 holds only 256 /56s, but our
+    largest zone, Beaver Shores, has 1,272 premises — so zones get a /44.)* **Region 0
+    (the first /40) is reserved** for **infrastructure** /48s (loopbacks, P2P links as
+    /127, mgmt, one per POP/T1) and **services** (DNS/CGNAT/NOC); zone *k* gets /44
+    #16+k. Implemented by the billing allocator (`software/api/billing.py`, doc 22).
 - **IPv4 (bridged):** public **/24–/23** (waitlist + lease, doc 17) for the CGNAT public
   pool, infra loopbacks, BGP, DNS/mail, and **static-IP business/marina** accounts.
   Residential behind **CGNAT** using **RFC 6598 100.64.0.0/10** internally.

@@ -115,7 +115,8 @@ templates in `data/gis/` define the spatial tables.
 3. **Signup/serviceability portal** — start pre-sales before building.
 4. **Work-order + BOM + procurement** — run the pilot build cleanly.
 5. **Field dispatch PWA** — boat-native ops.
-6. **Billing + provisioning + RADIUS** — turn on paying customers.
+6. **Billing + provisioning + RADIUS** — turn on paying customers. ✅ **Built** — doc 22
+   (RADIUS authorize tables are views over billing state; 46-check e2e vs live FreeRADIUS).
 7. **NOC monitoring + outage** — operate reliably.
 8. **Compliance advisor + grants scanner** — scale the paperwork with AI, not hires.
 

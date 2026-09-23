@@ -95,22 +95,30 @@ async def accrue_month(a: AccrueIn):
 class MemberOp(BaseModel):
     member_id: int
 
+async def forfeit_member(c: asyncpg.Connection, member_id: int, note: str = "forfeit on exit") -> float:
+    """Lapse a member and forfeit their units to the Commons Pool (doc 16). Run inside
+    the caller's transaction; idempotent (a lapsed member with 0 units forfeits 0).
+    Shared with billing.py, which calls it when a member's service is terminated."""
+    await _rebuild_balances(c, [member_id])
+    bal = await c.fetchrow("SELECT units FROM wake_balances WHERE member_id=$1", member_id)
+    units = float(bal["units"]) if bal else 0.0
+    if units > 0:
+        await c.execute("""INSERT INTO wake_ledger (member_id,event,amount,note)
+            VALUES ($1,'forfeit',$2,$3)""", member_id, -units, note)
+        await c.execute("""INSERT INTO commons_pool (id,units,updated_at)
+            VALUES (1,$1,now()) ON CONFLICT (id)
+            DO UPDATE SET units=commons_pool.units+$1, updated_at=now()""", units)
+    await c.execute("UPDATE members SET status='lapsed', lapsed_at=current_date "
+                    "WHERE member_id=$1", member_id)
+    await _rebuild_balances(c, [member_id])
+    return units
+
 @app.post("/members/leave")
 async def member_leave(m: MemberOp):
     """Member churns: forfeit their current units to the Commons Pool (doc 16)."""
     async with (await pool()).acquire() as c:
         async with c.transaction():
-            bal = await c.fetchrow("SELECT units FROM wake_balances WHERE member_id=$1", m.member_id)
-            units = float(bal["units"]) if bal else 0.0
-            if units > 0:
-                await c.execute("""INSERT INTO wake_ledger (member_id,event,amount,note)
-                    VALUES ($1,'forfeit',$2,'forfeit on exit')""", m.member_id, -units)
-                await c.execute("""INSERT INTO commons_pool (id,units,updated_at)
-                    VALUES (1,$1,now()) ON CONFLICT (id)
-                    DO UPDATE SET units=commons_pool.units+$1, updated_at=now()""", units)
-            await c.execute("UPDATE members SET status='lapsed', lapsed_at=current_date "
-                            "WHERE member_id=$1", m.member_id)
-            await _rebuild_balances(c, [m.member_id])
+            units = await forfeit_member(c, m.member_id)
     return {"ok": True, "member_id": m.member_id, "forfeited": units}
 
 @app.post("/wake/redistribute")

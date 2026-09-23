@@ -135,6 +135,11 @@ forfeiture to the Commons Pool on exit (`/members/leave`), 50% annual redistribu
 `db`+`user` capabilities) lets members see their WAKE voice and vote; stewards create/run
 proposals. SQL validated on PostGIS; weight/clip math unit-tested; portal verified offline.
 
+**Billing enforces the membership rules (doc 22):** a nonpay suspension sets the member to
+`suspended` (accrual pauses, no forfeiture); paying restores `active`. A **seasonal hold**
+keeps the member `active` — seasonal lake residents keep earning their vote. Termination
+(member cancel, or 60 days past due) calls `governance.forfeit_member`: units to the Commons Pool.
+
 ## 8. Why this is a genuine advantage
 
 - **Acquisition + retention:** every month a member stays, their voice grows — a

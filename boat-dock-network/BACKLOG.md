@@ -95,8 +95,17 @@ We work these **one by one**. Status: ✅ done · 🔨 in progress · ⬜ queued
   SQL validated on PostGIS. Member voting portal artifact (`db`+`user`, auto-enroll,
   steward tools) published + verified. `data/governance/governance_portal.html`
 
+## Done (cont.)
+- ✅ **Billing + provisioning + RADIUS** (DockOS step 6, doc 22): FreeRADIUS authorize tables
+  are **views over billing state** (no sync, no drift); `billing.py` lifecycle (prorated first
+  bill w/ doc 18 deposit credit + host credit + taxed equipment, monthly run, Stripe payments,
+  dunning 10/21/60 d → walled garden → terminate, seasonal hold that keeps WAKE, instant plan
+  changes, cancel w/ WAKE forfeit); provisioning engine (SKIP LOCKED queue, OLT/CPE adapters,
+  RFC 5176 CoA); IPv6 /56-from-zone-/44 allocator; least-privilege radius role. **46-check
+  e2e vs live FreeRADIUS 3.2.5** (`software/tests/test_billing_e2e.py`). Fixed doc 21 IPv6
+  zone size (/48 → /44).
+
 ## Queued (recommended order — next up)
-- ⬜ **Billing + provisioning + RADIUS** (DockOS step 6)
 - ⬜ **Boat-dispatch PWA + work-order engine** (DockOS steps 4–5)
 - ⬜ **NOC monitoring + outage management** (DockOS step 7)
 - ⬜ **AR/Benton/Washington compliance advisor** (DockOS step 8) — grants NOFO scanner
