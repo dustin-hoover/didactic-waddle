@@ -131,6 +131,13 @@ We work these **one by one**. Status: ✅ done · 🔨 in progress · ⬜ queued
   fiber)** leave 553 behind two cut nodes; the NW head-end also needs dual-homing. Docs
   03/21 corrected; pro forma unchanged (your call). Board artifact: "DockOS NOC".
 
+## Done (cont.)
+- ✅ **White paper** (`docs/whitepaper/`): every aspect of the plan in one living document
+  (executive summary through appendix, 20 sections), with a register of 20 open decisions
+  and a list of inconsistencies between docs to reconcile. Editable in place; each save is a
+  new version, and a Draft → Final switch marks the plan finalized. Artifact: "Boat Dock
+  Network White Paper".
+
 ## Queued (recommended order — next up)
 - ⬜ **Close the ring** (doc 24 §2): path survey on the 5 hops, dual-home HE-NW, decide
   on the N11/N05 cut nodes; then fold the cost into the pro forma

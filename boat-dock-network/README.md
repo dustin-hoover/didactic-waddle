@@ -66,6 +66,7 @@ go. Every assumption is listed in [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md).
 | 22 | [`docs/22-billing-provisioning-radius.md`](docs/22-billing-provisioning-radius.md) | Billing lifecycle, provisioning, RADIUS as views over billing (DockOS 6) |
 | 23 | [`docs/23-dispatch-and-work-orders.md`](docs/23-dispatch-and-work-orders.md) | Work orders, boat/truck dispatch, crew PWA; boat vs truck measured (DockOS 4–5) |
 | 24 | [`docs/24-noc-and-outage-management.md`](docs/24-noc-and-outage-management.md) | NOC root cause, outages, dispatch, member credits; the spine SPOF finding (DockOS 7) |
+| WP | [`docs/whitepaper/`](docs/whitepaper/) | White paper: the whole plan in one living document, with the open-decisions register |
 | — | [`BACKLOG.md`](BACKLOG.md) | Live build backlog we work through one by one |
 
 ## 2. Data & code map
