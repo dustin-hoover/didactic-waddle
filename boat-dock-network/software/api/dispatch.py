@@ -590,74 +590,78 @@ async def _crew_now(c, st: dict, now: dt.datetime) -> tuple[tuple, dt.datetime, 
         return (s["lon"], s["lat"]), now, s["seq"]
     return (plan["yard"]["lon"], plan["yard"]["lat"]), now, 0
 
-@app.post("/outages/{outage_id}/dispatch")
-async def outage_dispatch(outage_id: int, now: Optional[dt.datetime] = None):
+async def dispatch_outage(c, outage_id: int, now: Optional[dt.datetime] = None) -> dict:
     """NOC opens an outage -> P1 repair WO at the root node -> inserted as the NEXT stop of
-    whichever crew can get there first today (weather/skills/vehicle permitting)."""
+    whichever crew can get there first today (weather/skills/vehicle permitting).
+    Runs on the caller's connection/transaction (the NOC calls it directly, doc 24)."""
     now = (now or dt.datetime.now(TZ)).astimezone(TZ)
     day = now.date()
-    async with (await pool()).acquire() as c:
-        async with c.transaction():
-            o = await c.fetchrow("SELECT * FROM outages WHERE outage_id=$1 FOR UPDATE", outage_id)
-            if not o or not o["root_node"]:
-                raise HTTPException(400, "outage with a root node required")
-            if o["wo_id"]:
-                return {"ok": True, "wo_id": o["wo_id"], "already_dispatched": True}
-            wo_id = await create_wo(c, WOIn(wo_type="repair", node_id=o["root_node"], priority="P1",
-                                            outage_id=outage_id, note=f"Outage #{outage_id}: "
-                                            f"{o['impacted_customers'] or '?'} members impacted"))
-            await c.execute("UPDATE outages SET wo_id=$2 WHERE outage_id=$1", outage_id, wo_id)
-            await release_wo(c, wo_id)
-            wo = await _wo(c, wo_id)
-            weather = await weather_gate(c, day)
-            tieup, _ = await boat_tieup_min(c)
-            best = None
-            for r in await c.fetch("SELECT crew_id, plan FROM dispatch_plans WHERE day=$1 FOR UPDATE", day):
-                plan = json.loads(r["plan"]) if isinstance(r["plan"], str) else r["plan"]
-                cv = await c.fetchrow("SELECT * FROM crews WHERE crew_id=$1", r["crew_id"])
-                cvd = {**dict(cv), "vehicle": plan["vehicle"]}
-                if not _eligible(wo, cvd, weather):
-                    continue
-                pos, free_at, after = await _crew_now(c, {"plan": plan}, now)
-                go = leg(pos, (wo["lon"], wo["lat"]), plan["vehicle"], tieup)
-                if not go:
-                    continue
-                arrive = free_at + dt.timedelta(minutes=go["minutes"])
-                if best is None or arrive < best[0]:
-                    best = (arrive, r["crew_id"], plan, go, after)
-            if not best:
-                return {"ok": True, "wo_id": wo_id, "assigned": False,
-                        "reason": "no crew can reach it today (weather, skills or vehicle) — escalate"}
-            arrive, cid, plan, go, after = best
-            finish = arrive + dt.timedelta(hours=float(wo["est_hours"]))
-            new = {"seq": after + 1, "wo_id": wo_id, "wo_type": "repair", "priority": "P1", "lon": wo["lon"],
-                   "lat": wo["lat"], "eta": arrive.isoformat(), "finish": finish.isoformat(), "travel": go}
-            stops = [s for s in plan["stops"] if s["seq"] <= after] + [new] + \
-                    [dict(s, seq=s["seq"] + 1) for s in plan["stops"] if s["seq"] > after]
-            # shift everything after the insert by the time it costs
-            t, pos = finish, (wo["lon"], wo["lat"])
-            for s in stops[after + 1:]:
-                if s.get("_status") in ("closed", "asbuilt", "in_progress"):
-                    continue
-                lg = leg(pos, (s["lon"], s["lat"]), plan["vehicle"], tieup) or {"minutes": s["travel"]["minutes"]}
-                eta = t + dt.timedelta(minutes=lg["minutes"])
-                dur = dt.datetime.fromisoformat(s["finish"]) - dt.datetime.fromisoformat(s["eta"])
-                s["eta"], s["finish"] = eta.isoformat(), (eta + dur).isoformat()
-                t, pos = eta + dur, (s["lon"], s["lat"])
-            for s in stops:
-                s.pop("_status", None)
-                await c.execute("UPDATE work_orders SET route_seq=$2, eta=$3 WHERE wo_id=$1",
-                                s["wo_id"], s["seq"], dt.datetime.fromisoformat(s["eta"]))
-            plan["stops"] = stops
-            await c.execute("""UPDATE work_orders SET status='scheduled', scheduled_for=$2, assigned_crew=$3,
-                vehicle_id=$4, travel_mode=$5, travel_min=$6 WHERE wo_id=$1""",
-                wo_id, day, cid, plan["vehicle"]["vehicle_id"], go["mode"], round(go["minutes"], 1))
-            await c.execute("UPDATE dispatch_plans SET plan=$3::jsonb WHERE day=$1 AND crew_id=$2",
-                            day, cid, json.dumps(plan, default=str))
-            await _event(c, wo_id, "scheduled", detail={"crew": cid, "urgent_insert_after": after,
-                                                        "eta": arrive.isoformat(), "mode": go["mode"]})
+    o = await c.fetchrow("SELECT * FROM outages WHERE outage_id=$1 FOR UPDATE", outage_id)
+    if not o or not o["root_node"]:
+        raise HTTPException(400, "outage with a root node required")
+    if o["wo_id"]:
+        return {"ok": True, "wo_id": o["wo_id"], "already_dispatched": True}
+    wo_id = await create_wo(c, WOIn(wo_type="repair", node_id=o["root_node"], priority="P1",
+                                    outage_id=outage_id, note=f"Outage #{outage_id}: "
+                                    f"{o['impacted_customers'] or '?'} members impacted"))
+    await c.execute("UPDATE outages SET wo_id=$2 WHERE outage_id=$1", outage_id, wo_id)
+    await release_wo(c, wo_id)
+    wo = await _wo(c, wo_id)
+    weather = await weather_gate(c, day)
+    tieup, _ = await boat_tieup_min(c)
+    best = None
+    for r in await c.fetch("SELECT crew_id, plan FROM dispatch_plans WHERE day=$1 FOR UPDATE", day):
+        plan = json.loads(r["plan"]) if isinstance(r["plan"], str) else r["plan"]
+        cv = await c.fetchrow("SELECT * FROM crews WHERE crew_id=$1", r["crew_id"])
+        cvd = {**dict(cv), "vehicle": plan["vehicle"]}
+        if not _eligible(wo, cvd, weather):
+            continue
+        pos, free_at, after = await _crew_now(c, {"plan": plan}, now)
+        go = leg(pos, (wo["lon"], wo["lat"]), plan["vehicle"], tieup)
+        if not go:
+            continue
+        arrive = free_at + dt.timedelta(minutes=go["minutes"])
+        if best is None or arrive < best[0]:
+            best = (arrive, r["crew_id"], plan, go, after)
+    if not best:
+        return {"ok": True, "wo_id": wo_id, "assigned": False,
+                "reason": "no crew can reach it today (weather, skills or vehicle) — escalate"}
+    arrive, cid, plan, go, after = best
+    finish = arrive + dt.timedelta(hours=float(wo["est_hours"]))
+    new = {"seq": after + 1, "wo_id": wo_id, "wo_type": "repair", "priority": "P1", "lon": wo["lon"],
+           "lat": wo["lat"], "eta": arrive.isoformat(), "finish": finish.isoformat(), "travel": go}
+    stops = [s for s in plan["stops"] if s["seq"] <= after] + [new] + \
+            [dict(s, seq=s["seq"] + 1) for s in plan["stops"] if s["seq"] > after]
+    # shift everything after the insert by the time it costs
+    t, pos = finish, (wo["lon"], wo["lat"])
+    for s in stops[after + 1:]:
+        if s.get("_status") in ("closed", "asbuilt", "in_progress"):
+            continue
+        lg = leg(pos, (s["lon"], s["lat"]), plan["vehicle"], tieup) or {"minutes": s["travel"]["minutes"]}
+        eta = t + dt.timedelta(minutes=lg["minutes"])
+        dur = dt.datetime.fromisoformat(s["finish"]) - dt.datetime.fromisoformat(s["eta"])
+        s["eta"], s["finish"] = eta.isoformat(), (eta + dur).isoformat()
+        t, pos = eta + dur, (s["lon"], s["lat"])
+    for s in stops:
+        s.pop("_status", None)
+        await c.execute("UPDATE work_orders SET route_seq=$2, eta=$3 WHERE wo_id=$1",
+                        s["wo_id"], s["seq"], dt.datetime.fromisoformat(s["eta"]))
+    plan["stops"] = stops
+    await c.execute("""UPDATE work_orders SET status='scheduled', scheduled_for=$2, assigned_crew=$3,
+        vehicle_id=$4, travel_mode=$5, travel_min=$6 WHERE wo_id=$1""",
+        wo_id, day, cid, plan["vehicle"]["vehicle_id"], go["mode"], round(go["minutes"], 1))
+    await c.execute("UPDATE dispatch_plans SET plan=$3::jsonb WHERE day=$1 AND crew_id=$2",
+                    day, cid, json.dumps(plan, default=str))
+    await _event(c, wo_id, "scheduled", detail={"crew": cid, "urgent_insert_after": after,
+                                                "eta": arrive.isoformat(), "mode": go["mode"]})
     return {"ok": True, "wo_id": wo_id, "assigned": True, "crew_id": cid, "mode": go["mode"],
             "eta": arrive.isoformat(), "travel_min": round(go["minutes"], 1), "next_stop": after + 1}
+
+@app.post("/outages/{outage_id}/dispatch")
+async def outage_dispatch(outage_id: int, now: Optional[dt.datetime] = None):
+    async with (await pool()).acquire() as c:
+        async with c.transaction():
+            return await dispatch_outage(c, outage_id, now)
 
 # ---------------------------------------------------------------- field actions (PWA, offline)
 class FieldAction(BaseModel):
@@ -716,7 +720,10 @@ async def _complete(c, wo: dict, a: FieldAction) -> dict:
         await c.execute("UPDATE service_instances SET cpe_id=$2 WHERE service_id=$1", si["service_id"], cpe_id)
         result["activation"] = await activate_service(c, si["service_id"], day)   # -> first bill (doc 22)
     if wo["outage_id"]:
-        await c.execute("UPDATE outages SET status='resolved', resolved_at=$2 WHERE outage_id=$1", wo["outage_id"], at)
+        # NOC-managed outages close on telemetry recovery (doc 24), not on the crew's word
+        await c.execute("""UPDATE outages SET field_fixed_at=$2,
+            status=CASE WHEN noc_managed THEN status ELSE 'resolved' END,
+            resolved_at=CASE WHEN noc_managed THEN resolved_at ELSE $2 END WHERE outage_id=$1""", wo["outage_id"], at)
     closes = wo["wo_type"] in ("survey", "repair") or wo["wo_type"] in INSTALL_BY_MEDIUM.values() \
         or wo["wo_type"] == "drop-ug-fiber"
     await c.execute("""UPDATE work_orders SET status=$2::wo_status, completed_at=$3,

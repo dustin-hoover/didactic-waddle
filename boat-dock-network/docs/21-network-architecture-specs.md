@@ -55,7 +55,9 @@ security, and acceptance. Design to these standards:
   (VRF/EVI per zone or per service class); simple routed L3 acceptable at pilot, migrate to
   overlay as zones grow (doc 03 §7).
 - **Ring protection:** logical ring; IGP + FRR (TI-LFA / SR) reroutes the other way on any
-  single break — target **< 50 ms** reconvergence for protected segments.
+  single break — target **< 50 ms** reconvergence for protected segments. **Precondition:** the
+  ring must exist. The designed spine has 5 bridges and 8 cut nodes until the doc 24 §2
+  ring-closing hops and a second NW head-end lateral are built. FRR cannot protect a bridge.
 - **Subscriber sessions:** **IPoE + DHCPv6-PD/SLAAC** (preferred) or PPPoE for fiber;
   wireless CPE via RADIUS-authed IPoE. Prefix-delegate a /56 per sub.
 - **Security of routing:** publish **ROAs** for all prefixes; **ROV** on eBGP; prefix + AS

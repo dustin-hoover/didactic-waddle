@@ -1,0 +1,991 @@
+{
+ "now": "2026-10-06T13:02:30Z",
+ "board": {
+  "generated_at": "2026-10-06T13:02:30+00:00",
+  "incidents": [
+   {
+    "outage_id": 1,
+    "kind": "outage",
+    "status": "open",
+    "cause": "Backbone link failure",
+    "root_elements": [
+     "SP-06-13"
+    ],
+    "dark_nodes": [
+     "BDN-Z-01-N06",
+     "BDN-Z-03-N07",
+     "BDN-Z-04-N02",
+     "BDN-Z-04-N12",
+     "BDN-Z-04-N24",
+     "BDN-Z-06-N14",
+     "BDN-Z-07-N04",
+     "BDN-Z-08-N10",
+     "BDN-Z-10-N11",
+     "BDN-Z-10-N28",
+     "BDN-Z-15-N15",
+     "BDN-Z-18-N18",
+     "BDN-Z-18-N21"
+    ],
+    "zones": [
+     "Z-01",
+     "Z-03",
+     "Z-04",
+     "Z-06",
+     "Z-07",
+     "Z-08",
+     "Z-10",
+     "Z-15",
+     "Z-18"
+    ],
+    "impacted_services": 47,
+    "impacted_business": 8,
+    "started_at": "2026-10-06T13:00:00+00:00",
+    "detected_at": "2026-10-06T13:01:30+00:00",
+    "eta": "2026-10-06T14:49:39.337170+00:00",
+    "wo_id": 1,
+    "wo_status": "scheduled",
+    "assigned_crew": "CREW-2",
+    "travel_mode": "truck",
+    "crew_eta": "2026-10-06T13:19:39.337170+00:00",
+    "detail": "Backbone link SP-06-13 down (land hop) \u2014 BDN-Z-01-N06 side cut off"
+   }
+  ],
+  "alerts_by_disposition": [
+   {
+    "disposition": "root_cause",
+    "n": 1
+   },
+   {
+    "disposition": "suppressed",
+    "n": 13
+   }
+  ],
+  "notifications_queued": 94,
+  "nodes": [
+   {
+    "id": "BDN-Z-08-N01",
+    "lon": -93.999637465,
+    "lat": 36.369102056,
+    "tier": "T2",
+    "zone": "Z-08",
+    "power": "grid_ups",
+    "state": "up"
+   },
+   {
+    "id": "BDN-Z-04-N02",
+    "lon": -94.009070509,
+    "lat": 36.254640475,
+    "tier": "T2",
+    "zone": "Z-04",
+    "power": "grid_ups",
+    "state": "dark"
+   },
+   {
+    "id": "BDN-Z-13-N03",
+    "lon": -93.916984409,
+    "lat": 36.40166639,
+    "tier": "T2",
+    "zone": "Z-13",
+    "power": "grid_ups",
+    "state": "up"
+   },
+   {
+    "id": "BDN-Z-07-N04",
+    "lon": -93.998235301,
+    "lat": 36.182131291,
+    "tier": "T2",
+    "zone": "Z-07",
+    "power": "grid_ups",
+    "state": "dark"
+   },
+   {
+    "id": "BDN-Z-16-N05",
+    "lon": -93.847868724,
+    "lat": 36.347289761,
+    "tier": "T2",
+    "zone": "Z-16",
+    "power": "grid_ups",
+    "state": "up"
+   },
+   {
+    "id": "BDN-Z-01-N06",
+    "lon": -94.03060994,
+    "lat": 36.324791397,
+    "tier": "T2",
+    "zone": "Z-01",
+    "power": "grid_ups",
+    "state": "dark"
+   },
+   {
+    "id": "BDN-Z-03-N07",
+    "lon": -94.073458593,
+    "lat": 36.252706932,
+    "tier": "T2",
+    "zone": "Z-03",
+    "power": "grid_ups",
+    "state": "dark"
+   },
+   {
+    "id": "BDN-Z-12-N08",
+    "lon": -93.843034585,
+    "lat": 36.391317788,
+    "tier": "T2",
+    "zone": "Z-12",
+    "power": "grid_ups",
+    "state": "up"
+   },
+   {
+    "id": "BDN-Z-11-N09",
+    "lon": -94.041902465,
+    "lat": 36.380190313,
+    "tier": "T2",
+    "zone": "Z-11",
+    "power": "grid_ups",
+    "state": "up"
+   },
+   {
+    "id": "BDN-Z-08-N10",
+    "lon": -93.98379665,
+    "lat": 36.321428267,
+    "tier": "T3",
+    "zone": "Z-08",
+    "power": "solar_battery",
+    "state": "dark"
+   },
+   {
+    "id": "BDN-Z-10-N11",
+    "lon": -93.992255412,
+    "lat": 36.223505154,
+    "tier": "T2",
+    "zone": "Z-10",
+    "power": "grid_ups",
+    "state": "dark"
+   },
+   {
+    "id": "BDN-Z-04-N12",
+    "lon": -94.024795374,
+    "lat": 36.265295472,
+    "tier": "T3",
+    "zone": "Z-04",
+    "power": "solar_battery",
+    "state": "dark"
+   },
+   {
+    "id": "BDN-Z-02-N13",
+    "lon": -94.054432251,
+    "lat": 36.341726485,
+    "tier": "T2",
+    "zone": "Z-02",
+    "power": "grid_ups",
+    "state": "up"
+   },
+   {
+    "id": "BDN-Z-06-N14",
+    "lon": -93.956000178,
+    "lat": 36.31966105,
+    "tier": "T2",
+    "zone": "Z-06",
+    "power": "grid_ups",
+    "state": "dark"
+   },
+   {
+    "id": "BDN-Z-15-N15",
+    "lon": -93.996175867,
+    "lat": 36.147543398,
+    "tier": "T2",
+    "zone": "Z-15",
+    "power": "grid_ups",
+    "state": "dark"
+   },
+   {
+    "id": "BDN-Z-17-N16",
+    "lon": -93.885527138,
+    "lat": 36.321462691,
+    "tier": "T2",
+    "zone": "Z-17",
+    "power": "grid_ups",
+    "state": "up"
+   },
+   {
+    "id": "BDN-Z-14-N17",
+    "lon": -93.888698166,
+    "lat": 36.440521983,
+    "tier": "T2",
+    "zone": "Z-14",
+    "power": "grid_ups",
+    "state": "up"
+   },
+   {
+    "id": "BDN-Z-18-N18",
+    "lon": -93.993310697,
+    "lat": 36.273489868,
+    "tier": "T2",
+    "zone": "Z-18",
+    "power": "grid_ups",
+    "state": "dark"
+   },
+   {
+    "id": "BDN-Z-12-N19",
+    "lon": -93.807594341,
+    "lat": 36.369273829,
+    "tier": "T3",
+    "zone": "Z-12",
+    "power": "solar_battery",
+    "state": "up"
+   },
+   {
+    "id": "BDN-Z-05-N20",
+    "lon": -93.928911605,
+    "lat": 36.388919804,
+    "tier": "T2",
+    "zone": "Z-05",
+    "power": "grid_ups",
+    "state": "up"
+   },
+   {
+    "id": "BDN-Z-18-N21",
+    "lon": -93.932481205,
+    "lat": 36.233693748,
+    "tier": "T3",
+    "zone": "Z-18",
+    "power": "solar_battery",
+    "state": "dark"
+   },
+   {
+    "id": "BDN-Z-09-N22",
+    "lon": -93.877033591,
+    "lat": 36.383992428,
+    "tier": "T2",
+    "zone": "Z-09",
+    "power": "grid_ups",
+    "state": "up"
+   },
+   {
+    "id": "BDN-Z-16-N23",
+    "lon": -93.825457839,
+    "lat": 36.354097725,
+    "tier": "T3",
+    "zone": "Z-16",
+    "power": "solar_battery",
+    "state": "up"
+   },
+   {
+    "id": "BDN-Z-04-N24",
+    "lon": -94.004678597,
+    "lat": 36.249774701,
+    "tier": "T3",
+    "zone": "Z-04",
+    "power": "solar_battery",
+    "state": "dark"
+   },
+   {
+    "id": "BDN-Z-11-N25",
+    "lon": -94.015546468,
+    "lat": 36.377638638,
+    "tier": "T3",
+    "zone": "Z-11",
+    "power": "solar_battery",
+    "state": "up"
+   },
+   {
+    "id": "BDN-Z-09-N26",
+    "lon": -93.849577953,
+    "lat": 36.384268477,
+    "tier": "T3",
+    "zone": "Z-09",
+    "power": "solar_battery",
+    "state": "up"
+   },
+   {
+    "id": "BDN-Z-17-N27",
+    "lon": -93.883664767,
+    "lat": 36.298151877,
+    "tier": "T3",
+    "zone": "Z-17",
+    "power": "solar_battery",
+    "state": "up"
+   },
+   {
+    "id": "BDN-Z-10-N28",
+    "lon": -93.99593034,
+    "lat": 36.186848489,
+    "tier": "T3",
+    "zone": "Z-10",
+    "power": "solar_battery",
+    "state": "dark"
+   },
+   {
+    "id": "BDN-Z-08-N29",
+    "lon": -93.961082956,
+    "lat": 36.376669173,
+    "tier": "T3",
+    "zone": "Z-08",
+    "power": "solar_battery",
+    "state": "up"
+   },
+   {
+    "id": "BDN-Z-12-N30",
+    "lon": -93.833448936,
+    "lat": 36.396122205,
+    "tier": "T3",
+    "zone": "Z-12",
+    "power": "solar_battery",
+    "state": "up"
+   },
+   {
+    "id": "HE-NW",
+    "lon": -94.0579,
+    "lat": 36.3548,
+    "tier": "T0",
+    "zone": null,
+    "power": "grid",
+    "state": "up"
+   },
+   {
+    "id": "HE-E",
+    "lon": -93.8394,
+    "lat": 36.4009,
+    "tier": "T0",
+    "zone": null,
+    "power": "grid",
+    "state": "up"
+   }
+  ],
+  "links": [
+   {
+    "id": "SP-01-09",
+    "a": "BDN-Z-08-N01",
+    "b": "BDN-Z-11-N09",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-01-25",
+    "a": "BDN-Z-08-N01",
+    "b": "BDN-Z-11-N25",
+    "kind": "land",
+    "state": "up"
+   },
+   {
+    "id": "SP-01-29",
+    "a": "BDN-Z-08-N01",
+    "b": "BDN-Z-08-N29",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-02-07",
+    "a": "BDN-Z-04-N02",
+    "b": "BDN-Z-03-N07",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-02-11",
+    "a": "BDN-Z-04-N02",
+    "b": "BDN-Z-10-N11",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-02-12",
+    "a": "BDN-Z-04-N02",
+    "b": "BDN-Z-04-N12",
+    "kind": "land",
+    "state": "up"
+   },
+   {
+    "id": "SP-02-18",
+    "a": "BDN-Z-04-N02",
+    "b": "BDN-Z-18-N18",
+    "kind": "land",
+    "state": "up"
+   },
+   {
+    "id": "SP-02-24",
+    "a": "BDN-Z-04-N02",
+    "b": "BDN-Z-04-N24",
+    "kind": "land",
+    "state": "up"
+   },
+   {
+    "id": "SP-03-17",
+    "a": "BDN-Z-13-N03",
+    "b": "BDN-Z-14-N17",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-03-20",
+    "a": "BDN-Z-13-N03",
+    "b": "BDN-Z-05-N20",
+    "kind": "land",
+    "state": "up"
+   },
+   {
+    "id": "SP-03-22",
+    "a": "BDN-Z-13-N03",
+    "b": "BDN-Z-09-N22",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-04-15",
+    "a": "BDN-Z-07-N04",
+    "b": "BDN-Z-15-N15",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-04-28",
+    "a": "BDN-Z-07-N04",
+    "b": "BDN-Z-10-N28",
+    "kind": "land",
+    "state": "up"
+   },
+   {
+    "id": "SP-05-16",
+    "a": "BDN-Z-16-N05",
+    "b": "BDN-Z-17-N16",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-05-23",
+    "a": "BDN-Z-16-N05",
+    "b": "BDN-Z-16-N23",
+    "kind": "land",
+    "state": "up"
+   },
+   {
+    "id": "SP-05-26",
+    "a": "BDN-Z-16-N05",
+    "b": "BDN-Z-09-N26",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-05-27",
+    "a": "BDN-Z-16-N05",
+    "b": "BDN-Z-17-N27",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-06-10",
+    "a": "BDN-Z-01-N06",
+    "b": "BDN-Z-08-N10",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-06-13",
+    "a": "BDN-Z-01-N06",
+    "b": "BDN-Z-02-N13",
+    "kind": "land",
+    "state": "root"
+   },
+   {
+    "id": "SP-07-12",
+    "a": "BDN-Z-03-N07",
+    "b": "BDN-Z-04-N12",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-08-22",
+    "a": "BDN-Z-12-N08",
+    "b": "BDN-Z-09-N22",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-08-26",
+    "a": "BDN-Z-12-N08",
+    "b": "BDN-Z-09-N26",
+    "kind": "land",
+    "state": "up"
+   },
+   {
+    "id": "SP-08-30",
+    "a": "BDN-Z-12-N08",
+    "b": "BDN-Z-12-N30",
+    "kind": "land",
+    "state": "up"
+   },
+   {
+    "id": "SP-09-13",
+    "a": "BDN-Z-11-N09",
+    "b": "BDN-Z-02-N13",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-09-25",
+    "a": "BDN-Z-11-N09",
+    "b": "BDN-Z-11-N25",
+    "kind": "water_short",
+    "state": "up"
+   },
+   {
+    "id": "SP-10-14",
+    "a": "BDN-Z-08-N10",
+    "b": "BDN-Z-06-N14",
+    "kind": "land",
+    "state": "up"
+   },
+   {
+    "id": "SP-11-21",
+    "a": "BDN-Z-10-N11",
+    "b": "BDN-Z-18-N21",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-11-24",
+    "a": "BDN-Z-10-N11",
+    "b": "BDN-Z-04-N24",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-11-28",
+    "a": "BDN-Z-10-N11",
+    "b": "BDN-Z-10-N28",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-12-24",
+    "a": "BDN-Z-04-N12",
+    "b": "BDN-Z-04-N24",
+    "kind": "land",
+    "state": "up"
+   },
+   {
+    "id": "SP-14-18",
+    "a": "BDN-Z-06-N14",
+    "b": "BDN-Z-18-N18",
+    "kind": "land",
+    "state": "up"
+   },
+   {
+    "id": "SP-15-28",
+    "a": "BDN-Z-15-N15",
+    "b": "BDN-Z-10-N28",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-16-27",
+    "a": "BDN-Z-17-N16",
+    "b": "BDN-Z-17-N27",
+    "kind": "water_short",
+    "state": "up"
+   },
+   {
+    "id": "SP-17-22",
+    "a": "BDN-Z-14-N17",
+    "b": "BDN-Z-09-N22",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-18-24",
+    "a": "BDN-Z-18-N18",
+    "b": "BDN-Z-04-N24",
+    "kind": "land",
+    "state": "up"
+   },
+   {
+    "id": "SP-19-23",
+    "a": "BDN-Z-12-N19",
+    "b": "BDN-Z-16-N23",
+    "kind": "water_short",
+    "state": "up"
+   },
+   {
+    "id": "SP-19-30",
+    "a": "BDN-Z-12-N19",
+    "b": "BDN-Z-12-N30",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-20-29",
+    "a": "BDN-Z-05-N20",
+    "b": "BDN-Z-08-N29",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-21-24",
+    "a": "BDN-Z-18-N21",
+    "b": "BDN-Z-04-N24",
+    "kind": "water_long",
+    "state": "up"
+   },
+   {
+    "id": "SP-22-26",
+    "a": "BDN-Z-09-N22",
+    "b": "BDN-Z-09-N26",
+    "kind": "land",
+    "state": "up"
+   },
+   {
+    "id": "SP-26-30",
+    "a": "BDN-Z-09-N26",
+    "b": "BDN-Z-12-N30",
+    "kind": "land",
+    "state": "up"
+   },
+   {
+    "id": "HF-HE-NW",
+    "a": "HE-NW",
+    "b": "BDN-Z-02-N13",
+    "kind": "headend_fiber",
+    "state": "up"
+   },
+   {
+    "id": "HF-HE-E",
+    "a": "HE-E",
+    "b": "BDN-Z-12-N30",
+    "kind": "headend_fiber",
+    "state": "up"
+   }
+  ]
+ },
+ "status": {
+  "generated_at": "2026-09-23T13:19:04.594473+00:00",
+  "overall": "major_outage",
+  "zones": [
+   {
+    "zone_id": "Z-01",
+    "name": "Beaver Shores",
+    "state": "outage",
+    "since": "2026-10-06T13:00:00+00:00",
+    "eta": "2026-10-06T14:49:39.337170+00:00",
+    "cause": "Backbone link failure",
+    "members_affected": 4
+   },
+   {
+    "zone_id": "Z-02",
+    "name": "Prairie Creek",
+    "state": "operational",
+    "since": null,
+    "eta": null,
+    "cause": null,
+    "members_affected": 0
+   },
+   {
+    "zone_id": "Z-03",
+    "name": "Monte Ne",
+    "state": "outage",
+    "since": "2026-10-06T13:00:00+00:00",
+    "eta": "2026-10-06T14:49:39.337170+00:00",
+    "cause": "Backbone link failure",
+    "members_affected": 4
+   },
+   {
+    "zone_id": "Z-04",
+    "name": "Creech",
+    "state": "outage",
+    "since": "2026-10-06T13:00:00+00:00",
+    "eta": "2026-10-06T14:49:39.337170+00:00",
+    "cause": "Backbone link failure",
+    "members_affected": 10
+   },
+   {
+    "zone_id": "Z-05",
+    "name": "Lost Bridge Village",
+    "state": "operational",
+    "since": null,
+    "eta": null,
+    "cause": null,
+    "members_affected": 0
+   },
+   {
+    "zone_id": "Z-06",
+    "name": "Township of Walnut",
+    "state": "outage",
+    "since": "2026-10-06T13:00:00+00:00",
+    "eta": "2026-10-06T14:49:39.337170+00:00",
+    "cause": "Backbone link failure",
+    "members_affected": 4
+   },
+   {
+    "zone_id": "Z-07",
+    "name": "Blue Springs Village",
+    "state": "outage",
+    "since": "2026-10-06T13:00:00+00:00",
+    "eta": "2026-10-06T14:49:39.337170+00:00",
+    "cause": "Backbone link failure",
+    "members_affected": 4
+   },
+   {
+    "zone_id": "Z-08",
+    "name": "Ventris Public Use Area",
+    "state": "outage",
+    "since": "2026-10-06T13:00:00+00:00",
+    "eta": "2026-10-06T14:49:39.337170+00:00",
+    "cause": "Backbone link failure",
+    "members_affected": 3
+   },
+   {
+    "zone_id": "Z-09",
+    "name": "Mundell (historical)",
+    "state": "operational",
+    "since": null,
+    "eta": null,
+    "cause": null,
+    "members_affected": 0
+   },
+   {
+    "zone_id": "Z-10",
+    "name": "War Eagle Cove",
+    "state": "outage",
+    "since": "2026-10-06T13:00:00+00:00",
+    "eta": "2026-10-06T14:49:39.337170+00:00",
+    "cause": "Backbone link failure",
+    "members_affected": 7
+   },
+   {
+    "zone_id": "Z-11",
+    "name": "Puckett (historical)",
+    "state": "operational",
+    "since": null,
+    "eta": null,
+    "cause": null,
+    "members_affected": 0
+   },
+   {
+    "zone_id": "Z-12",
+    "name": "Beaver Dam",
+    "state": "operational",
+    "since": null,
+    "eta": null,
+    "cause": null,
+    "members_affected": 0
+   },
+   {
+    "zone_id": "Z-13",
+    "name": "Vista Shores",
+    "state": "operational",
+    "since": null,
+    "eta": null,
+    "cause": null,
+    "members_affected": 0
+   },
+   {
+    "zone_id": "Z-14",
+    "name": "Huffman Ford (historical)",
+    "state": "operational",
+    "since": null,
+    "eta": null,
+    "cause": null,
+    "members_affected": 0
+   },
+   {
+    "zone_id": "Z-15",
+    "name": "Blue Springs Use Area",
+    "state": "outage",
+    "since": "2026-10-06T13:00:00+00:00",
+    "eta": "2026-10-06T14:49:39.337170+00:00",
+    "cause": "Backbone link failure",
+    "members_affected": 4
+   },
+   {
+    "zone_id": "Z-16",
+    "name": "Township of Prairie",
+    "state": "operational",
+    "since": null,
+    "eta": null,
+    "cause": null,
+    "members_affected": 0
+   },
+   {
+    "zone_id": "Z-17",
+    "name": "Rambo Riviera",
+    "state": "operational",
+    "since": null,
+    "eta": null,
+    "cause": null,
+    "members_affected": 0
+   },
+   {
+    "zone_id": "Z-18",
+    "name": "Cook Ford",
+    "state": "outage",
+    "since": "2026-10-06T13:00:00+00:00",
+    "eta": "2026-10-06T14:49:39.337170+00:00",
+    "cause": "Backbone link failure",
+    "members_affected": 7
+   }
+  ],
+  "recent": []
+ },
+ "notice_sms": "Boat Dock Network: service in Beaver Shores, Blue Springs Use Area, Blue Springs Village, Cook Ford, Creech, Monte Ne, Township of Walnut, Ventris Public Use Area, War Eagle Cove has been interrupted since Tue 8:00 AM (backbone link failure). A crew is on the way \u2014 we expect service back by Tue 9:49 AM. Live status: https://status.boatdock.network. No need to call \u2014 outage credits are applied automatically under the member SLA.",
+ "wo": {
+  "wo_id": 1,
+  "priority": "P1",
+  "status": "scheduled",
+  "assigned_crew": "CREW-2",
+  "travel_mode": "truck",
+  "travel_min": "18.199999999999999289457264239899814128875732421875",
+  "eta": "2026-10-06T13:19:39.337170+00:00",
+  "node_id": "BDN-Z-01-N06"
+ },
+ "log": [
+  {
+   "outage_id": 1,
+   "kind": "outage",
+   "cause": "Backbone link failure",
+   "detail": "Backbone link SP-06-13 down (land hop) \u2014 BDN-Z-01-N06 side cut off",
+   "root_elements": [
+    "SP-06-13"
+   ],
+   "started_at": "2026-10-06T13:00:00+00:00",
+   "resolved_at": "2026-10-06T18:00:20+00:00",
+   "impacted_services": 47,
+   "impacted_business": 8,
+   "credits_usd": 22.08,
+   "status": "resolved"
+  },
+  {
+   "outage_id": 2,
+   "kind": "degraded",
+   "cause": "Reduced redundancy",
+   "detail": "Ring open: SP-01-25 (land hop) down \u2014 traffic rerouted, no members affected",
+   "root_elements": [
+    "SP-01-25"
+   ],
+   "started_at": "2026-10-06T18:10:00+00:00",
+   "resolved_at": "2026-10-06T18:21:30+00:00",
+   "impacted_services": null,
+   "impacted_business": null,
+   "credits_usd": null,
+   "status": "resolved"
+  },
+  {
+   "outage_id": 3,
+   "kind": "outage",
+   "cause": "Backbone link failure",
+   "detail": "Backbone link SP-01-25 down (land hop) \u2014 BDN-Z-11-N25 side cut off; Backbone link SP-09-25 down (short lake hop) \u2014 BDN-Z-11-N25 side cut off",
+   "root_elements": [
+    "SP-01-25",
+    "SP-09-25"
+   ],
+   "started_at": "2026-10-06T18:10:00+00:00",
+   "resolved_at": "2026-10-06T19:00:00+00:00",
+   "impacted_services": 3,
+   "impacted_business": 0,
+   "credits_usd": 0.0,
+   "status": "resolved"
+  },
+  {
+   "outage_id": 4,
+   "kind": "degraded",
+   "cause": "Reduced redundancy",
+   "detail": "Ring open: SP-01-25 (land hop) down \u2014 traffic rerouted, no members affected",
+   "root_elements": [
+    "SP-01-25"
+   ],
+   "started_at": "2026-10-06T18:10:00+00:00",
+   "resolved_at": "2026-10-06T19:10:00+00:00",
+   "impacted_services": null,
+   "impacted_business": null,
+   "credits_usd": null,
+   "status": "resolved"
+  },
+  {
+   "outage_id": 5,
+   "kind": "outage",
+   "cause": "Access-radio failure at a local network site",
+   "detail": "Access radio at BDN-Z-02-N13: 3 of 4 member radios down, node reachable",
+   "root_elements": [
+    "BDN-Z-02-N13:access"
+   ],
+   "started_at": "2026-10-06T19:30:00+00:00",
+   "resolved_at": "2026-10-06T20:00:00+00:00",
+   "impacted_services": 3,
+   "impacted_business": 0,
+   "credits_usd": 0.0,
+   "status": "resolved"
+  },
+  {
+   "outage_id": 6,
+   "kind": "degraded",
+   "cause": "Reduced redundancy",
+   "detail": "Ring open: SP-01-09 (licensed microwave lake crossing) down \u2014 traffic rerouted, no members affected (flapping)",
+   "root_elements": [
+    "SP-01-09"
+   ],
+   "started_at": "2026-10-06T20:20:00+00:00",
+   "resolved_at": "2026-10-06T20:30:20+00:00",
+   "impacted_services": null,
+   "impacted_business": null,
+   "credits_usd": null,
+   "status": "resolved"
+  },
+  {
+   "outage_id": 7,
+   "kind": "power",
+   "cause": "Planned battery service at a network site",
+   "detail": "Battery at BDN-Z-09-N26 forecast to hit the 20% cutoff Wed 8:00 AM (60% now, -2.5%/h; before the panels recover). If it trips: 1 node(s), 3 members dark.",
+   "root_elements": [
+    "BDN-Z-09-N26:power"
+   ],
+   "started_at": "2026-10-06T21:00:00+00:00",
+   "resolved_at": "2026-10-06T22:00:00+00:00",
+   "impacted_services": 3,
+   "impacted_business": null,
+   "credits_usd": null,
+   "status": "resolved"
+  },
+  {
+   "outage_id": 8,
+   "kind": "power",
+   "cause": "Planned battery service at a network site",
+   "detail": "Battery at BDN-Z-08-N29 forecast to hit the 20% cutoff Wed 8:00 AM (60% now, -2.5%/h; before the panels recover). If it trips: 1 node(s), 3 members dark. \u2014 superseded by outage #9",
+   "root_elements": [
+    "BDN-Z-08-N29:power"
+   ],
+   "started_at": "2026-10-06T21:00:00+00:00",
+   "resolved_at": "2026-10-06T22:01:30+00:00",
+   "impacted_services": 3,
+   "impacted_business": null,
+   "credits_usd": null,
+   "status": "resolved"
+  },
+  {
+   "outage_id": 9,
+   "kind": "outage",
+   "cause": "Power loss at a network site",
+   "detail": "Power loss at BDN-Z-08-N29 (battery exhausted)",
+   "root_elements": [
+    "BDN-Z-08-N29"
+   ],
+   "started_at": "2026-10-06T22:00:00+00:00",
+   "resolved_at": "2026-10-08T00:00:00+00:00",
+   "impacted_services": 3,
+   "impacted_business": 0,
+   "credits_usd": 19.13,
+   "status": "resolved"
+  },
+  {
+   "outage_id": 10,
+   "kind": "degraded",
+   "cause": "Reduced redundancy",
+   "detail": "Head-end HE-NW down \u2014 traffic on the other head-end, no members affected",
+   "root_elements": [
+    "HE-NW"
+   ],
+   "started_at": "2026-10-08T14:00:00+00:00",
+   "resolved_at": null,
+   "impacted_services": null,
+   "impacted_business": null,
+   "credits_usd": null,
+   "status": "open"
+  }
+ ]
+}

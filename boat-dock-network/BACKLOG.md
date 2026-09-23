@@ -7,7 +7,7 @@ We work these **one by one**. Status: ✅ done · 🔨 in progress · ⬜ queued
 - ✅ Verified premises-passed from public GIS (9,571 ≤1mi) + PostGIS + DockOS schema
 - ✅ 18 service zones + build order
 - ✅ 30 candidate nodes, viewshed-ranked (bare-earth + canopy DSM)
-- ✅ Redundant backbone spine (41 hops, $1.37M)
+- ✅ Backbone spine (41 hops, $1.37M) — *not yet a full ring; see doc 24 §2*
 - ✅ 5-year pro forma (foliage base case: ~$7.5M CapEx, EBITDA+ Y2, peak ~$3.1M)
 - ✅ Interactive map + financial dashboard (self-contained artifacts)
 - ✅ Canopy-aware LOS refinement (NLCD DSM): 75% wireless LOS, 25% shadow
@@ -116,8 +116,24 @@ We work these **one by one**. Status: ✅ done · 🔨 in progress · ⬜ queued
   ~52% at 5 min → hybrid fleet; dock turnaround ≤ 8 min is the KPI (measured, fed back to the
   planner). Repaired 15 malformed BOM kit rows. Preview artifact: "DockOS Crew".
 
+## Done (cont.)
+- ✅ **NOC monitoring + outage management** (DockOS step 7, doc 24): topology engine turns
+  alarm storms into a single root cause (reachability from head-ends; root, suppressed,
+  silent, ring-open), with hold-down and flap damping. Outage → active members only
+  (seasonal holds excluded) → P1 inserted as the next stop of the fastest crew → SMS/email
+  notices with ETA → public status page (no PII) → closes on **telemetry** recovery, cancels
+  un-started crew visits → **automatic SLA credits** (business 2× > 4 h, residential ≥ 24 h)
+  into billing. Also: access-sector outages, single-radio P3 tickets that self-clear, and a
+  solar-battery SOC forecast that sends a crew *before* the site dies. **52-check e2e** on
+  the real topology; dispatch 43 + billing 46 still green.
+  **Finding:** the spine is **not a ring**: 5 bridges + 8 cut nodes, and 2,367 of 4,211
+  members behind a SPOF (SP-06-13 alone carries 2,243). **+5 hops ($40k radio … $689k
+  fiber)** leave 553 behind two cut nodes; the NW head-end also needs dual-homing. Docs
+  03/21 corrected; pro forma unchanged (your call). Board artifact: "DockOS NOC".
+
 ## Queued (recommended order — next up)
-- ⬜ **NOC monitoring + outage management** (DockOS step 7)
+- ⬜ **Close the ring** (doc 24 §2): path survey on the 5 hops, dual-home HE-NW, decide
+  on the N11/N05 cut nodes; then fold the cost into the pro forma
 - ⬜ **AR/Benton/Washington compliance advisor** (DockOS step 8) — grants NOFO scanner
   deferred (no government money in the base case; revisit only if programs return)
 

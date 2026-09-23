@@ -60,6 +60,14 @@ not a rebuild. This is how the outside plant stays adaptable for decades.
 
 ## 3. The ring spine (crossing the lake)
 
+> **Correction (doc 24 §2).** Measured on the designed topology, the 41-hop spine is **not yet
+> a ring**. It has 5 bridge links and 8 cut nodes, and 2,367 of 4,211 Year-5 members (56%) sit
+> behind a single point of failure. The worst is land hop SP-06-13, which carries half the
+> network. **Five added hops close it** ($40k as PtP radio if the paths have line of sight,
+> up to $689k as aerial fiber). Afterward, members behind a SPOF drop to 553, at two cut
+> nodes with no alternative site within 7 km. The NW head-end must also be dual-homed. The
+> intent below stands; the current design does not deliver it until those hops are built.
+
 - Built as a **logical ring** around and across the lake so a single fiber cut or
   faded microwave hop never isolates a zone — traffic flows the other way around.
 - **Over water:** licensed microwave hops with **space diversity** (two vertically
@@ -99,7 +107,7 @@ using this precedence (implemented as code in doc 14):
 | Failure | Mitigation |
 |---------|-----------|
 | One upstream provider/path down | Second diverse on-ramp + BGP reroute |
-| Spine fiber cut / faded hop | Ring reroutes the other direction |
+| Spine fiber cut / faded hop | Ring reroutes the other direction — **only once the 5 ring-closing hops are built** (doc 24 §2); today 5 hops are single points of failure |
 | Dock node power loss | UPS + solar/battery autonomy (2–3 days); generator for POPs |
 | Radio/PON module failure | Hot-swappable module; boat-dispatched spare kit (BOM) |
 | Node unreachable in storm | Solar autonomy holds; boat dispatch when safe; Starlink last-resort backhaul for critical nodes |
@@ -116,7 +124,8 @@ using this precedence (implemented as code in doc 14):
 - **AAA:** RADIUS for wireless CPE and PPPoE/IPoE fiber sessions, integrated with
   billing (doc 14) so provisioning ↔ billing is one source of truth.
 - **QoS:** per-plan rate limiting at the CPE/OLT; business/marina SLAs prioritized.
-- **Monitoring:** SNMP/streaming telemetry from every T0–T3 device into the NOC stack.
+- **Monitoring:** SNMP/streaming telemetry from every T0–T3 device into the NOC stack;
+  topology-aware root cause, outages, dispatch and credits in DockOS (doc 24).
 
 ## 8. Standards & documentation discipline
 

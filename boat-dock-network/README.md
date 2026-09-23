@@ -58,6 +58,14 @@ go. Every assumption is listed in [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md).
 | 14 | [`docs/14-software-architecture.md`](docs/14-software-architecture.md) | DockOS platform, services, stack, the AR compliance "brain" |
 | 15 | [`docs/15-roadmap-and-phasing.md`](docs/15-roadmap-and-phasing.md) | Sequenced build: pilot → region → whole lake, plus software milestones |
 | 16 | [`docs/16-governance-and-tokenomics.md`](docs/16-governance-and-tokenomics.md) | Member cooperative + DAO: the non-transferable, tenure-earned WAKE governance unit, patronage-dividend economics, voting design |
+| 17 | [`docs/17-middle-mile-transit.md`](docs/17-middle-mile-transit.md) | Middle-mile / transit procurement, sizing, RFQ, path diversity |
+| 18 | [`docs/18-member-capital-campaign.md`](docs/18-member-capital-campaign.md) | Grant-free funding: reservations, shares, founding capital, per-zone build gate |
+| 19 | [`docs/19-entity-formation-checklist.md`](docs/19-entity-formation-checklist.md) | Arkansas telecom cooperative formation, tax, FCC, Beaver Lake permits |
+| 20 | [`docs/20-site-acquisition-and-real-estate.md`](docs/20-site-acquisition-and-real-estate.md) | Own the head-ends, lease the edge; huts vs cabinets |
+| 21 | [`docs/21-network-architecture-specs.md`](docs/21-network-architecture-specs.md) | Engineering design spec: equipment, addressing, routing, power, acceptance |
+| 22 | [`docs/22-billing-provisioning-radius.md`](docs/22-billing-provisioning-radius.md) | Billing lifecycle, provisioning, RADIUS as views over billing (DockOS 6) |
+| 23 | [`docs/23-dispatch-and-work-orders.md`](docs/23-dispatch-and-work-orders.md) | Work orders, boat/truck dispatch, crew PWA; boat vs truck measured (DockOS 4–5) |
+| 24 | [`docs/24-noc-and-outage-management.md`](docs/24-noc-and-outage-management.md) | NOC root cause, outages, dispatch, member credits; the spine SPOF finding (DockOS 7) |
 | — | [`BACKLOG.md`](BACKLOG.md) | Live build backlog we work through one by one |
 
 ## 2. Data & code map

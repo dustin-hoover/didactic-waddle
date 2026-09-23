@@ -59,7 +59,10 @@ Pipeline (each stage is a DockOS state + work-order type):
   marina/resort priority + spares on-site.
 - **Outage flow:** device-down alert → DockOS computes impacted customers + outage
   polygon → auto-ticket + status page update → nearest qualified boat crew dispatched
-  with the right BOM kit → repair → as-built + customer comms.
+  with the right BOM kit → repair → as-built + customer comms. **Built (doc 24):**
+  root cause from topology (one incident per event, not an alarm storm), the P1 goes in as
+  the next stop of the fastest crew, the outage closes on telemetry recovery, and SLA
+  credits apply automatically.
 - **Truck-roll-by-boat efficiency:** dispatch routes by water from nearest ramp/cache;
   batch nearby jobs; carry standard spare kits so most repairs are one trip.
 - **Preventive maintenance:** seasonal node inspections (mounts, solar, batteries,

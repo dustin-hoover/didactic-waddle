@@ -118,7 +118,9 @@ templates in `data/gis/` define the spatial tables.
    weather gate, offline crew app; 43-check e2e sign-up → dispatch → first bill).
 6. **Billing + provisioning + RADIUS** — turn on paying customers. ✅ **Built** — doc 22
    (RADIUS authorize tables are views over billing state; 46-check e2e vs live FreeRADIUS).
-7. **NOC monitoring + outage** — operate reliably.
+7. **NOC monitoring + outage** — operate reliably. ✅ **Built** — doc 24 (topology root
+   cause, outage → P1 dispatch → notices → automatic credits; 52-check e2e; found the spine
+   is not yet a ring).
 8. **Compliance advisor + grants scanner** — scale the paperwork with AI, not hires.
 
 Each is a self-contained Claude Code task; see doc 15.
