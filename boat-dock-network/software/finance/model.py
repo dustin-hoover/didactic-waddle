@@ -40,6 +40,10 @@ COST_T2, COST_T3 = 40_000, 18_000       # dock/agg node, relay/fill node
 # nLOS/fiber. See data/gis/outputs/lidar_validation.csv + docs/05.
 N_T2, N_T3       = 18, 12                # primary vs fill (is_primary split)
 COST_HEADEND     = 120_000; N_HEADENDS = 2
+# Fee-simple land for the two T0 head-end comm huts (doc 20): own the 2 head-ends,
+# lease/easement everything else. Planning-grade — replace with real parcel quotes.
+# A parcel that doubles as the boat/ops base may cost more but removes a separate base.
+COST_HEADEND_LAND = 150_000; N_LAND_PARCELS = 2   # ~$300k Y1 land acquisition
 COST_CORE_NOC    = 250_000
 COST_FLEET_START = 450_000
 SHADOW_CAPEX     = 1_400_000           # extra relays + fiber (LiDAR: canopy heavier than proxied)
@@ -98,8 +102,12 @@ for y in YEARS:
         infra += round((COST_HEADEND * N_HEADENDS + COST_CORE_NOC + COST_FLEET_START) / 1000)
     if y == 5:
         infra += round((SHADOW_CAPEX + FIBER_OVERBUILD) / 1000)
+    # land acquisition: fee-simple head-end parcels, Y1 (doc 20). Tracked separately
+    # so it doesn't distort cost/passing (land is an owned asset, not a passing cost).
+    land = round(COST_HEADEND_LAND * N_LAND_PARCELS / 1000) if y == 1 else 0
     conn = round(subs_new[y] * CONN_COST_BLEND / 1000)
-    capex[y] = {"infra": infra, "connection": conn, "total": infra + conn}
+    capex[y] = {"infra": infra, "land": land, "connection": conn,
+                "total": infra + land + conn}
 
 # ---------- P&L + cash ----------
 opex_tot = {y: sum(OPEX[k][y] for k in OPEX) for y in YEARS}
@@ -131,6 +139,7 @@ with open(os.path.join(FIN, "pro_forma.csv"), "w") as f:
 cl = [["capex_line_$000s"] + [f"Y{y}" for y in YEARS]]
 cl += [
     row("network_infrastructure", {y: capex[y]["infra"] for y in YEARS}),
+    row("land_acquisition", {y: capex[y]["land"] for y in YEARS}),
     row("subscriber_connections", {y: capex[y]["connection"] for y in YEARS}),
     row("capex_total", {y: capex[y]["total"] for y in YEARS}),
 ]
@@ -140,6 +149,11 @@ with open(os.path.join(FIN, "capex_detail.csv"), "w") as f:
 # ---------- headline metrics ----------
 capex_5y   = sum(capex[y]["total"] for y in YEARS)
 infra_5y   = sum(capex[y]["infra"] for y in YEARS)
+land_5y    = sum(capex[y]["land"] for y in YEARS)
+# rough financeable/collateral base: owned real estate + fixed facilities (land +
+# head-ends + core/NOC + spine). Excludes leased sites and depreciating CPE/fleet.
+# Feeds the debt story (doc 13) — owned assets lower cost of capital.
+collateral_base = land_5y + round((COST_HEADEND * N_HEADENDS + COST_CORE_NOC) / 1000) + round(SPINE_CAPEX / 1000)
 peak_need  = -min(cf_cum.values())
 cost_per_passing = round(infra_5y * 1000 / PREM_TOTAL)
 cost_per_sub     = round(capex_5y * 1000 / subs_end[5])
@@ -147,6 +161,7 @@ summary = {
     "premises_total": PREM_TOTAL, "los_covered": LOS_COVERED, "shadow": SHADOW,
     "subs_year5": subs_end[5], "ultimate_take": TAKE_BY_YEAR[5], "arpu_mo": ARPU_MO,
     "capex_5y_000": capex_5y, "infra_5y_000": infra_5y, "spine_capex": SPINE_CAPEX,
+    "land_acquisition_000": land_5y, "collateral_base_000": collateral_base,
     "peak_funding_need_000": peak_need,
     "ebitda_positive_year": next(y for y in YEARS if ebitda[y] > 0),
     "cash_positive_year": next((y for y in YEARS if cf_cum[y] > 0), 6),
@@ -170,7 +185,8 @@ print("EBITDA ($000)       " + "".join(f"{ebitda[y]:>9,}" for y in YEARS))
 print("CapEx ($000)        " + "".join(f"{capex[y]['total']:>9,}" for y in YEARS))
 print("Cash cum ($000)     " + "".join(f"{cf_cum[y]:>9,}" for y in YEARS))
 print()
-print(f"5-yr CapEx {money(capex_5y*1000)} (infra {money(infra_5y*1000)}) | peak funding need {money(peak_need*1000)}")
+print(f"5-yr CapEx {money(capex_5y*1000)} (infra {money(infra_5y*1000)}, land {money(land_5y*1000)}) | peak funding need {money(peak_need*1000)}")
+print(f"owned-asset collateral base ~{money(collateral_base*1000)} (land + head-ends + core/NOC + spine)")
 cp = f"~Y{summary['cash_positive_year']}" if summary['cash_positive_projected'] else f"Y{summary['cash_positive_year']}"
 print(f"cost/passing ${cost_per_passing:,} | cost/sub ${cost_per_sub:,} | "
       f"EBITDA+ Y{summary['ebitda_positive_year']} | cash+ {cp}")

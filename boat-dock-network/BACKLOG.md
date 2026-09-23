@@ -31,7 +31,7 @@ We work these **one by one**. Status: ✅ done · 🔨 in progress · ⬜ queued
 - ✅ **True LiDAR surface model** (3DEP point cloud → first-return DSM, `ept_build.py`):
   validated LOS — real canopy blocks ~half of clean LOS (Phase-1: 26% vs 44% NLCD proxy).
   30–45 m towers + nLOS radios recover it. Model made LiDAR-informed
-  (CapEx ~$8.3M, peak ~$3.3M). `data/gis/outputs/lidar_validation.csv`
+  (CapEx ~$8.6M incl. land, peak ~$3.6M). `data/gis/outputs/lidar_validation.csv`
 
 ## Done (cont.)
 - ✅ **Middle-mile / transit procurement package** (doc 17): found Diamond State Networks
@@ -44,7 +44,7 @@ We work these **one by one**. Status: ✅ done · 🔨 in progress · ⬜ queued
   Three instruments (reservation deposit $100 · membership share $200 · founding capital
   $500/$1,500/$5,000) + per-zone build-gate (reservations ≥ 25% of premises AND capital ≥
   premises × $75). Portal now captures pledge amounts to a `pledges` db collection and
-  shows an owner **Campaign cockpit** (per-zone capital vs gate, total vs $3.3M peak,
+  shows an owner **Campaign cockpit** (per-zone capital vs gate, total vs $3.6M peak,
   funding mix); Stripe-backed reference API (`software/api/capital.py`: pledge → Checkout →
   webhook → collected → enroll member/WAKE) + schema (`capital_campaigns`, `member_shares`,
   Stripe fields on `pledges`, `campaign_progress` view). Portal artifact republished (v2).
@@ -93,6 +93,5 @@ We work these **one by one**. Status: ✅ done · 🔨 in progress · ⬜ queued
 - ⬜ **NOC monitoring + outage management** (DockOS step 7)
 - ⬜ **AR/Benton/Washington compliance advisor** (DockOS step 8) — grants NOFO scanner
   deferred (no government money in the base case; revisit only if programs return)
-- ⬜ **Entity formation checklist** (AR cooperative filing, bylaws, ASN/IP, transit LOIs)
 
 _Update this file as items complete._

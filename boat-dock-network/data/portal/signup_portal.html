@@ -129,7 +129,7 @@ const PLANS=[
 const PHASE={1:['Building now','Phase 1','b1'],2:['Next up','Phase 2','b2'],3:['Planned','Phase 3','b3'],4:['Future (demand-gated)','Phase 4','b4']};
 // member-capital instruments + build-gate dials (doc 18)
 const DEPOSIT=100, SHARE=200;
-const GATE_PER_PREMISE=75, RES_PCT=0.25, PEAK_NEED=3300000;
+const GATE_PER_PREMISE=75, RES_PCT=0.25, PEAK_NEED=3600000;
 let state={zone:null, plan:null};
 
 // ---------- map ----------
@@ -315,7 +315,7 @@ function renderCockpit(pls){
   const nMet=Object.values(byZone).filter(gateMet).length;
   document.getElementById('capTiles').innerHTML=[
     ['$'+Math.round(totCap).toLocaleString(),'Capital committed'],
-    [(100*totCap/PEAK_NEED).toFixed(1)+'%','of $3.3M peak need'],
+    [(100*totCap/PEAK_NEED).toFixed(1)+'%','of $3.6M peak need'],
     [nMet,'Zones at build-gate'],
     ['$'+Math.round(totDep+totSh).toLocaleString(),'Refundable (dep+share)']
   ].map(([v,k])=>'<div class="tile"><b>'+v+'</b><span>'+k+'</span></div>').join('');

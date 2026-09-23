@@ -22,7 +22,7 @@ tenure-earned so the decentralization design (doc 16) holds.
 
 ## 2. What it raises (ties to the pro forma)
 
-Peak external need is **~$3.3M** (doc 09). Member capital + deposits target a large
+Peak external need is **~$3.6M** (doc 09; includes fee-simple head-end land, doc 20). Member capital + deposits target a large
 slice of that:
 
 - **Membership shares:** ~4,000 members × $200 ≈ **$0.8M** of patient equity (over the ramp).
@@ -65,7 +65,7 @@ Member picks options in the portal ─▶ create pledge (intent, amount)
 
 - **Prototype (live):** the signup portal now captures **pledge amounts** (deposit /
   share / founding) and writes a `pledges` record to the artifact db, and the owner sees
-  a **Campaign cockpit** — per-zone capital vs build-gate target, totals vs the $3.3M
+  a **Campaign cockpit** — per-zone capital vs build-gate target, totals vs the $3.6M
   peak, and funding mix. (`software/portal/make_portal.py`.)
 - **Production:** `software/api/capital.py` (Stripe-backed pledge → checkout → webhook →
   collected → enroll) + `software/db/signup_schema.sql` (`capital_campaigns`,
