@@ -1,0 +1,19 @@
+phase,zone_id,zone_name,county,premises,commercial,median_value,over_1m,pct_los,nodes_in_set,build_score
+1,Z-02,Prairie Creek,Benton,1134,58,390420,33,75,1,0.837
+1,Z-01,Beaver Shores,Benton,1272,15,345685,65,95,1,0.803
+1,Z-03,Monte Ne,Benton,935,9,309365,58,69,1,0.603
+2,Z-04,Creech,Benton,851,3,286355,20,89,3,0.603
+2,Z-09,Mundell (historical),Carroll,462,5,546550,59,97,2,0.601
+2,Z-05,Lost Bridge Village,Benton,596,4,427268,33,97,1,0.597
+2,Z-06,Township of Walnut,Benton,538,7,420638,57,96,1,0.581
+2,Z-08,Ventris Public Use Area,Benton,510,2,471018,38,95,3,0.575
+3,Z-12,Beaver Dam,Carroll,405,14,404650,42,89,3,0.534
+3,Z-07,Blue Springs Village,Washington,531,16,241500,11,93,1,0.529
+3,Z-14,Huffman Ford (historical),Benton,280,7,475792,49,92,1,0.510
+3,Z-13,Vista Shores,Benton,285,8,309755,14,92,1,0.454
+3,Z-11,Puckett (historical),Benton,432,1,232922,44,88,2,0.444
+4,Z-10,War Eagle Cove,Washington,440,6,215425,11,83,2,0.440
+4,Z-15,Blue Springs Use Area,Washington,259,3,253200,9,89,1,0.404
+4,Z-17,Rambo Riviera,Benton,228,3,304032,10,85,2,0.403
+4,Z-18,Cook Ford,Benton,179,1,176470,2,77,2,0.316
+4,Z-16,Township of Prairie,Carroll,234,0,243900,9,55,2,0.300

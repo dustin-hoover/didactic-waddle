@@ -1,0 +1,270 @@
+[
+ {
+  "id": "m01",
+  "n": 1,
+  "phase": 1,
+  "due": "2026-10-05",
+  "title": "Send the transit request to Diamond State Networks / OzarksGo",
+  "detail": "The draft is in Gmail: add your name and phone, then send. The path-B template goes to the contact forms of 2–3 other carriers.",
+  "who": "You (draft ready)",
+  "decisions": [
+   "D14"
+  ],
+  "status": "todo",
+  "note": "",
+  "updated": ""
+ },
+ {
+  "id": "m02",
+  "n": 2,
+  "phase": 1,
+  "due": "2026-10-09",
+  "title": "Engage cooperative/securities counsel and a co-op CPA",
+  "detail": "The counsel inquiry draft is in Gmail. Send it to 2–3 firms, pick one, and sign the engagement letter.",
+  "who": "You (draft ready)",
+  "decisions": [
+   "D01"
+  ],
+  "status": "todo",
+  "note": "",
+  "updated": ""
+ },
+ {
+  "id": "m03",
+  "n": 3,
+  "phase": 1,
+  "due": "2026-10-09",
+  "title": "Name the two head-end (internet on-ramp) locations",
+  "detail": "Your two known internet-buy locations, or candidate parcels near them.",
+  "who": "You",
+  "decisions": [
+   "D02",
+   "D03"
+  ],
+  "status": "todo",
+  "note": "",
+  "updated": ""
+ },
+ {
+  "id": "m04",
+  "n": 4,
+  "phase": 1,
+  "due": "2026-10-09",
+  "title": "Confirm the pilot zones",
+  "detail": "Prairie Creek, Beaver Shores and Monte Ne, as ranked.",
+  "who": "You",
+  "decisions": [
+   "D13"
+  ],
+  "status": "todo",
+  "note": "",
+  "updated": ""
+ },
+ {
+  "id": "m05",
+  "n": 5,
+  "phase": 1,
+  "due": "2026-10-16",
+  "title": "Recruit the founding board / incorporators",
+  "detail": "Neighbors, a marina owner, and someone with finance experience.",
+  "who": "You",
+  "decisions": [],
+  "status": "todo",
+  "note": "",
+  "updated": ""
+ },
+ {
+  "id": "m06",
+  "n": 6,
+  "phase": 2,
+  "due": "2026-10-16",
+  "title": "Decide the legal form with counsel",
+  "detail": "Telecommunications cooperative vs general cooperative; confirm whether tenure-weighted voting is allowed.",
+  "who": "You + counsel",
+  "decisions": [
+   "D01"
+  ],
+  "status": "todo",
+  "note": "",
+  "updated": ""
+ },
+ {
+  "id": "m07",
+  "n": 7,
+  "phase": 2,
+  "due": "2026-10-16",
+  "title": "Send the Army Corps introduction",
+  "detail": "A letter to the Little Rock District about the Beaver Lake Shoreline Management Plan, requesting a meeting.",
+  "who": "You (Claude can draft)",
+  "decisions": [],
+  "status": "todo",
+  "note": "",
+  "updated": ""
+ },
+ {
+  "id": "m08",
+  "n": 8,
+  "phase": 2,
+  "due": "2026-10-30",
+  "title": "File the Articles, get the EIN, open bank and escrow accounts",
+  "detail": "",
+  "who": "You + counsel",
+  "decisions": [],
+  "status": "todo",
+  "note": "",
+  "updated": ""
+ },
+ {
+  "id": "m09",
+  "n": 9,
+  "phase": 2,
+  "due": "2026-11-06",
+  "title": "File the ARIN and FCC registrations",
+  "detail": "ARIN organization, AS number and IPv6; FCC registration number. Both need the EIN.",
+  "who": "You (Claude preps)",
+  "decisions": [],
+  "status": "todo",
+  "note": "",
+  "updated": ""
+ },
+ {
+  "id": "m10",
+  "n": 10,
+  "phase": 2,
+  "due": "2026-11-13",
+  "title": "Score the transit quotes and update the model",
+  "detail": "Quotes go into the provider scorecard; transit sizing and the pro forma are re-run.",
+  "who": "Claude (weekly check-in) + you",
+  "decisions": [],
+  "status": "todo",
+  "note": "",
+  "updated": ""
+ },
+ {
+  "id": "m11",
+  "n": 11,
+  "phase": 2,
+  "due": "2026-11-13",
+  "title": "Submit pole-attachment applications",
+  "detail": "Ozarks Electric, Carroll Electric and SWEPCO.",
+  "who": "You (Claude can draft)",
+  "decisions": [],
+  "status": "todo",
+  "note": "",
+  "updated": ""
+ },
+ {
+  "id": "m12",
+  "n": 12,
+  "phase": 2,
+  "due": "2026-11-13",
+  "title": "Hold the Army Corps meeting",
+  "detail": "",
+  "who": "You",
+  "decisions": [],
+  "status": "todo",
+  "note": "",
+  "updated": ""
+ },
+ {
+  "id": "m13",
+  "n": 13,
+  "phase": 3,
+  "due": "2026-12-04",
+  "title": "Field-verify the pilot",
+  "detail": "Walk the tower sites, survey the first lake crossing, and sign the first host-site agreements.",
+  "who": "You + RF engineer or contractor",
+  "decisions": [
+   "D04"
+  ],
+  "status": "todo",
+  "note": "",
+  "updated": ""
+ },
+ {
+  "id": "m14",
+  "n": 14,
+  "phase": 3,
+  "due": "2026-12-11",
+  "title": "Sign purchase options on the head-end parcels",
+  "detail": "",
+  "who": "You + counsel",
+  "decisions": [
+   "D02"
+  ],
+  "status": "todo",
+  "note": "",
+  "updated": ""
+ },
+ {
+  "id": "m15",
+  "n": 15,
+  "phase": 3,
+  "due": "2026-12-11",
+  "title": "Get radio demos and quotes; decide the short lake crossings",
+  "detail": "Tarana first, plus one line-of-sight vendor; watchdog and surge standard on every install.",
+  "who": "You + RF engineer",
+  "decisions": [
+   "D07",
+   "D08"
+  ],
+  "status": "todo",
+  "note": "",
+  "updated": ""
+ },
+ {
+  "id": "m16",
+  "n": 16,
+  "phase": 3,
+  "due": "2026-12-18",
+  "title": "Open the member-capital campaign in the pilot zones",
+  "detail": "Once counsel approves the documents: portal on real hosting, live Stripe, escrow account.",
+  "who": "You + counsel; Claude deploys",
+  "decisions": [
+   "D09",
+   "D15"
+  ],
+  "status": "todo",
+  "note": "",
+  "updated": ""
+ },
+ {
+  "id": "m17",
+  "n": 17,
+  "phase": 3,
+  "due": "2026-12-18",
+  "title": "Meet lenders",
+  "detail": "CoBank, RTFC and a local bank, with the data room.",
+  "who": "You",
+  "decisions": [],
+  "status": "todo",
+  "note": "",
+  "updated": ""
+ },
+ {
+  "id": "m18",
+  "n": 18,
+  "phase": 3,
+  "due": "2026-12-23",
+  "title": "Make an offer to a network/RF engineer",
+  "detail": "",
+  "who": "You",
+  "decisions": [],
+  "status": "todo",
+  "note": "",
+  "updated": ""
+ },
+ {
+  "id": "m19",
+  "n": 19,
+  "phase": 3,
+  "due": "2026-12-28",
+  "title": "90-day review: pilot go/no-go readiness",
+  "detail": "The gate: pilot zones at 25% reservations and $75 per premises committed, both transit paths signed, first permits in hand, financing committed.",
+  "who": "You + board",
+  "decisions": [],
+  "status": "todo",
+  "note": "",
+  "updated": ""
+ }
+]

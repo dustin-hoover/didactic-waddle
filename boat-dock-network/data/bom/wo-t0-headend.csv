@@ -1,0 +1,12 @@
+item,category,spec,qty,unit,unit_cost_est_usd,vendor_primary,vendor_alt,notes
+border router,radio,BGP-capable edge router (10/100G),1,ea,18000,Juniper,Arista,multi-homing to upstream
+core router/switch,radio,core routing + aggregation,1,ea,12000,Juniper,MikroTik,
+transport/DWDM (if needed),optics,DWDM/mux to spine,1,ea,8000,TBD,,depends on transport design
+XGS-PON OLT,optics,OLT chassis for nearby FTTH,1,ea,9000,TBD,,serves local FTTH
+rack + PDU,enclosure,server rack + dual PDU,1,set,2500,TBD,,
+UPS + generator hookup,power,rack UPS 6kVA + ATS/generator inlet,1,set,7000,TBD,,grid + backup
+grounding/surge,power,building ground + surge,1,set,1500,TBD,,
+transit cross-connect,transport,handoff to upstream provider,1,lot,2000,,,at your on-ramp location
+servers (NOC/AAA/services),radio,DNS/RADIUS/monitoring compute,1,set,6000,TBD,,can be VPS at pilot
+install + commissioning,labor,"build, config, BGP turn-up",1,lot,9000,,,network engineer
+ASN + IP registration,permit,ARIN ASN + IPv4 block + IPv6,1,lot,2500,ARIN,,one-time; org-wide asset
