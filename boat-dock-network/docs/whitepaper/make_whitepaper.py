@@ -352,6 +352,7 @@ sec("legal", "Legal, entity and regulatory", """
 <h3>Entity</h3>
 <ul>
 <li><strong>Recommended vehicle:</strong> an Arkansas <strong>Telecommunications Cooperative</strong> under the Rural Telephone Cooperative Act (Act 51 of 1951). Articles are filed with the Secretary of State. A general cooperative is the alternative; that choice is an open decision for counsel.</li>
+<li><strong>A question counsel must answer early:</strong> cooperative statutes often require one member, one vote. Counsel needs to confirm whether WAKE's tenure-weighted, capped voting is permitted, or whether it must sit on top of a one-member-one-vote legal floor or be advisory.</li>
 <li><strong>Tax:</strong> Subchapter T, so patronage dividends aren't taxed at the co-op level.</li>
 <li><strong>Critical path:</strong> counsel and CPA engaged → name and registered agent → Articles filed → EIN → ARIN organization, AS number and IP space, bank and escrow → bylaws and organizational meeting (can now sign transit and take member capital) → FCC registration and data filings, with Corps, pole and road permits started in parallel.</li>
 </ul>
@@ -395,6 +396,19 @@ sec("roadmap", "Roadmap", """
     ["4 — Long tail", "Years 3–5", "Upper arms and sparse coves, each gated by pre-sales; fiber overbuild where wireless zones mature"],
 ]) + """
 <p>Software leads the build slightly, so every zone is measured, sold and managed from data. The remaining module is the compliance advisor.</p>
+""")
+
+# ------------------------------------------------------------------------------ launch
+import json as _j
+_ms = _j.load(open(os.path.join(REPO, "docs", "launch", "milestones.json")))
+_ph = {1: "Weeks 1–2", 2: "Weeks 2–6", 3: "Months 2–4"}
+sec("launch", "Launch plan: the first 90 days", """
+<p>From engaging counsel to a pilot go/no-go, September 28 to December 28, 2026. The live <a href="https://claude.ai/artifact/FoM5mbfAWq36NiJcinnXTK">launch tracker</a> holds the current status of each milestone. Every Monday an automated check-in reads replies in the founder's inbox, updates the tracker, drafts polite follow-ups where someone hasn't replied (drafts only, never sent), and flags what's stuck. The same milestones are on the founder's calendar.</p>
+""" + tbl(["When", "Due", "Milestone", "Who"], [
+    [_ph[m["phase"]], dt.date.fromisoformat(m["due"]).strftime("%b %-d"), m["title"], m["who"]] for m in _ms
+]) + """
+<p><strong>Already prepared:</strong> Gmail drafts of the transit request to Diamond State Networks/OzarksGo, a template for the second carrier, and an engagement inquiry to cooperative counsel. Each needs only a name, a phone number and a send.</p>
+<p><strong>The go/no-go gate on December 28:</strong> pilot zones at 25% reservations and $75 per premises committed, both transit paths signed, first permits in hand, and financing committed.</p>
 """)
 
 # ------------------------------------------------------------------------------ 17
@@ -486,14 +500,16 @@ decisions = [
 ]
 
 now = dt.datetime(2026, 9, 23, 18, 0, tzinfo=dt.timezone.utc).isoformat()
+now2 = dt.datetime(2026, 9, 26, 4, 30, tzinfo=dt.timezone.utc).isoformat()
 state = {
     "meta": {"title": "Boat Dock Network", "kicker": "White paper · working draft",
              "subtitle": "A member-owned, grant-free fiber and wireless network for the whole shoreline of Beaver Lake, Arkansas",
-             "version": 1, "status": "draft", "updated": now, "preparedFor": "Founders, members, lenders and counsel"},
+             "version": 2, "status": "draft", "updated": now2, "preparedFor": "Founders, members, lenders and counsel"},
     "sections": S,
     "decisions": [{"id": a, "area": b, "question": c, "options": d, "recommendation": e, "ref": f,
                    "status": "open", "decision": "", "note": ""} for a, b, c, d, e, f in decisions],
-    "changelog": [{"v": 1, "date": now, "note": "First draft assembled from planning docs 01–24, the pro forma, the ring audit and the weather analysis."}],
+    "changelog": [{"v": 1, "date": now, "note": "First draft assembled from planning docs 01–24, the pro forma, the ring audit and the weather analysis."},
+                  {"v": 2, "date": now2, "note": "Added the 90-day launch plan and tracker link, and the counsel question on one-member-one-vote."}],
 }
 for s in S:   # the executive summary counts the open decisions
     s["html"] = s["html"].replace("Twenty decisions", f"{len(decisions)} decisions".capitalize())
