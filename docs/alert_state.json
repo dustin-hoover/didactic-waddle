@@ -1,1 +1,1 @@
-{"BTC": true, "ETH": true, "SOL": true, "BNB": false, "XRP": true, "ADA": true, "AVAX": true, "LINK": true, "DOGE": true, "LTC": true}
+{"BTC": false, "ETH": true, "SOL": true, "BNB": false, "XRP": false, "ADA": false, "AVAX": true, "LINK": true, "DOGE": false, "LTC": false}
