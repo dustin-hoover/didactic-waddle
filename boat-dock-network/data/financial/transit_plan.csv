@@ -1,0 +1,6 @@
+year,subscribers,peak_gbps,provision_gbps,billed_mbps,port_each_path,est_monthly_usd,est_annual_000s
+Y1,835,2.7,3.8,2035,10G x2,4832,58
+Y2,1889,6.9,9.6,5157,10G x2,7641,92
+Y3,2963,12.3,17.3,9245,25G x2,10547,127
+Y4,3828,17.9,25.1,13436,25G x2,13062,157
+Y5,4211,21.9,30.7,16423,100G x2,17748,213
