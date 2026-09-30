@@ -114,8 +114,8 @@
     <div style="overflow-x:auto;margin-top:10px">
       <table id="scnTable">
         <thead><tr>
-          <th>Scenario</th><th>Risk</th><th>Return</th><th>Sharpe</th>
-          <th>Max DD</th><th>Reserve</th><th>$1,000→</th><th></th>
+          <th>Scenario</th><th>Risk</th><th>Return (median)</th><th>Range (p10–p90)</th>
+          <th>Sharpe</th><th>Max DD</th><th>$1,000→</th><th></th>
         </tr></thead>
         <tbody id="scnBody"><tr><td colspan="8" class="muted">Loading real-data results…</td></tr></tbody>
       </table>
@@ -708,15 +708,23 @@ async function render(){
 function renderScenarios(){
   const body = $("#scnBody"); body.innerHTML="";
   if(!SCN.length){ body.innerHTML=`<tr><td colspan="8" class="muted">No scenario data yet.</td></tr>`; return; }
+  // With a windowed board, rank/headline by the robust MEDIAN and show the spread.
+  const hasDist = SCN.length && SCN[0].median_return!==undefined;
   for(const s of SCN){
+    const headline = hasDist ? s.median_return : s.return;
+    const lo = hasDist ? s.lo_return : s.return, hi = hasDist ? s.hi_return : s.return;
+    const spread = hasDist ? (s.spread!==undefined ? s.spread : (hi-lo)) : 0;
+    // flag fragile scenarios: a spread wider than ~0.8 (80pts) is "noisy"
+    const stab = !hasDist ? "" : (spread>=0.65 ? ' <span class="pill no" title="wide range = window-sensitive, unreliable">noisy</span>'
+                    : (spread<=0.35 ? ' <span class="pill ok" title="narrow range = robust">stable</span>' : ''));
     const tr=document.createElement("tr");
     tr.innerHTML = `
-      <td>${s.name}</td>
+      <td>${s.name}${stab}</td>
       <td class="lvl-${s.risk_level}">${s.risk_level}</td>
-      <td class="${s.return>=0?'pos':'neg'}">${pct(s.return)}</td>
+      <td class="${headline>=0?'pos':'neg'}">${pct(headline)}</td>
+      <td class="muted">${hasDist ? pct(lo)+' … '+pct(hi) : '—'}</td>
       <td>${s.sharpe.toFixed(2)}</td>
       <td>${(Math.abs(s.max_drawdown)*100).toFixed(1)}%</td>
-      <td>${Math.round(s.reserve_frac*100)}%</td>
       <td>$${Math.round(s.final_total).toLocaleString()}</td>
       <td><button class="small" data-assign="${s.key}">Use</button></td>`;
     body.appendChild(tr);
@@ -1057,7 +1065,8 @@ if(window.ethereum){
 fetch("data.json",{cache:"no-store"}).then(r=>r.json()).then(d=>{
   const sc=d.scenarios||{};
   SCN = sc.rows||[];
-  if(sc.span){ $("#scnMeta").textContent = `— ${sc.symbol} ${sc.interval}, ${sc.span}. Same real data, different dials.`; }
+  if(sc.span){ $("#scnMeta").textContent = `— ${sc.symbol} ${sc.interval}, ${sc.span}. Same real data, different dials.`
+    + (sc.windowed ? ` Return is the MEDIAN across sliding windows, with a p10–p90 range — so a scenario can't top the board on a single lucky window. Wide range = window-sensitive.` : ``); }
   if(SCN.length){ $("#bhline").textContent = `Buy & hold over the same window: ${pct(SCN[0].buyhold_return)}. All figures are paper, on real data.`; }
   if(d.generated_at){ $("#gen").textContent = " · data refreshed "+d.generated_at.replace("T"," ")+" UTC"; }
   renderTree(d.bag_tree);

@@ -125,3 +125,61 @@ def compare(bars: List[Bar], starting_cash: float = 1000.0) -> List[Dict]:
     rows = [run_scenario(s, bars, starting_cash) for s in LIBRARY]
     rows.sort(key=lambda r: r["return"], reverse=True)
     return rows
+
+
+def _pctile(sorted_vals: List[float], q: float) -> float:
+    """Nearest-rank percentile of an already-sorted list (q in [0,1])."""
+    if not sorted_vals:
+        return 0.0
+    i = min(len(sorted_vals) - 1, max(0, int(round(q * (len(sorted_vals) - 1)))))
+    return sorted_vals[i]
+
+
+def compare_distribution(bars: List[Bar], starting_cash: float = 1000.0,
+                         window_frac: float = 0.8, samples: int = 12) -> List[Dict]:
+    """Honest scenario board: each scenario's return as a DISTRIBUTION, not a point.
+
+    A single full-window return is fragile — path-dependent scenarios (tight stops,
+    early drawdown breakers, heavy skimming) swing wildly as the rolling data window
+    shifts day to day, so the "leader" reshuffles on noise. To tell the truth, we
+    slide a sub-window (``window_frac`` of the bars) across the history ``samples``
+    times and report each scenario's MEDIAN return plus a 10th–90th-percentile range
+    and stdev. Ranking is by median (robust), and the spread exposes which scenarios
+    are stable (narrow) vs fragile (wide).
+
+    Each row is a SUPERSET of a `run_scenario` row (full-window ``return``, ``sharpe``,
+    ``max_drawdown``, etc. are kept for continuity) plus: ``median_return``,
+    ``lo_return`` (p10), ``hi_return`` (p90), ``spread`` (p90−p10), ``stdev``,
+    ``n_windows``. Falls back to the point estimate when there aren't enough bars.
+    """
+    full = {s.key: run_scenario(s, bars, starting_cash) for s in LIBRARY}
+    n = len(bars)
+    w = int(n * window_frac)
+    dist: Dict[str, List[float]] = {s.key: [] for s in LIBRARY}
+
+    if w >= 200 and n - w >= 1:
+        step = max(1, (n - w) // max(1, samples - 1))
+        for off in range(0, n - w + 1, step):
+            win = bars[off:off + w]
+            for s in LIBRARY:
+                dist[s.key].append(run_backtest(win, s.config(starting_cash)).strategy_return)
+
+    rows: List[Dict] = []
+    for s in LIBRARY:
+        row = dict(full[s.key])
+        vals = sorted(dist[s.key])
+        if vals:
+            mean = sum(vals) / len(vals)
+            sd = (sum((x - mean) ** 2 for x in vals) / len(vals)) ** 0.5
+            row.update(median_return=round(_pctile(vals, 0.5), 4),
+                       lo_return=round(_pctile(vals, 0.1), 4),
+                       hi_return=round(_pctile(vals, 0.9), 4),
+                       spread=round(_pctile(vals, 0.9) - _pctile(vals, 0.1), 4),
+                       stdev=round(sd, 4), n_windows=len(vals))
+        else:                                   # too few bars — degrade to the point estimate
+            pt = row["return"]
+            row.update(median_return=pt, lo_return=pt, hi_return=pt,
+                       spread=0.0, stdev=0.0, n_windows=1)
+        rows.append(row)
+    rows.sort(key=lambda r: r["median_return"], reverse=True)
+    return rows

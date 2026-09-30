@@ -371,15 +371,17 @@ def build():
             except Exception as e:  # noqa: BLE001
                 tape["edge"] = {"error": str(e)[:80]}
 
-    # SCENARIO BOARD — the 401k-style comparison: each scenario's realized paper
-    # return on the same real data, so a wallet can pick or rebalance between them.
+    # SCENARIO BOARD — the 401k-style comparison. Reports each scenario's return as a
+    # DISTRIBUTION across sliding windows (median + p10–p90 range), not one fragile
+    # point estimate, so a path-dependent scenario can't top the board on window luck.
     scenarios = {}
     try:
         from tradebot import scenarios as sc
         sbars = feed.history("BTC", "1d", 1000)
         scenarios = {"symbol": "BTC", "interval": "1d", "cash": 1000,
                      "span": f"{sbars[0].date[:10]} -> {sbars[-1].date[:10]}",
-                     "rows": sc.compare(sbars, starting_cash=1000)}
+                     "windowed": True,
+                     "rows": sc.compare_distribution(sbars, starting_cash=1000)}
     except Exception as e:  # noqa: BLE001
         scenarios = {"error": str(e)[:80]}
 

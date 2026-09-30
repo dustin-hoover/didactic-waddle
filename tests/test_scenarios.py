@@ -59,3 +59,37 @@ def test_config_is_paper_and_carries_params():
     cfg = scn.config(starting_cash=500)
     assert cfg.mode == "paper" and cfg.starting_cash == 500
     assert cfg.risk.atr_stop_mult == 2.0             # scenario param flowed through
+
+
+def test_compare_distribution_shape_and_superset():
+    rows = sc.compare_distribution(_series(), starting_cash=1000, samples=6)
+    assert len(rows) == len(sc.LIBRARY)
+    for r in rows:
+        # superset of a point row
+        for k in ("key", "name", "return", "sharpe", "max_drawdown"):
+            assert k in r
+        # plus the distribution fields
+        for k in ("median_return", "lo_return", "hi_return", "spread", "stdev", "n_windows"):
+            assert k in r
+        assert r["lo_return"] <= r["median_return"] <= r["hi_return"]
+        assert r["spread"] >= 0 and r["n_windows"] >= 1
+
+
+def test_compare_distribution_sorted_by_median():
+    rows = sc.compare_distribution(_series(), starting_cash=1000, samples=6)
+    meds = [r["median_return"] for r in rows]
+    assert meds == sorted(meds, reverse=True)
+
+
+def test_compare_distribution_samples_multiple_windows():
+    rows = sc.compare_distribution(_series(), starting_cash=1000, samples=8)
+    # _series() has 300 bars, window_frac 0.8 -> 240-bar window, room to slide
+    assert max(r["n_windows"] for r in rows) > 1
+
+
+def test_compare_distribution_degrades_when_too_few_bars():
+    short = _series()[:150]                      # < the 200-bar sub-window floor
+    rows = sc.compare_distribution(short, starting_cash=1000)
+    for r in rows:
+        assert r["n_windows"] == 1
+        assert r["median_return"] == r["return"] and r["spread"] == 0.0
