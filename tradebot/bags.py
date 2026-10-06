@@ -84,6 +84,11 @@ class RetirePolicy:
     grace_days: float = 14.0          # never cull a bag younger than this
     keep_min: int = 1                 # always keep at least this many (the strongest)
     absorb_into_strongest: bool = True  # sweep a retired bag's value into the best survivor
+    # DRAWDOWN CULL (fast natural selection): a bag that falls this fraction below its
+    # seed is culled NOW — not after the deadline — and its capital flows to the
+    # strongest bag. This is "cut the loser, feed the winner" so evolution keeps
+    # favoring strength. 0.0 disables it; 0.10 = cull a bag down 10% from seed.
+    max_loss_frac: float = 0.0
 
 
 @dataclass
@@ -236,9 +241,12 @@ class Supervisor:
                                 "to": target, "reason": reason})
 
     def _maybe_retire(self, totals: Dict[str, float]) -> None:
-        """Cull bags that failed to reach the survival bar by their deadline; the
-        strongest always survive (keep_min). A retired bag's value is swept into the
-        strongest survivor, so total value is conserved — the strong absorb the weak."""
+        """Cull weak bags; the strongest always survive (keep_min). A culled bag's value
+        is swept into the strongest survivor, so total value is conserved — the strong
+        absorb the weak. Two triggers:
+          * DRAWDOWN: total falls max_loss_frac below seed -> cull NOW (fast selection).
+          * DEADLINE: didn't reach survival_target by deadline_days -> cull.
+        """
         r = self.retire
         if not r.enabled or len(self.specs) <= r.keep_min:
             return
@@ -254,24 +262,29 @@ class Supervisor:
                 continue
             total = totals.get(spec.id, 0.0)
             mult = (total / spec.seed) if spec.seed > 0 else 0.0
-            if age_days >= r.deadline_days and mult < r.survival_target:
-                if r.absorb_into_strongest and strongest.id != spec.id and strongest.id in self.specs:
-                    seng = self._engine(strongest)
-                    seng.protector.state.reserve += total     # value moves, never minted
-                    seng._save()
-                reason = (f"retired: reached {mult:.2f}x (< {r.survival_target:.2f}x bar) "
-                          f"by {age_days:.0f}d")
-                if self.ledger is not None:      # remember the failure + its birth conditions
-                    self.ledger.record_failure(spec.id, multiple=mult, final_value=total, reason=reason)
-                del self.specs[spec.id]
-                try:
-                    os.remove(self._state_path(spec.id))
-                except OSError:
-                    pass
-                self.retired.append({"ts": int(now), "bag": spec.id, "seed": spec.seed,
-                                     "final_value": round(total, 2), "multiple": round(mult, 3),
-                                     "reason": reason,
-                                     "absorbed_by": strongest.id if r.absorb_into_strongest else None})
+            drawdown_cull = r.max_loss_frac > 0 and spec.seed > 0 and total <= spec.seed * (1 - r.max_loss_frac)
+            deadline_cull = age_days >= r.deadline_days and mult < r.survival_target
+            if not (drawdown_cull or deadline_cull):
+                continue
+            if drawdown_cull:
+                reason = f"culled: down {(1-mult)*100:.0f}% vs seed (>{r.max_loss_frac*100:.0f}% loss) → reallocated to {strongest.id}"
+            else:
+                reason = f"retired: reached {mult:.2f}x (< {r.survival_target:.2f}x bar) by {age_days:.0f}d"
+            if r.absorb_into_strongest and strongest.id != spec.id and strongest.id in self.specs:
+                seng = self._engine(strongest)
+                seng.protector.state.reserve += total     # value moves, never minted
+                seng._save()
+            if self.ledger is not None:          # remember the failure + its birth conditions
+                self.ledger.record_failure(spec.id, multiple=mult, final_value=total, reason=reason)
+            del self.specs[spec.id]
+            try:
+                os.remove(self._state_path(spec.id))
+            except OSError:
+                pass
+            self.retired.append({"ts": int(now), "bag": spec.id, "seed": spec.seed,
+                                 "final_value": round(total, 2), "multiple": round(mult, 3),
+                                 "reason": reason,
+                                 "absorbed_by": strongest.id if r.absorb_into_strongest else None})
 
     def _maybe_spawn(self, spec: BagSpec, eng: TradingEngine, price: float) -> None:
         p = self.policy

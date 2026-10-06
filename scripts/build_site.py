@@ -297,11 +297,17 @@ def build():
         # (keep_min=1) and absorb the culled value. Default target 1.0 = "don't lose
         # money" (realistic). Crank TB_SURVIVAL_TARGET toward 1000 and the tree prunes
         # to just its single strongest bag — an honest demo that a 1000x bar terminates
-        # almost everything. Off unless TB_RETIRE is set, so it's a deliberate choice.
+        # almost everything. Retirement is ON by default now so EVOLUTION runs: the
+        # drawdown cull (TB_MAX_LOSS_FRAC, default 10%) sweeps a losing bag's capital
+        # into the strongest survivor the moment it bleeds past the threshold. keep_min
+        # always protects the best, and with a lone root bag it's a safe no-op until the
+        # tree actually branches. Set TB_RETIRE=0 to disable the whole mechanism.
         retire = RetirePolicy(
-            enabled=os.environ.get("TB_RETIRE", "").strip() in ("1", "true", "on"),
+            enabled=os.environ.get("TB_RETIRE", "1").strip() in ("1", "true", "on"),
             survival_target=float(os.environ.get("TB_SURVIVAL_TARGET", "1.0")),
             deadline_days=float(os.environ.get("TB_SURVIVAL_DEADLINE_DAYS", "90")),
+            grace_days=float(os.environ.get("TB_SURVIVAL_GRACE_DAYS", "5")),
+            max_loss_frac=float(os.environ.get("TB_MAX_LOSS_FRAC", "0.10")),
             keep_min=int(os.environ.get("TB_SURVIVAL_KEEP_MIN", "1")))
         # Morph policy: a bag adapts its own strategy to the BTC regime (defensive in a
         # bear, growth/aggressive in a confirmed bull). Gated by TB_MORPH.

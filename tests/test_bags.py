@@ -180,6 +180,39 @@ def test_survivor_above_target_kept(tmp_path):
     assert set(sup.specs) == {"b1", "b2"} and not sup.retired
 
 
+def test_drawdown_cull_reallocates_loser_to_strongest(tmp_path):
+    # A bag down >10% from seed is culled NOW (well before any deadline) and its
+    # capital flows to the strongest bag. Evolution favors strength.
+    rp = RetirePolicy(enabled=True, max_loss_frac=0.10, deadline_days=999, grace_days=3, keep_min=1)
+    sup = Supervisor(str(tmp_path), SpawnPolicy(enabled=False), retire=rp)
+    sup.add_bag("steady", 100); sup.add_bag("steady", 100)
+    _age(sup, "b1", 10); _age(sup, "b2", 10)
+    before = sup._engine(sup.specs["b1"]).protector.state.reserve
+    sup._maybe_retire({"b1": 150.0, "b2": 85.0})     # b2 down 15% from seed -> culled
+    assert "b2" not in sup.specs and "b1" in sup.specs
+    assert "down 15% vs seed" in sup.retired[-1]["reason"] and sup.retired[-1]["absorbed_by"] == "b1"
+    after = sup._engine(sup.specs["b1"]).protector.state.reserve
+    assert abs(after - (before + 85.0)) < 1e-6        # value conserved into the winner
+
+
+def test_drawdown_cull_spares_small_loss(tmp_path):
+    rp = RetirePolicy(enabled=True, max_loss_frac=0.10, deadline_days=999, grace_days=3, keep_min=1)
+    sup = Supervisor(str(tmp_path), SpawnPolicy(enabled=False), retire=rp)
+    sup.add_bag("steady", 100); sup.add_bag("steady", 100)
+    _age(sup, "b1", 10); _age(sup, "b2", 10)
+    sup._maybe_retire({"b1": 150.0, "b2": 95.0})      # b2 only down 5% -> spared
+    assert set(sup.specs) == {"b1", "b2"} and not sup.retired
+
+
+def test_drawdown_cull_respects_grace(tmp_path):
+    rp = RetirePolicy(enabled=True, max_loss_frac=0.10, deadline_days=999, grace_days=7, keep_min=1)
+    sup = Supervisor(str(tmp_path), SpawnPolicy(enabled=False), retire=rp)
+    sup.add_bag("steady", 100); sup.add_bag("steady", 100)
+    _age(sup, "b1", 10); _age(sup, "b2", 2)           # b2 down big but too young
+    sup._maybe_retire({"b1": 150.0, "b2": 50.0})
+    assert "b2" in sup.specs                           # grace protects the newborn
+
+
 def test_retire_disabled_by_default_is_noop(tmp_path):
     sup = Supervisor(str(tmp_path), SpawnPolicy(enabled=False))
     sup.add_bag("steady", 100); sup.add_bag("steady", 100)
