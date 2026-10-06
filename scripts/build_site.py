@@ -426,11 +426,32 @@ def build():
         except Exception as e:  # noqa: BLE001
             crosschain = {"error": str(e)[:120]}
 
+    # CARRY MONITOR — live delta-neutral funding income (market-neutral, measurable).
+    # Research only: ranks majors by realized net funding APR + persistence, flags the
+    # attractive ones. Fully defensive; disable with TB_CARRY=0.
+    carry = {}
+    if os.environ.get("TB_CARRY", "1").strip() not in ("0", "false", "off"):
+        try:
+            from tradebot import carry as cy
+            rows_c = cy.fetch_carry()
+            hl = {}
+            try:
+                hl = cy.hl_cross_section()
+            except Exception:  # noqa: BLE001
+                pass
+            carry = {"venue": "OKX realized ~90d", "note_venue_fit": "Hyperliquid (on-chain perp)",
+                     "min_net_apr": cy.CarryConfig().min_net_apr,
+                     "rows": [r.to_dict() for r in rows_c],
+                     "hl_majors": {k: hl.get(k) for k in ("BTC", "ETH", "SOL") if k in hl}}
+        except Exception as e:  # noqa: BLE001
+            carry = {"error": str(e)[:120]}
+
     data = {"generated_at": datetime.now(timezone.utc).isoformat(timespec="minutes"),
             "interval": INTERVAL, "style": STYLE, "onchain": onchain, "regime": regime,
             "chains": chains_block, "autopilot": autopilot, "universe": universe,
             "rows": rows, "featured": featured, "paper": paper, "tape": tape,
-            "scenarios": scenarios, "bag_tree": bag_tree, "crosschain": crosschain}
+            "scenarios": scenarios, "bag_tree": bag_tree, "crosschain": crosschain,
+            "carry": carry}
     json.dump(data, open(os.path.join(DOCS, "data.json"), "w"), indent=1)
     json.dump(state, open(os.path.join(DOCS, "alert_state.json"), "w"))
 

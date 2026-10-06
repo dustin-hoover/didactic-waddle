@@ -114,6 +114,15 @@
     <div class="note" id="xcNote"></div>
   </div>
 
+  <div class="panel" id="carryPanel" hidden>
+    <h2>Carry monitor <span class="badge">funding income</span></h2>
+    <table>
+      <thead><tr><th>Coin</th><th>Net APR</th><th>Gross</th><th>% periods +</th><th></th></tr></thead>
+      <tbody id="carryRows"></tbody>
+    </table>
+    <div class="note" id="carryNote"></div>
+  </div>
+
   <div class="panel" id="paperPanel" hidden>
     <h2>Your paper portfolio <span class="badge" id="paperSince"></span></h2>
     <div class="grid" id="paper"></div>
@@ -242,6 +251,32 @@ fetch('./data.json?t='+Date.now()).then(r=>r.json()).then(d=>{
       `Live <b>read-only</b> quotes (dry, $${xc.notional_usd} each) from ${xc.venue} — intent-based cross-chain settlement, no bridge to operate. `+
       (med!=null?`Measured median <b>~${Math.round(med)} bps</b> vs the arbitrage engine's assumed <b>${asm} bps</b> bridge cost — cross-chain spawning is cheaper than we assumed. `:'')+
       `Nothing signs here; this proves whether moving a bag between chains is economical before any funds move.`;
+  }
+
+  const cy=d.carry;
+  if(cy && !cy.error && (cy.rows||[]).some(r=>r.n>0)){
+    document.getElementById('carryPanel').hidden=false;
+    const cb=document.getElementById('carryRows'); cb.innerHTML='';
+    cy.rows.forEach(r=>{
+      const tr=document.createElement('tr');
+      if(!r.n){ tr.innerHTML=`<td>${r.coin}</td><td colspan="4" class="note">no data</td>`; }
+      else{
+        const flag = r.attractive ? ' <span class="pill up">attractive</span>' : '';
+        const cc = r.net_apr>=(cy.min_net_apr||3) ? 'up' : 'gold';
+        tr.innerHTML=`<td>${r.coin}${flag}</td>`+
+          `<td class="${cc}">${r.net_apr.toFixed(1)}%</td>`+
+          `<td class="n">${r.gross_apr.toFixed(1)}%</td>`+
+          `<td>${Math.round(r.pct_positive*100)}%</td>`+
+          `<td class="n">${r.note||''}</td>`;
+      }
+      cb.appendChild(tr);
+    });
+    const hl=cy.hl_majors||{};
+    const hlTxt=Object.keys(hl).length?` Hyperliquid now: ${Object.entries(hl).map(([k,v])=>k+' '+(v>=0?'+':'')+Math.round(v)+'%').join(', ')}.`:'';
+    document.getElementById('carryNote').innerHTML=
+      `Delta-neutral <b>funding income</b> (long spot + short perp = market-neutral; you earn this regardless of price direction). `+
+      `Net APR = realized ~90d funding (${cy.venue}) minus a fee-drag estimate; "% periods +" is how persistent it's been.`+hlTxt+
+      ` <b>Monitor only</b> — no position. Honest caveats: funding goes flat/negative in bears, and capturing it needs a perp venue (${cy.note_venue_fit}) with liquidation + counterparty risk.`;
   }
 
   const pp=d.paper;
