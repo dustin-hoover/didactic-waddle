@@ -53,14 +53,14 @@
   "halt_price": null
  },
  "reserve": {
-  "reserve": 124.76537665447508,
+  "reserve": 124.78588603145937,
   "hwm": 1188.5078803508084,
   "skims": 1,
-  "yield_earned": 0.38736527261695,
+  "yield_earned": 0.40787464960124725,
   "reinvests": 0,
   "total_reinvested": 0.0,
   "trading_base": 1000.0
  },
- "last_ts": 1791244800000,
+ "last_ts": 1791331200000,
  "started_ts": 1788998400000
 }
