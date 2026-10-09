@@ -1,0 +1,11 @@
+item,category,spec,qty,unit,unit_cost_est_usd,vendor_primary,vendor_alt,notes
+spare nLOS CPE,radio,Tarana G1 residential node,2,ea,400,Tarana,,fast swap
+spare PtMP CPE,radio,Cambium/Ubiquiti SM,2,ea,180,Cambium,Ubiquiti,
+spare backhaul radio,radio,airFiber/cnWave,1,ea,700,Ubiquiti,Cambium,
+spare router/gateway,radio,Wi-Fi 6/7 router,2,ea,150,TBD,,
+fiber field kit,fiber,"pigtails, sleeves, connectors, cleaver",1,kit,600,TBD,,
+patch/jumpers,optics,assorted fiber + ethernet jumpers,1,lot,120,TBD,,
+PoE injectors/fuses,power,assorted PoE + fuses,1,lot,120,TBD,,
+portable battery,power,LiFePO4 field battery,1,ea,300,TBD,,
+hardware/consumables,misc,"mounts, clamps, ties, tape",1,lot,150,TBD,,
+test gear (assigned),misc,OTDR/power meter/spectrum (shared),1,set,0,,,tracked as fleet asset not consumed

@@ -8,3 +8,6 @@ data/tradebot_state.json
 data/alert_state_*.json
 *.log
 .DS_Store
+
+# large raw GIS downloads (re-fetch with the scripts; derived outputs are committed)
+boat-dock-network/data/gis/raw/
