@@ -1,0 +1,12 @@
+{
+  "name": "DockOS Crew — Boat Dock Network",
+  "short_name": "DockOS Crew",
+  "description": "Today's run, water routes, checklists and job capture for Boat Dock Network crews.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EDF2F1",
+  "theme_color": "#1C5E88",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

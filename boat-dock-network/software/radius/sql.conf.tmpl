@@ -1,0 +1,48 @@
+# Boat Dock Network — FreeRADIUS 3.2 rlm_sql module (doc 22).
+# Installed to /etc/freeradius/3.0/mods-available/sql by setup_freeradius.sh
+# (@PLACEHOLDERS@ filled from env). Authorize tables are VIEWS over billing state
+# (software/db/billing_schema.sql): no sync job, no drift — billing state IS policy.
+sql {
+	dialect = "postgresql"
+	driver = "rlm_sql_${dialect}"
+	postgresql {
+		send_application_name = yes
+	}
+
+	server = "@DB_HOST@"
+	port = @DB_PORT@
+	login = "@DB_USER@"          # least-privilege role: SELECT on views, write radacct/radpostauth
+	password = "@DB_PASS@"
+	radius_db = "@DB_NAME@"
+
+	acct_table1 = "radacct"
+	acct_table2 = "radacct"
+	postauth_table = "radpostauth"
+	authcheck_table = "radcheck"          # view: service_instances in provisioned/active/suspended
+	groupcheck_table = "radgroupcheck"    # view: empty (policy is all in replies)
+	authreply_table = "radreply"          # view: Delegated-IPv6-Prefix, static Framed-IP-Address
+	groupreply_table = "radgroupreply"    # view: per-plan QoS derived from `plans` + walled garden
+	usergroup_table = "radusergroup"      # view: plan group, or 'suspended'
+
+	delete_stale_sessions = yes
+
+	pool {
+		start = ${thread[pool].start_servers}
+		min = ${thread[pool].min_spare_servers}
+		max = ${thread[pool].max_servers}
+		spare = ${thread[pool].max_spare_servers}
+		uses = 0
+		retry_delay = 30
+		lifetime = 0
+		idle_timeout = 60
+		max_retries = 5
+	}
+
+	# NAS/BNG clients from the `nas` table (the same registry the provisioning
+	# engine uses for CoA secrets). Keep clients.conf for localhost only.
+	read_clients = @READ_CLIENTS@
+	client_table = "nas"
+
+	group_attribute = "SQL-Group"
+	$INCLUDE ${modconfdir}/${.:name}/main/${dialect}/queries.conf
+}

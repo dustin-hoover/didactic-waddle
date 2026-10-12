@@ -1,0 +1,6 @@
+surface,phase1_los_pct,covered,premises,observer_mast_m,target_m,max_range_m,note
+bare_earth,55,1854,3341,15,2,8000,3DEP bare-earth DEM
+nlcd_proxy_dsm,44,1473,3341,15,2,8000,DEM + NLCD canopy height (~22m forest)
+true_lidar_dsm,26,895,3341,15,2,8000,USGS 3DEP LiDAR first-return DSM (10m)
+true_lidar_tower30,40,1363,3341,30,4,10000,LiDAR DSM with 30m (100ft) tower
+true_lidar_tower45,45,1520,3341,45,4,10000,LiDAR DSM with 45m (150ft) tower

@@ -1,0 +1,4 @@
+dist_band,premises,avg_total_value,median_total_value,over_1m
+0-0.25mi,6144,484351,410288,522
+0.25-0.5mi,1544,298507,264382,26
+0.5-1mi,1883,283242,259850,16
