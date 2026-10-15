@@ -1,0 +1,216 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Saatgut Live Engine</title>
+<style>
+  :root{ --bg:#0a0c0a; --ink:#e8e2cf; --muted:#8a8571; --gold:#e3b23c; --green:#5fae5f;
+         --red:#c9524a; --line:#1c2320; color-scheme:dark; }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow:hidden}
+  #c{position:fixed;inset:0;width:100vw;height:100vh;display:block}
+  .hud{position:fixed;z-index:2;pointer-events:none;font-size:11px;letter-spacing:.06em}
+  #top{top:calc(10px + env(safe-area-inset-top,0px));left:14px;right:14px;display:flex;
+    justify-content:space-between;align-items:flex-start}
+  .brand{font-size:15px;font-weight:700;color:var(--gold);letter-spacing:.14em}
+  .sub{color:var(--muted);margin-top:3px}
+  #stats{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:16px;
+    text-align:right;line-height:1.55;font-size:9px;max-width:50%;text-shadow:0 0 4px #000}
+  #stats b{color:var(--ink);font-weight:700}
+  .on{color:var(--green)} .off{color:var(--red)} .g{color:var(--gold)}
+  #stage{position:fixed;z-index:2;top:calc(58px + env(safe-area-inset-top,0px));left:0;right:0;
+    display:flex;justify-content:center;gap:0;pointer-events:none}
+  .st{font-size:9px;color:var(--muted);letter-spacing:.12em;padding:0 10px;position:relative}
+  .st.lit{color:var(--gold)}
+  .st.lit::before{content:"";position:absolute;top:-6px;left:50%;width:4px;height:4px;margin-left:-2px;
+    border-radius:50%;background:var(--gold);box-shadow:0 0 8px var(--gold)}
+  #foot{bottom:calc(8px + env(safe-area-inset-bottom,0px));left:14px;right:14px;color:var(--muted);
+    font-size:10px;text-align:center}
+  a{color:var(--gold);text-decoration:none;pointer-events:auto}
+</style>
+
+<canvas id="c"></canvas>
+<div id="top" class="hud">
+  <div><div class="brand">SAATGUT 🌾</div><div class="sub" id="asof">live engine · loading…</div></div>
+  <div id="stats"></div>
+</div>
+<div id="stage" class="hud"></div>
+<div id="foot" class="hud">real data, no fabrication · <a href="app.html">dashboard</a> · <a href="wallet.html">wallet</a></div>
+
+<script>
+"use strict";
+const cv=document.getElementById("c"), ctx=cv.getContext("2d");
+let W=0,H=0,DPR=1;
+function resize(){ DPR=Math.min(window.devicePixelRatio||1,2); W=window.innerWidth; H=window.innerHeight;
+  cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); layout(); }
+window.addEventListener("resize",resize);
+
+// ---- live state (filled from data.json; sane defaults so it animates offline) ----
+let S={ gateOn:true, pctAbove:0.1, days:0, exposure:0.9, total:1000, ret:0, reserve:0, skims:0,
+        bags:[{id:"b1",parent:null,total:1000,seed:1000,fitness:1,halted:false}],
+        retired:[], carry:[], gen:"" };
+
+function applyData(d){
+  const r=d.regime||{}, p=d.paper||{}, bt=d.bag_tree||{}, cy=d.carry||{};
+  S.gateOn = r.on!==false; S.pctAbove=+r.pct_above_long||0; S.days=r.days_in_regime||0;
+  S.exposure = (p.exposure!=null?p.exposure:0.9); S.total=p.total||bt.totals?.total||1000;
+  S.ret=p.total_return||0; S.reserve=p.reserve||bt.totals?.reserve||0; S.skims=p.skims||0;
+  if(Array.isArray(bt.bags)&&bt.bags.length) S.bags=bt.bags;
+  if(Array.isArray(bt.retired)) S.retired=bt.retired;
+  if(Array.isArray(cy.rows)) S.carry=cy.rows.filter(x=>x.n>0);
+  S.gen=d.generated_at||"";
+  renderHud();
+}
+function renderHud(){
+  document.getElementById("asof").textContent = "live engine · "+(S.gen? S.gen.replace("T"," ")+"Z":"offline");
+  const gc=S.gateOn?"on":"off";
+  document.getElementById("stats").innerHTML =
+    `<span class="${gc}">${S.gateOn?"ON":"OFF"}</span> · <b>${S.pctAbove>=0?"+":""}${(S.pctAbove*100).toFixed(1)}%</b> · ${S.days}d<br>`+
+    `<b class="g">$${Math.round(S.total).toLocaleString()}</b> ${S.ret>=0?"+":""}${(S.ret*100).toFixed(1)}%<br>`+
+    `🔒$${Math.round(S.reserve).toLocaleString()} · ${S.bags.length}bag · ${S.skims}skim`;
+  const stages=["DATA","SCREEN","REGIME","BAGS","CARRY","PAPER"];
+  document.getElementById("stage").innerHTML = stages.map((s,i)=>{
+    const lit = i<2 || (i===2&&true) || (i===3&&S.bags.length) || (i===4&&S.carry.length) || (i===5);
+    return `<span class="st ${lit?"lit":""}">${s}</span>`;
+  }).join("");
+}
+
+// ---- scene geometry ----
+let cx,gateY,topY,botY,nodes=[];
+function layout(){
+  cx=W/2; topY=H*0.20; gateY=H*0.46; botY=H*0.74;
+  // place bag nodes along the field below the gate (root centered, children fan out)
+  const bags=S.bags.slice(0,10);
+  nodes = bags.map((b,i)=>{
+    const n=bags.length, spread=Math.min(W*0.8, 90*n);
+    const x = n===1? cx : cx - spread/2 + spread*(i/(n-1));
+    return { b, x, y: botY + (i%2)*26, r: 0, pulse:Math.random()*6.28 };
+  });
+}
+
+// ---- particles (the hourglass flow = capital moving through the regime gate) ----
+const P=[]; const MAX=260;
+function spawn(){
+  const sx = cx + (Math.random()-0.5)*W*0.62;
+  P.push({ sx, ex: cx + (Math.random()-0.5)*(W*0.5), t:0,
+           sp: 0.0016+Math.random()*0.0022, x:sx, y:topY, seed:Math.random()<0.5,
+           div: Math.random() }); // div used if gate off (divert to reserve silo)
+}
+function smooth(t){ return t*t*(3-2*t); }
+
+let cull={active:false,x:0,y:0,tx:0,ty:0,t:0};
+function maybeCull(){
+  // periodically flash a reallocation: faded node -> strongest node
+  if(cull.active || nodes.length<2) return;
+  if(Math.random()<0.004){
+    let strong=nodes.reduce((a,b)=>(b.b.fitness||1)>(a.b.fitness||1)?b:a,nodes[0]);
+    let weak=nodes.reduce((a,b)=>(b.b.fitness||1)<(a.b.fitness||1)?b:a,nodes[0]);
+    if(strong!==weak){ cull={active:true,x:weak.x,y:weak.y,tx:strong.x,ty:strong.y,t:0}; }
+  }
+}
+
+let tick=0, tickerX=0;
+function frame(){
+  tick++;
+  ctx.fillStyle="rgba(10,12,10,0.26)"; ctx.fillRect(0,0,W,H);  // motion-blur trail
+
+  // faint hourglass guide
+  ctx.strokeStyle="rgba(227,178,60,0.07)"; ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(cx-W*0.34,topY); ctx.lineTo(cx,gateY); ctx.lineTo(cx-W*0.30,botY+20);
+  ctx.moveTo(cx+W*0.34,topY); ctx.lineTo(cx,gateY); ctx.lineTo(cx+W*0.30,botY+20);
+  ctx.stroke();
+
+  // spawn with rate ∝ exposure (how much capital is deployed)
+  const rate = 3 + Math.round(S.exposure*5);
+  for(let i=0;i<rate;i++) if(P.length<MAX) spawn();
+
+  const gateColor = S.gateOn? [95,174,95] : [201,82,74];
+  const reserveX = W*0.82, reserveY=gateY;
+
+  for(let i=P.length-1;i>=0;i--){
+    const p=P[i]; p.t+=p.sp;
+    if(p.t>=1){ P.splice(i,1); continue; }
+    const st=smooth(p.t);
+    if(p.t<0.5){ // above gate: funnel in toward the pinch
+      const k=smooth(p.t/0.5);
+      p.x = p.sx + (cx-p.sx)*k; p.y = topY + (gateY-topY)*k;
+    } else {
+      if(S.gateOn){ // through the gate -> fan out into the bag field (growth)
+        const k=smooth((p.t-0.5)/0.5);
+        p.x = cx + (p.ex-cx)*k; p.y = gateY + (botY-gateY)*k;
+      } else { // gate OFF -> divert to the reserve silo (banked, not deployed)
+        const k=smooth((p.t-0.5)/0.5);
+        p.x = cx + (reserveX-cx)*k; p.y = gateY + (reserveY-gateY)*k*0.6 + Math.sin(p.div*6.28)*8;
+      }
+    }
+    const a = p.t<0.5? p.t*2 : (1-(p.t-0.5)*2)*0.9+0.1;
+    const col = p.seed? "227,178,60" : (S.gateOn?"120,150,110":"150,120,110");
+    ctx.beginPath(); ctx.arc(p.x,p.y, p.seed?2.2:1.4, 0,6.28);
+    ctx.fillStyle=`rgba(${col},${0.3+a*0.7})`; ctx.fill();
+  }
+
+  // the REGIME GATE node (the pinch)
+  const pulse = 1+0.25*Math.sin(tick*0.06);
+  const gr=ctx.createRadialGradient(cx,gateY,0,cx,gateY,34*pulse);
+  gr.addColorStop(0,`rgba(${gateColor.join(",")},0.9)`);
+  gr.addColorStop(1,`rgba(${gateColor.join(",")},0)`);
+  ctx.fillStyle=gr; ctx.beginPath(); ctx.arc(cx,gateY,34*pulse,0,6.28); ctx.fill();
+  ctx.fillStyle=`rgb(${gateColor.join(",")})`; ctx.beginPath(); ctx.arc(cx,gateY,4,0,6.28); ctx.fill();
+  ctx.fillStyle="rgba(232,226,207,0.8)"; ctx.font="9px ui-monospace,monospace"; ctx.textAlign="center";
+  ctx.fillText("REGIME GATE · "+(S.gateOn?"OPEN":"CLOSED"), cx, gateY+50);
+
+  // reserve silo (lights up when gate closed)
+  ctx.textAlign="right";
+  ctx.fillStyle = S.gateOn? "rgba(227,178,60,0.22)":"rgba(227,178,60,0.85)";
+  ctx.fillText("🔒 RESERVE", W-14, reserveY-14);
+  ctx.textAlign="center";
+
+  // bag nodes (the field the gate feeds) — size & glow by fitness
+  maybeCull();
+  for(const n of nodes){
+    const fit = n.b.fitness||1; const up = fit>=1;
+    const base = 7 + Math.min(26, Math.log10(Math.max(n.b.total,1))*4);
+    n.r = base*(1+0.08*Math.sin(tick*0.05+n.pulse));
+    const c = n.b.halted? "201,82,74" : (up? "227,178,60":"120,120,100");
+    const g=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r*1.8);
+    g.addColorStop(0,`rgba(${c},0.55)`); g.addColorStop(1,`rgba(${c},0)`);
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(n.x,n.y,n.r*1.8,0,6.28); ctx.fill();
+    ctx.fillStyle=`rgba(${c},0.95)`; ctx.beginPath(); ctx.arc(n.x,n.y,3,0,6.28); ctx.fill();
+    ctx.fillStyle="rgba(232,226,207,0.75)"; ctx.font="9px ui-monospace,monospace"; ctx.textAlign="center";
+    ctx.fillText(`${n.b.id} ${fit.toFixed(2)}×`, n.x, n.y+n.r+12);
+  }
+
+  // cull reallocation flash (loser's capital -> strongest, animated)
+  if(cull.active){
+    cull.t+=0.03; const k=smooth(Math.min(cull.t,1));
+    const x=cull.x+(cull.tx-cull.x)*k, y=cull.y+(cull.ty-cull.y)*k;
+    ctx.fillStyle="rgba(201,82,74,0.9)"; ctx.beginPath(); ctx.arc(x,y,3.5,0,6.28); ctx.fill();
+    ctx.strokeStyle="rgba(201,82,74,0.3)"; ctx.beginPath(); ctx.moveTo(cull.x,cull.y); ctx.lineTo(x,y); ctx.stroke();
+    if(cull.t>=1) cull.active=false;
+  }
+
+  // carry ticker along the very bottom
+  if(S.carry.length){
+    const txt = S.carry.map(r=>`${r.coin} ${r.net_apr>=0?"+":""}${r.net_apr.toFixed(1)}%${r.attractive?"◆":""}`).join("     ");
+    ctx.font="10px ui-monospace,monospace"; ctx.textAlign="left";
+    const full=txt+"     "; const wTxt=ctx.measureText(full).width;
+    tickerX-=0.4; if(tickerX<-wTxt) tickerX+=wTxt;
+    const y=H-46;
+    ctx.fillStyle="rgba(138,133,113,0.5)"; ctx.fillText("CARRY  ",14,y);
+    let x0=14+ctx.measureText("CARRY  ").width+tickerX;
+    for(let pass=0;pass<2;pass++){
+      S.carry.forEach(r=>{
+        const s=`${r.coin} ${r.net_apr>=0?"+":""}${r.net_apr.toFixed(1)}%${r.attractive?"◆":""}     `;
+        ctx.fillStyle = r.attractive? "rgba(95,174,95,0.95)":"rgba(138,133,113,0.8)";
+        ctx.fillText(s,x0,y); x0+=ctx.measureText(s).width;
+      });
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+resize();
+fetch("data.json",{cache:"no-store"}).then(r=>r.json()).then(applyData).catch(()=>renderHud());
+renderHud();
+requestAnimationFrame(frame);
+</script>

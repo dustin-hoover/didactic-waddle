@@ -470,6 +470,9 @@ def build():
     # copy the wallet control panel -> docs/wallet.html (reads docs/data.json)
     wallet = open(os.path.join(ROOT, "static", "wallet.html")).read()
     open(os.path.join(DOCS, "wallet.html"), "w").write(wallet)
+    # copy the live engine visualization -> docs/live.html (canvas, reads docs/data.json)
+    live = open(os.path.join(ROOT, "static", "live.html")).read()
+    open(os.path.join(DOCS, "live.html"), "w").write(live)
     open(os.path.join(DOCS, ".nojekyll"), "w").write("")
 
     # push phone alerts
