@@ -1,0 +1,4 @@
+node_id,zone_id,tier,status,power,host_property,elevation_ft,lat,lon,asbuilt_ref,notes
+BDN-PrairieCreek-T2-01,Z-PC,T2,candidate,grid_ups,true,,,,,"Example: host-node dock aggregation candidate"
+BDN-RockyBranch-T2-01,Z-RB,T2,candidate,solar_battery,true,,,,,"Example: off-grid dock node candidate"
+BDN-Dam-T1-01,Z-DAM,T1,candidate,grid_ups,false,,,,,"Example: core/ring node on high ground"

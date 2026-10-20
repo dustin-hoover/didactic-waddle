@@ -1,0 +1,10 @@
+item,category,spec,qty,unit,unit_cost_est_usd,vendor_primary,vendor_alt,notes
+armored fiber or duct,fiber,OS2 armored bury or HDPE microduct,5280,ft,2.60,TBD,,per mile; microduct enables blown fiber
+blown fiber (if microduct),fiber,OS2 blown fiber,5280,ft,1.10,TBD,,alt to armored direct-bury
+micro-trenching,labor,saw-cut micro-trench + backfill,5280,ft,9.00,,,cheapest where pavement/soil allows
+directional bore (rock/crossings),labor,HDD for road/rock segments,300,ft,22.00,,,rock is the wildcard cost
+handholes/vaults,mount,pull boxes,6,ea,350,TBD,,
+splice closures,fiber,buried closures + splicing,3,ea,700,TBD,,
+locate (811) + permits,permit,AR811 + ROW/ARDOT/county,1,lot,2500,,,required before digging
+install labor,labor,placement + splicing + test + restoration,1,lot,12000,,,capitalized
+mobilization,transport,equipment + crew,1,lot,1800,,,

@@ -1,0 +1,8 @@
+item,category,spec,qty,unit,unit_cost_est_usd,vendor_primary,vendor_alt,notes
+nLOS CPE radio,radio,Tarana G1 residential node,1,ea,400,Tarana,,non-line-of-sight through trees
+CPE mount,mount,J-mount / eave / dock mount + hardware,1,set,60,TBD,,
+router/gateway,radio,Wi-Fi 6/7 router,1,ea,150,TBD,,managed
+ethernet/PoE + cable,misc,outdoor CAT6 + PoE + connectors,1,lot,45,TBD,,
+grounding/surge,power,surge protector + ground,1,set,35,TBD,,
+install labor,labor,"mount, aim, activate, speed test",1,lot,180,,,boat/land tech; expensed or capitalized per policy
+boat mobilization (if water access),transport,vessel + fuel share,1,lot,40,,,batch nearby jobs

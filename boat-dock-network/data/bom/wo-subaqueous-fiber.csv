@@ -1,0 +1,9 @@
+item,category,spec,qty,unit,unit_cost_est_usd,vendor_primary,vendor_alt,notes
+submarine-rated fiber,fiber,double-armored subaqueous OS2,LEN_FT,ft,6.00,TBD,,cove crossing length from survey
+shore landing hardware,mount,landing vaults + conduit both shores,2,set,1200,TBD,,transition to land plant
+anchoring/weights,mount,cable weights/anchors,1,lot,1500,TBD,,keep cable on bed
+splice closures,fiber,waterproof closures both ends,2,ea,700,TBD,,
+USACE Section 10/404 permit,permit,federal lakebed crossing permit + easement,1,lot,6000,,,MAJOR path item; start early (doc 12)
+survey (bathymetry),labor,depth/route survey,1,lot,2500,,,
+barge + lay labor,labor,cable lay by barge/boat crew,1,lot,8000,,,capitalized; specialized
+mobilization,transport,barge + boats + equipment,1,lot,2500,,,
