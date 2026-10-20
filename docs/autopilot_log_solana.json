@@ -1,8 +1,20 @@
 {
  "exposure": {
-  "SOL": 1.0
+  "SOL": 0.0
  },
  "decisions": [
+  {
+   "ts": 1792525877,
+   "asset": "SOL",
+   "action": "sell",
+   "notional": 100.0,
+   "target": 0.0,
+   "current": 1.0,
+   "gate": "ON",
+   "price": 106.17,
+   "reason": "WOULD sell $100.00 of SOL (DRY-RUN)",
+   "blocked": null
+  },
   {
    "ts": 1792507434,
    "asset": "SOL",
