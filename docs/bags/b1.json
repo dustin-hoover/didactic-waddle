@@ -1,6 +1,6 @@
 {
- "cash": 570.4602377416326,
- "units": 0.005323167447202017,
+ "cash": 1000.4898668376768,
+ "units": 0.0,
  "fills": [
   {
    "ts": 1788998400000,
@@ -50,24 +50,31 @@
    "units": 0.006187895168260382,
    "price": 80950.325079,
    "fee": 0.5009121254254514
+  },
+  {
+   "ts": 1792886400000,
+   "side": "sell",
+   "units": 0.005323167447202017,
+   "price": 80865.404565,
+   "fee": 0.4304600891852294
   }
  ],
  "risk": {
   "peak_equity": 1065.63675579635,
-  "entry_price": 76790.8,
-  "stop_price": 70229.0418970506,
+  "entry_price": null,
+  "stop_price": null,
   "halted": false,
   "halt_price": null
  },
  "reserve": {
-  "reserve": 125.13506171758002,
+  "reserve": 125.15563186471167,
   "hwm": 1188.5078803508084,
   "skims": 1,
-  "yield_earned": 0.7570503357219053,
+  "yield_earned": 0.7776204828535622,
   "reinvests": 0,
   "total_reinvested": 0.0,
   "trading_base": 1000.0
  },
- "last_ts": 1792800000000,
+ "last_ts": 1792886400000,
  "started_ts": 1788998400000
 }
