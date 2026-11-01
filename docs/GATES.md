@@ -19,8 +19,10 @@ Required before sign-off:
 **Phase 0 gate — SIGNED:** _[Dustin: name + date + canary cap]_ ☐ not yet
 
 ## Phase 1 — Validation infrastructure
-- [ ] 1.1 Point-in-time, survivorship-free datastore.
-- [ ] 1.2 Evaluation harness (walk-forward, CPCV, DSR, PBO, block bootstrap) + trial registry.
+- [x] 1.1 Point-in-time, survivorship-free datastore (code: `datastore.py`; tests cover delisted-coin-in-past-universe + the look-ahead canary). _Needs a real historical load (incl. dead coins) to be useful — infra only so far._
+- [x] 1.2 Evaluation harness — walk-forward, CPCV (purge+embargo), Deflated Sharpe, PBO/CSCV, stationary block bootstrap, BTC buy&hold + 200d-SMA benchmarks, trial registry (code: `evaluate.py` → `docs/trials.jsonl`; known-answer tests: noise→PBO≥0.5 & DSR<0.5, planted edge detected).
+
+_Note: 1.1/1.2 are the referee. No strategy's headline number stands until it is run through this harness. The regime gate re-evaluation (the open debt in FINDINGS.md) is the first job for it — not yet done._
 
 **Phase 1 gate — SIGNED:** _[Dustin]_ ☐ not yet
 
