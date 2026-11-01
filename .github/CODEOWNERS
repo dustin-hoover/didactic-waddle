@@ -1,0 +1,20 @@
+# Code ownership — every change needs @dustin-hoover's review (Phase 0.1).
+# Pair this with a branch-protection rule on the default branch:
+# "Require review from Code Owners" + "Require a pull request before merging".
+# (GitHub enforces CODEOWNERS only when that rule is on — set it in
+#  Settings -> Branches; it cannot be configured from code.)
+
+# Default: the whole repo.
+*                           @dustin-hoover
+
+# Security-critical surfaces — never change without an explicit owner review.
+/.github/                   @dustin-hoover
+/tradebot/execution.py      @dustin-hoover
+/tradebot/solana_exec.py    @dustin-hoover
+/tradebot/autopilot.py      @dustin-hoover
+/tradebot/near_intents.py   @dustin-hoover
+/tradebot/universe.py       @dustin-hoover
+/tradebot/safety.py         @dustin-hoover
+/scripts/kill.py            @dustin-hoover
+/static/wallet.html         @dustin-hoover
+/docs/GATES.md              @dustin-hoover

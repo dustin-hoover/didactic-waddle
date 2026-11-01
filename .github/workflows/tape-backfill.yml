@@ -21,7 +21,7 @@ on:
         description: "Block-slice sampled per day (~900 ≈ 3h; consistent across days)"
         default: "900"
 
-permissions:
+permissions:          # minimal: only contents:write, needed to commit the flow journal
   contents: write
 
 jobs:
@@ -29,8 +29,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25   # a bounded sampler finishes in minutes; never run away again
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      # Pinned to a full commit SHA, not a moving tag (Phase 0.1).
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: "3.11"
       - name: Backfill the flow journal

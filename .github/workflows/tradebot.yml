@@ -9,7 +9,7 @@ on:
     - cron: "0 */2 * * *"   # every 2 hours (UTC). Tighten/loosen as you like.
   workflow_dispatch: {}      # a "Run" button in the GitHub mobile app
 
-permissions:
+permissions:          # minimal: only contents:write, needed to commit the refreshed docs/ site
   contents: write
 
 concurrency:
@@ -20,9 +20,11 @@ jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # Actions are pinned to a full commit SHA (not a moving tag) so a compromised
+      # or retagged release can't silently run in this workflow (Phase 0.1).
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: "3.11"
 

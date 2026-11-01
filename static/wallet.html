@@ -326,9 +326,14 @@
     <div class="sec" style="margin-top:8px;border-color:var(--good,#4a7)">🔒 <div style="font-size:12px">
       <b>Security model.</b> Signing stays in your wallet (no server/hot key). Recipient is read from
       your connected wallet — <b>never typed</b>. A <b>fresh</b> quote is fetched right before every
-      deposit (no reused addresses). Hard caps below bound the blast radius. The page's
+      deposit (no reused addresses). The page's
       <code>connect-src</code> is locked to the exact APIs, so injected script can't redirect your
-      funds. Independently verify every deposit on the NEAR Intents explorer link shown.</div></div>
+      funds. Independently verify every deposit on the NEAR Intents explorer link shown.
+      <br><b>On caps:</b> the dollar caps shown below are <b>advisory</b> — tracked in this browser
+      only (localStorage), so they are <b>not</b> a security boundary and do not bind another device
+      or a cleared browser. Until on-chain caps are live (a smart-account policy, Phase 0.2), the real
+      limits are <b>your wallet's confirmation</b> on every signature and <b>keeping only canary-sized
+      funds</b> in this wallet.</div></div>
 
     <div id="xiAddr" style="margin:10px 0;padding:8px 10px;border-radius:8px;border:1px solid var(--line);
       background:var(--panel);font-weight:600;font-size:13px;word-break:break-word">Connect your wallet to begin.</div>
@@ -418,8 +423,8 @@
     }
     function capMsg(){
       var u=usage();
-      return "Caps — per move $"+CAP_MOVE+" · today $"+Math.round(u.dayUsd)+"/"+CAP_DAY+
-             " · lifetime $"+Math.round(u.lifeUsd)+"/"+CAP_LIFE+". You sign the deposit in your wallet.";
+      return "Caps (advisory, this browser only) — per move $"+CAP_MOVE+" · today $"+Math.round(u.dayUsd)+"/"+CAP_DAY+
+             " · lifetime $"+Math.round(u.lifeUsd)+"/"+CAP_LIFE+". Not a security boundary — you sign every deposit in your wallet.";
     }
     function capCheck(usd){
       var u=usage();
