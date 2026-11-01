@@ -39,9 +39,29 @@ SOLANA_TOKENS: Dict[str, tuple] = {
 }
 
 
-def register_tokens(mapping: Dict[str, tuple]) -> None:
+# Hand-audited mints above are TRUSTED for live trading (snapshot at import). Stables
+# are the quote leg. Discovered tokens must carry an "OK" verdict to be live-eligible.
+TRUSTED_SOLANA: set = set(SOLANA_TOKENS)
+STABLES = {"USDC", "USDT", "USDS", "USDE", "PYUSD"}
+SOLANA_SAFETY: Dict[str, str] = {}      # SYMBOL -> verdict (OK|CAUTION|AVOID|UNKNOWN)
+
+
+def register_tokens(mapping: Dict[str, tuple], safety: Optional[Dict[str, str]] = None) -> None:
     for sym, (mint, dec) in mapping.items():
         SOLANA_TOKENS.setdefault(sym.upper(), (mint, int(dec)))
+    if safety:
+        for sym, verdict in safety.items():
+            SOLANA_SAFETY[sym.upper()] = (verdict or "UNKNOWN").upper()
+
+
+def live_eligible(symbol: str) -> bool:
+    """Phase 0.4: live (signable) path allows only stable quote legs, hand-audited
+    trusted mints, or discovered tokens with a recorded "OK" rug-screen verdict.
+    UNKNOWN/CAUTION/AVOID are all refused for live trading."""
+    sym = symbol.upper()
+    if sym in STABLES or sym in TRUSTED_SOLANA:
+        return True
+    return (SOLANA_SAFETY.get(sym) or "").upper() == "OK"
 
 
 @dataclass
@@ -145,6 +165,14 @@ def propose(owner: str, sell_symbol: str, buy_symbol: str, notional_usd: float,
         raise PolicyError("slippage bounds are misconfigured")
     if p.venue != "jupiter":
         raise PolicyError(f"unknown venue '{p.venue}'")
+
+    # Phase 0.4 — LIVE path refuses tokens that aren't safety-OK (dry-run still builds).
+    if p.enabled:
+        for sym in (ss, bs):
+            if not live_eligible(sym):
+                verdict = SOLANA_SAFETY.get(sym) or "UNKNOWN"
+                raise PolicyError(f"{sym} is not live-eligible on Solana "
+                                  f"(safety verdict {verdict}, not OK)")
 
     sell_mint, sell_dec = SOLANA_TOKENS[ss]
     buy_mint, buy_dec = SOLANA_TOKENS[bs]

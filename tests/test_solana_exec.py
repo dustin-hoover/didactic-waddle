@@ -75,3 +75,33 @@ def test_register_tokens_no_override():
     assert SOLANA_TOKENS["USDC"] == before          # existing not overridden
     assert SOLANA_TOKENS["WIF"] == ("WifMint111", 6)
     del SOLANA_TOKENS["WIF"]                          # clean shared registry
+
+
+# ---- Phase 0.4: live path refuses tokens that aren't safety-OK -----------------
+
+def test_solana_live_refuses_unknown_token():
+    register_tokens({"SKETCH": ("5ketchMintBase58xxxxxxxxxxxxxxxxxxxxxxxxxx", 6)},
+                    safety={"SKETCH": "UNKNOWN"})
+    prices = {"USDC": 1.0, "SKETCH": 0.5}
+    pol = SolanaExecPolicy(enabled=True, allowed_tokens=("USDC", "SKETCH"), max_notional_usd=100)
+    with pytest.raises(PolicyError, match="not live-eligible"):
+        propose("owner", "USDC", "SKETCH", 100.0, prices, pol, quote_fn=False)
+    # Dry-run preview still builds.
+    pol_dry = SolanaExecPolicy(enabled=False, allowed_tokens=("USDC", "SKETCH"), max_notional_usd=100)
+    pr = propose("owner", "USDC", "SKETCH", 100.0, prices, pol_dry, quote_fn=False)
+    assert pr.ok is False
+
+
+def test_solana_live_allows_ok_token():
+    register_tokens({"CLEAN": ("C1eanMintBase58xxxxxxxxxxxxxxxxxxxxxxxxxxx", 6)},
+                    safety={"CLEAN": "OK"})
+    pol = SolanaExecPolicy(enabled=True, allowed_tokens=("USDC", "CLEAN"), max_notional_usd=100)
+    pr = propose("owner", "USDC", "CLEAN", 100.0, {"USDC": 1.0, "CLEAN": 2.0}, pol, quote_fn=False)
+    assert pr.ok is True
+
+
+def test_solana_live_allows_hand_vetted_core():
+    # CBBTC is hand-audited (TRUSTED_SOLANA) → live-eligible without a verdict.
+    pol = SolanaExecPolicy(enabled=True, allowed_tokens=("USDC", "CBBTC"), max_notional_usd=100)
+    pr = propose("owner", "USDC", "CBBTC", 100.0, PRICES, pol, quote_fn=False)
+    assert pr.ok is True

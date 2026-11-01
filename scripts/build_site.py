@@ -152,7 +152,7 @@ def build():
     # what to trade. EVM vetted sets are registered into the execution token registry.
     universe = {}
     try:
-        from tradebot.universe import discover, to_registry
+        from tradebot.universe import discover, to_registry, to_safety
         min_res = float(os.environ.get("TB_UNIVERSE_MIN_RESERVE", "250000"))
         if spec.can_discover:
             do_screen = (spec.can_screen and os.environ.get("TB_UNIVERSE_SCREEN", "1").strip()
@@ -167,13 +167,19 @@ def build():
                 pages=int(os.environ.get("TB_UNIVERSE_PAGES", "4")),
                 min_reserve_usd=min_res, screen=do_screen, screen_fn=screen_fn,
                 screen_chain=spec.id)
+            # Register the FULL vetted set for addresses, but pass each token's safety
+            # verdict so the execution layer keeps non-OK tokens off the LIVE path
+            # (Phase 0.4). Dry-run/UX still see the long tail.
             if spec.kind == "evm":
                 from tradebot.execution import register_tokens
-                register_tokens(spec.id, to_registry(vetted))
+                register_tokens(spec.id, to_registry(vetted), safety=to_safety(vetted))
             else:
                 from tradebot.solana_exec import register_tokens as _sol_register
-                _sol_register({v.symbol: (v.address, v.decimals) for v in vetted})
-            universe = {"chain": spec.id, "count": len(vetted), "min_reserve_usd": min_res,
+                _sol_register({v.symbol: (v.address, v.decimals) for v in vetted},
+                              safety=to_safety(vetted))
+            n_live = sum(1 for v in vetted if v.live_eligible)
+            universe = {"chain": spec.id, "count": len(vetted), "live_eligible": n_live,
+                        "min_reserve_usd": min_res,
                         "screened": do_screen, "tokens": [v.to_dict() for v in vetted]}
         else:
             universe = {"chain": spec.id, "count": 0, "note": "discovery not available for this chain"}

@@ -50,18 +50,58 @@ TOKENS: Dict[str, Dict[str, tuple]] = {
     },
 }
 
-def register_tokens(chain: str, mapping: Dict[str, tuple]) -> None:
+# Symbols hand-audited into the registry above are TRUSTED for live trading without
+# a rug-screen verdict (snapshot taken at import, before any runtime discovery). Every
+# token merged in later via register_tokens is NOT trusted by provenance — it must
+# carry a safety verdict of "OK" to ever be live-eligible (Phase 0.4).
+TRUSTED: Dict[str, set] = {chain: set(reg) for chain, reg in TOKENS.items()}
+
+# Stablecoins are the quote leg of a trade (USDC in/out), not a directional position;
+# they are always live-eligible as the stable side.
+STABLES = {"USDC", "USDT", "DAI", "USDE", "USDBC", "GHO", "EURC", "USDS"}
+
+# Runtime safety verdicts for discovered tokens: chain -> SYMBOL -> verdict
+# (OK | CAUTION | AVOID | UNKNOWN). Absent means "no verdict recorded".
+SAFETY: Dict[str, Dict[str, str]] = {}
+
+
+def register_tokens(chain: str, mapping: Dict[str, tuple],
+                    safety: Optional[Dict[str, str]] = None) -> None:
     """Merge a vetted token set (from tradebot.universe) into the registry at runtime.
 
     Keys are upper-cased to match the proposal layer's lookup. Existing hand-vetted
     entries win on conflict, so a discovered token can never silently override a
     known-good address. Values are (address, decimals).
+
+    `safety` optionally records each symbol's rug-screen verdict so the live path can
+    refuse anything that isn't a confirmed "OK" (see live_eligible / propose). A token
+    registered here is NEVER added to TRUSTED — only hand-audited entries are trusted.
     """
     reg = TOKENS.setdefault(chain, {})
     for sym, (addr, dec) in mapping.items():
         key = sym.upper()
         if key not in reg:
             reg[key] = (addr, int(dec))
+    if safety:
+        sreg = SAFETY.setdefault(chain, {})
+        for sym, verdict in safety.items():
+            sreg[sym.upper()] = (verdict or "UNKNOWN").upper()
+
+
+def live_eligible(chain: str, symbol: str) -> bool:
+    """Is this token allowed on the LIVE (signable) path? Phase 0.4 gate.
+
+    Eligible only if it is a stable quote leg, a hand-audited TRUSTED token, or a
+    discovered token whose recorded rug-screen verdict is exactly "OK". UNKNOWN,
+    CAUTION and AVOID are all refused for live trading — you cannot gate-pass on
+    missing or cautionary safety data. (Dry-run previews are unaffected.)
+    """
+    sym = symbol.upper()
+    if sym in STABLES:
+        return True
+    if sym in TRUSTED.get(chain, set()):
+        return True
+    return (SAFETY.get(chain, {}).get(sym) or "").upper() == "OK"
 
 
 # Where a one-time ERC-20 approval must point for each venue (the signing layer
@@ -161,6 +201,16 @@ def propose(bag_id: str, wallet: str, sell_symbol: str, buy_symbol: str,
             raise PolicyError(f"no positive USD price for {sym}")
     if p.venue not in ("cow", "1inch"):
         raise PolicyError(f"unknown venue '{p.venue}'")
+
+    # Phase 0.4 — LIVE path refuses any token that isn't safety-OK. Dry-run previews
+    # (kill switch off) still build so research/UX can see the proposal, but a
+    # signable order is never produced for an UNKNOWN/CAUTION/AVOID token.
+    if p.enabled:
+        for sym in (ss, bs):
+            if not live_eligible(chain, sym):
+                verdict = SAFETY.get(chain, {}).get(sym) or "UNKNOWN"
+                raise PolicyError(f"{sym} is not live-eligible on '{chain}' "
+                                  f"(safety verdict {verdict}, not OK)")
 
     sell_addr, sell_dec = reg[ss]
     buy_addr, buy_dec = reg[bs]

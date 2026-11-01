@@ -65,8 +65,18 @@ class VettedToken:
     safety_verdict: Optional[str] = None   # OK | CAUTION | AVOID | UNKNOWN (rug-screen)
     safety_risk: Optional[int] = None
 
+    @property
+    def live_eligible(self) -> bool:
+        """Phase 0.4: only a confirmed-OK rug-screen verdict is live-tradeable. A token
+        with no verdict yet (screen not run) is NOT live-eligible here — the execution
+        layer separately trusts its own hand-audited core, but a *discovered* token must
+        earn OK. UNKNOWN/CAUTION/AVOID are never live-eligible."""
+        return (self.safety_verdict or "").upper() == "OK"
+
     def to_dict(self) -> dict:
-        return self.__dict__.copy()
+        d = self.__dict__.copy()
+        d["live_eligible"] = self.live_eligible      # surfaced for the dashboard/registry
+        return d
 
 
 def vet_candidates(cands: Sequence[TokenCandidate], min_reserve_usd: float = 250_000.0,
@@ -221,6 +231,18 @@ def discover_base(pages: int = 3, min_reserve_usd: float = 250_000.0,
                     screen_chain="base")
 
 
-def to_registry(vetted: Sequence[VettedToken]) -> Dict[str, tuple]:
-    """Shape the vetted set for execution.register_tokens: {SYMBOL: (address, decimals)}."""
-    return {v.symbol: (v.address, v.decimals) for v in vetted}
+def to_registry(vetted: Sequence[VettedToken], live_only: bool = False) -> Dict[str, tuple]:
+    """Shape the vetted set for execution.register_tokens: {SYMBOL: (address, decimals)}.
+
+    With ``live_only``, keep only tokens whose rug-screen verdict is OK — the set that
+    may ever reach the live (signable) path. The default returns the full research set
+    (dry-run and UX can display the long tail; the execution layer gates live separately
+    using the verdicts from ``to_safety``)."""
+    src = [v for v in vetted if v.live_eligible] if live_only else vetted
+    return {v.symbol: (v.address, v.decimals) for v in src}
+
+
+def to_safety(vetted: Sequence[VettedToken]) -> Dict[str, str]:
+    """Per-symbol rug-screen verdict for execution.register_tokens(safety=...), so the
+    live path can refuse anything that isn't OK. Tokens with no verdict map to UNKNOWN."""
+    return {v.symbol: (v.safety_verdict or "UNKNOWN") for v in vetted}

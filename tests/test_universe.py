@@ -123,6 +123,27 @@ def test_screen_failure_marks_unknown_not_dropped():
     assert len(out) == 1 and out[0].safety_verdict == "UNKNOWN"
 
 
+def test_live_eligible_only_when_verdict_ok():
+    from tradebot.universe import VettedToken
+    ok = VettedToken("GOOD", "0xa", 18, 5e6, 1e6, 3, "g", safety_verdict="OK")
+    unk = VettedToken("MYST", "0xc", 18, 3e6, 1e6, 1, "m", safety_verdict="UNKNOWN")
+    cau = VettedToken("MEH", "0xd", 18, 3e6, 1e6, 1, "d", safety_verdict="CAUTION")
+    none = VettedToken("RAW", "0xe", 18, 3e6, 1e6, 1, "e")      # screen never run
+    assert ok.live_eligible is True
+    assert unk.live_eligible is False and cau.live_eligible is False
+    assert none.live_eligible is False
+    assert ok.to_dict()["live_eligible"] is True                # surfaced for the dashboard
+
+
+def test_to_registry_live_only_keeps_only_ok():
+    from tradebot.universe import VettedToken, to_registry, to_safety
+    v = [VettedToken("GOOD", "0xa", 18, 5e6, 1e6, 3, "g", safety_verdict="OK"),
+         VettedToken("MYST", "0xc", 18, 3e6, 1e6, 1, "m", safety_verdict="UNKNOWN")]
+    assert set(to_registry(v)) == {"GOOD", "MYST"}             # full research set
+    assert set(to_registry(v, live_only=True)) == {"GOOD"}     # only OK reaches live
+    assert to_safety(v) == {"GOOD": "OK", "MYST": "UNKNOWN"}
+
+
 def test_discover_base_with_screen_drops_rug():
     page = {"data": [
         {"attributes": {"name": "GOOD / USDC", "reserve_in_usd": "3000000", "volume_usd": {"h24": "1"}},

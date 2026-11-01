@@ -122,3 +122,51 @@ def test_wbtc_tradeable_on_arbitrum():
                           max_notional_usd=100)
     pr = propose("b1", "0xabc", "USDC", "WBTC", 100.0, {"USDC": 1.0, "WBTC": 100000.0}, pol)
     assert pr.ok is True and pr.buy_token == "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f"
+
+
+# ---- Phase 0.4: live path refuses tokens that aren't safety-OK -----------------
+
+def test_live_refuses_discovered_unknown_token(tmp_path):
+    from tradebot import execution as ex
+    # A discovered token with an UNKNOWN verdict: registered for addresses, NOT live.
+    ex.register_tokens("base", {"SKETCH": ("0x" + "9" * 40, 18)},
+                       safety={"SKETCH": "UNKNOWN"})
+    prices = {"USDC": 1.0, "SKETCH": 0.5}
+    pol_live = ExecutionPolicy(enabled=True, chain="base",
+                               allowed_tokens=("USDC", "SKETCH"), max_notional_usd=100)
+    with pytest.raises(PolicyError, match="not live-eligible"):
+        propose("b1", "0xabc", "USDC", "SKETCH", 100.0, prices, pol_live)
+    # Dry-run (kill switch off) still builds a preview for research/UX.
+    pol_dry = ExecutionPolicy(enabled=False, chain="base",
+                              allowed_tokens=("USDC", "SKETCH"), max_notional_usd=100)
+    pr = propose("b1", "0xabc", "USDC", "SKETCH", 100.0, prices, pol_dry)
+    assert pr.ok is False
+
+
+def test_live_allows_discovered_ok_token():
+    from tradebot import execution as ex
+    ex.register_tokens("base", {"CLEAN": ("0x" + "a" * 40, 18)}, safety={"CLEAN": "OK"})
+    pol = ExecutionPolicy(enabled=True, chain="base",
+                          allowed_tokens=("USDC", "CLEAN"), max_notional_usd=100)
+    pr = propose("b1", "0xabc", "USDC", "CLEAN", 100.0, {"USDC": 1.0, "CLEAN": 2.0}, pol)
+    assert pr.ok is True
+
+
+def test_live_allows_hand_vetted_core_without_a_verdict():
+    # CBBTC is hand-audited (TRUSTED), so it is live-eligible with no recorded verdict.
+    pol = ExecutionPolicy(enabled=True, chain="base", allowed_tokens=("USDC", "CBBTC"),
+                          max_notional_usd=100)
+    pr = propose("b1", "0xabc", "USDC", "CBBTC", 100.0, {"USDC": 1.0, "CBBTC": 77000.0}, pol)
+    assert pr.ok is True
+
+
+def test_live_refuses_caution_and_avoid():
+    from tradebot import execution as ex
+    ex.register_tokens("base", {"MEH": ("0x" + "b" * 40, 18),
+                                "BAD": ("0x" + "c" * 40, 18)},
+                       safety={"MEH": "CAUTION", "BAD": "AVOID"})
+    for sym, price in (("MEH", 1.0), ("BAD", 1.0)):
+        pol = ExecutionPolicy(enabled=True, chain="base",
+                              allowed_tokens=("USDC", sym), max_notional_usd=100)
+        with pytest.raises(PolicyError, match="not live-eligible"):
+            propose("b1", "0xabc", "USDC", sym, 100.0, {"USDC": 1.0, sym: price}, pol)
