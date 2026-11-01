@@ -14,7 +14,7 @@ Required before sign-off:
 - [ ] 0.2 Hard caps enforced on-chain (Safe + Roles / Squads), not in localStorage; exact-amount approvals; `approvals_audit.py` reports zero unlimited approvals.
 - [x] 0.3 Global kill switch + portfolio drawdown breaker (code: `autopilot.py`, `scripts/kill.py`). _On-chain pause still pending (0.2)._
 - [x] 0.4 Token universe tightened: UNKNOWN/CAUTION never live-eligible (code: `execution.py`, `solana_exec.py`, `universe.py`).
-- [ ] 0.5 Real-fill cost reconciliation (`docs/fills.jsonl`, `scripts/cost_report.py`); backtests use the worse of modelled vs realized.
+- [x] 0.5 Real-fill cost reconciliation (code: `fills.py` → `docs/fills.jsonl`, `scripts/cost_report.py` → `docs/cost_model.json`; `backtest.run_backtest(cost_report=…)` + `build_site.py` use the worse of modelled vs realized). _Awaiting real canary fills to populate the log._
 
 **Phase 0 gate — SIGNED:** _[Dustin: name + date + canary cap]_ ☐ not yet
 

@@ -1,0 +1,22 @@
+{
+  "generated": "2026-11-01T04:47:44.963830+00:00",
+  "fills_path": "docs/fills.jsonl",
+  "n_fills": 0,
+  "n_ok": 0,
+  "n_failed": 0,
+  "failure_rate": 0.0,
+  "median_latency_s": 0.0,
+  "modelled": {
+    "fee_frac": 0.001,
+    "slippage_frac": 0.0007
+  },
+  "realized": {
+    "fee_frac": 0.0,
+    "slippage_frac": 0.0,
+    "p90_slippage_frac": 0.0
+  },
+  "effective": {
+    "fee_frac": 0.001,
+    "slippage_frac": 0.0007
+  }
+}

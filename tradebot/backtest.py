@@ -11,9 +11,9 @@ from __future__ import annotations
 import math
 import statistics
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional
 
-from .config import BotConfig
+from .config import BotConfig, CostModel
 from .ohlcv import Bar
 from .portfolio import PaperExecutor, Portfolio
 from .protection import ProfitProtector
@@ -85,10 +85,16 @@ def _max_dd(curve: List[float]) -> float:
     return mdd
 
 
-def run_backtest(bars: List[Bar], cfg: BotConfig) -> BacktestResult:
+def run_backtest(bars: List[Bar], cfg: BotConfig,
+                 cost_report: Optional[str] = None) -> BacktestResult:
+    """Run the backtest. When ``cost_report`` names a cost-reconciliation file
+    (docs/cost_model.json from scripts/cost_report.py), execution uses the WORSE of
+    the modelled costs (cfg.costs) and the realized costs in that report (Phase 0.5).
+    Omitted, costs are exactly cfg.costs — so existing callers are unchanged."""
     strat = build_strategy(cfg.strategy)
     risk = RiskManager(cfg.risk)
-    execu = PaperExecutor(cfg.costs)
+    costs = CostModel.from_report(cost_report, base=cfg.costs) if cost_report else cfg.costs
+    execu = PaperExecutor(costs)
     pf = Portfolio(cash=cfg.starting_cash)
     rstate = RiskState(peak_equity=cfg.starting_cash)
 

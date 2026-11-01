@@ -34,6 +34,9 @@ DOCS = os.path.join(ROOT, "docs")
 ONCHAIN = os.environ.get("TB_DATA_SOURCE", "auto").lower() == "onchain"
 INTERVAL = "1d" if ONCHAIN else os.environ.get("TB_INTERVAL", "4h")
 STYLE = os.environ.get("TB_STYLE", "swing")
+# Phase 0.5: backtests use the WORSE of modelled vs realized costs from this report
+# (written by scripts/cost_report.py). Missing report => modelled costs, unchanged.
+COST_REPORT = os.path.join(DOCS, "cost_model.json")
 NTFY = os.environ.get("NTFY_TOPIC", "").strip()
 
 
@@ -60,7 +63,8 @@ def build():
             trend = TrendFilterStrategy(STYLE).generate(bars)
             comp = CompositeStrategy(STYLE).generate(bars)
             bt = run_backtest(bars, BotConfig(symbol=sym, interval=INTERVAL,
-                                              strategy=StrategyConfig(kind="trend", style=STYLE)))
+                                              strategy=StrategyConfig(kind="trend", style=STYLE)),
+                              cost_report=COST_REPORT)
             now_long = trend.target_exposure > 0
             rows.append({
                 "symbol": sym, "price": bars[-1].close, "trend_up": now_long,
@@ -96,7 +100,8 @@ def build():
     try:
         fb = feed.history("BTC", "1d", 1000)
         fr = run_backtest(fb, BotConfig(symbol="BTC", interval="1d",
-                                        strategy=StrategyConfig(kind="trend")))
+                                        strategy=StrategyConfig(kind="trend")),
+                          cost_report=COST_REPORT)
         start = fb[0].close
         bh = [10000 * (b.close / start) for b in fb]
         step = max(1, len(fb) // 160)

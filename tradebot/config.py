@@ -26,6 +26,32 @@ class CostModel:
     fee_frac: float = 0.001             # 10 bps taker
     slippage_frac: float = 0.0007       # modelled slippage per trade
 
+    def worse_of(self, realized: dict) -> "CostModel":
+        """Return a CostModel that takes the WORSE (higher) of modelled vs realized
+        cost for each parameter (Phase 0.5). A backtest must never assume execution
+        cheaper than reality; `realized` is a dict with fee_frac / slippage_frac
+        (e.g. from tradebot.fills.realized_costs or docs/cost_model.json)."""
+        rf = float(realized.get("fee_frac", 0.0) or 0.0)
+        rs = float(realized.get("slippage_frac", 0.0) or 0.0)
+        return CostModel(fee_frac=max(self.fee_frac, rf),
+                         slippage_frac=max(self.slippage_frac, rs))
+
+    @classmethod
+    def from_report(cls, path: str = "docs/cost_model.json",
+                    base: "Optional[CostModel]" = None) -> "CostModel":
+        """Load effective (worse-of) costs from a cost report, falling back to the
+        modelled defaults when the report is missing or unreadable. This is how the
+        backtester reads its cost parameters from reconciled real fills."""
+        import json as _json
+        b = base or cls()
+        try:
+            with open(path) as fh:
+                rep = _json.load(fh)
+        except (FileNotFoundError, ValueError, OSError):
+            return b
+        realized = rep.get("realized", {}) if isinstance(rep, dict) else {}
+        return b.worse_of(realized)
+
 
 @dataclass
 class StrategyConfig:
