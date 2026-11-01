@@ -22,10 +22,15 @@ the 200d by the buffer OR the short average falls back below the long. Between t
 two triggers the gate HOLDS its last state — that band is the anti-whipsaw buffer.
 
 Defaults (sma_short=20, confirm_days=3) were chosen by a sensitivity sweep over
-~3.5y of BTC daily: they beat the slower 50d/5d gate on risk-adjusted return AND
-drawdown while staying positive in BOTH halves of the window (i.e. not overfit).
-Faster-reacting short/long spans scored higher in-sample but went negative
-out-of-sample, so they were rejected.
+~3.5y of BTC daily. HONEST UPDATE (1 Nov 2026, scripts/regime_eval.py over 2000 BTC
+daily bars via the Phase 1 harness): that sweep is OVERFIT — PBO=0.71 across a
+54-point grid, and a plain un-tuned 200-day SMA matched or beat the tuned gate
+(12.7%/0.53 vs 11.3%/0.50 CAGR/Sharpe). What DOES hold out-of-sample is the gate's
+DRAWDOWN reduction (34% vs 76% buy&hold max DD); its Sharpe does NOT beat buy&hold
+after deflation (DSR 0.80 vs 0.74). So treat this gate as a risk-reducer, not an
+alpha source, and prefer the simplest trend rule. See docs/FINDINGS.md and
+docs/regime_eval.json. (Switching the default to a plain 200d rule is a strategy
+change flagged for Phase 2/3, not yet made.)
 
 `mode` allows a manual override: "auto" (detect), "on" (force-enable), "off"
 (force-disable / hard kill). This is pure logic over a BTC close series — no keys,

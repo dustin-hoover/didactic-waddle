@@ -1,0 +1,54 @@
+{
+  "symbol": "BTC",
+  "git_commit": "f0cf9ad",
+  "n_days": 2000,
+  "cost_per_flip": 0.0017,
+  "n_trials": 54,
+  "benchmarks": {
+    "buy_hold": {
+      "cagr": 0.0853,
+      "sharpe": 0.422,
+      "max_drawdown": 0.7663
+    },
+    "sma200": {
+      "cagr": 0.1273,
+      "sharpe": 0.531,
+      "max_drawdown": 0.3568
+    }
+  },
+  "deployed_gate": {
+    "cagr": 0.113,
+    "sharpe": 0.496,
+    "max_drawdown": 0.3366
+  },
+  "dsr_deployed": 0.7968,
+  "dsr_buy_hold": 0.7424,
+  "pbo": 0.7103,
+  "pbo_median_logit": -0.981,
+  "walk_forward": {
+    "folds": 11,
+    "gate_beats_bh_folds": 4,
+    "mean_gate_daily": 0.000731,
+    "mean_bh_daily": 0.000949
+  },
+  "bootstrap_deployed": {
+    "cagr": {
+      "p05": -0.10696416217264915,
+      "p25": 0.009733160554068032,
+      "median": 0.10951513803785029,
+      "p75": 0.22369193405174936,
+      "p95": 0.4171409819486409,
+      "mean": 0.12437318316881389
+    },
+    "max_drawdown": {
+      "p05": 0.29091324268632013,
+      "p25": 0.3672506400148625,
+      "median": 0.44545041173310473,
+      "p75": 0.5436383151874199,
+      "p95": 0.6819221725767006,
+      "mean": 0.4618774900502912
+    },
+    "ruin_prob_50dd": 0.334
+  },
+  "verdict": "DSR is weak (0.80) \u2014 Sharpe only marginally beats luck; PBO=0.71 says the parameter choice is OVERFIT; the gate cut drawdown (34% vs buy&hold 77%); CAGR beats buy&hold (11% vs 9%)."
+}
