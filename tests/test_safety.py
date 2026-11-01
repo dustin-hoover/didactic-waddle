@@ -28,7 +28,7 @@ def test_norm_rejects_garbage():
     for bad in ["", "0x123", "notanaddress", "0x" + "z" * 40]:
         try:
             sf._norm(bad)
-            assert False, f"expected ValueError for {bad!r}"
+            raise AssertionError(f"expected ValueError for {bad!r}")
         except ValueError:
             pass
 

@@ -148,7 +148,7 @@ def test_supervisor_records_failure_on_retire(tmp_path):
     sup = Supervisor(str(tmp_path), SpawnPolicy(enabled=False), retire=retire, ledger=led)
     sup._signals = {"regime_on": False, "strength": 0.0}
     sup.add_bag("steady", seed=100)                # strongest, protected
-    weak = sup.add_bag("steady", seed=100)         # will be culled (can't 1000x)
+    sup.add_bag("steady", seed=100)                # will be culled (can't 1000x)
     # backdate births so they're past the (zero) deadline
     for r in led.records:
         r["ts"] = 0

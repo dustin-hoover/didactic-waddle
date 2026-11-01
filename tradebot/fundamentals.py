@@ -30,7 +30,7 @@ fetchers are injectable.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional
 
 # Symbols we never treat as opportunities: stablecoins and wrapped/pegged proxies
@@ -39,7 +39,7 @@ _EXCLUDE = {
     "USDT", "USDC", "USDS", "DAI", "TUSD", "FDUSD", "USDE", "PYUSD", "USD1", "BUSD",
     "USDG", "USR", "USDF", "USDD", "GUSD", "LUSD", "FRAX", "USDX", "RLUSD", "USDY", "USDO",
     "WBTC", "WETH", "WBT", "CBBTC", "BTCB", "WEETH", "WSTETH", "STETH", "RETH",
-    "LEO", "WBETH", "WBETH", "SUSDE", "BSC-USD",
+    "LEO", "WBETH", "SUSDE", "BSC-USD",
 }
 
 

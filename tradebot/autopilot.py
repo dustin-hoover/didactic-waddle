@@ -40,6 +40,8 @@ class AutopilotConfig:
     daily_cap_usd: float = 300.0       # max total notional placed per UTC day
     cooldown_min: int = 60             # minimum minutes between trades
     min_move_frac: float = 0.10        # ignore exposure changes smaller than this fraction of equity
+    max_drawdown_frac: float = 0.15    # PORTFOLIO breaker: pause new risk-on if equity is this far below its high-water mark
+    kill_file: str = "KILL"            # if this file exists (or env TB_KILL set), ALL new activity halts
     venue: str = "cow"
     chain: str = "base"
     allowed_tokens: tuple = ("USDC", "WETH", "WBTC")
@@ -57,6 +59,7 @@ class AutoState:
     spent_usd: float = 0.0
     last_trade_ts: int = 0
     trades_today: int = 0
+    hwm_equity: float = 0.0            # high-water mark of equity, for the drawdown breaker
 
 
 @dataclass
@@ -104,6 +107,16 @@ class Autopilot:
             self.state.spent_usd = 0.0
             self.state.trades_today = 0
 
+    def _killed(self) -> bool:
+        """Global kill switch: halt ALL new activity if env TB_KILL is set or the
+        kill file exists. Independent of the on-chain pause (see scripts/kill.py)."""
+        if os.environ.get("TB_KILL", "").strip().lower() in ("1", "true", "on", "yes"):
+            return True
+        try:
+            return bool(self.cfg.kill_file) and os.path.exists(self.cfg.kill_file)
+        except Exception:  # noqa: BLE001
+            return False
+
     def decide(self, bag_id: str, wallet: str, target_exposure: float, current_exposure: float,
                equity_usd: float, base_symbol: str, price_usd: dict, now_ts: int,
                regime_on: bool = True) -> Decision:
@@ -116,7 +129,10 @@ class Autopilot:
         c = self.cfg
         if not c.enabled:
             return Decision("hold", 0.0, c.live, "autopilot disabled")
+        if self._killed():
+            return Decision("hold", 0.0, c.live, "KILL switch engaged — all new activity halted", blocked="kill")
         self._roll_day(now_ts)
+        self.state.hwm_equity = max(self.state.hwm_equity, equity_usd)   # track the high-water mark
 
         delta = target_exposure - current_exposure
         notional = abs(delta) * equity_usd
@@ -124,6 +140,15 @@ class Autopilot:
             return Decision("hold", 0.0, c.live, "no material change (below min move)")
 
         side = "buy" if delta > 0 else "sell"
+
+        # PORTFOLIO drawdown breaker: if live equity is this far below its high-water
+        # mark, pause all new risk-on. De-risking (selling) is always still allowed.
+        if (side == "buy" and self.state.hwm_equity > 0
+                and equity_usd <= self.state.hwm_equity * (1 - c.max_drawdown_frac)):
+            dd = (1 - equity_usd / self.state.hwm_equity) * 100
+            return Decision("hold", notional, c.live,
+                            f"portfolio drawdown breaker ({dd:.0f}% off high) — new risk-on paused "
+                            f"until cleared", blocked="drawdown")
 
         # Master regime gate: no new/added longs unless a bull is confirmed. Selling
         # (de-risking to cash) is always permitted, even with the gate OFF.

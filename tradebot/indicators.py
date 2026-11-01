@@ -80,7 +80,7 @@ def rsi(values: List[float], n: int = 14) -> Series:
 
 def macd(values: List[float], fast: int = 12, slow: int = 26, signal: int = 9) -> Tuple[Series, Series, Series]:
     ef, es = ema(values, fast), ema(values, slow)
-    line: Series = [None if (a is None or b is None) else a - b for a, b in zip(ef, es)]
+    line: Series = [None if (a is None or b is None) else a - b for a, b in zip(ef, es, strict=False)]
     vals = [x for x in line if x is not None]
     sig_vals = ema(vals, signal)
     sig: Series = [None] * len(values)
@@ -90,7 +90,7 @@ def macd(values: List[float], fast: int = 12, slow: int = 26, signal: int = 9) -
         if line[i] is not None:
             sig[i] = sig_vals[j]
             j += 1
-    hist: Series = [None if (l is None or s is None) else l - s for l, s in zip(line, sig)]
+    hist: Series = [None if (l is None or s is None) else l - s for l, s in zip(line, sig, strict=False)]
     return line, sig, hist
 
 

@@ -2,7 +2,6 @@
 
 import importlib.util
 import os
-import sys
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _SPEC = importlib.util.spec_from_file_location(
@@ -13,7 +12,7 @@ _SPEC.loader.exec_module(tf)
 
 def _journal(prices, imbs, sym="ETH"):
     days = {}
-    for k, (p, i) in enumerate(zip(prices, imbs)):
+    for k, (p, i) in enumerate(zip(prices, imbs, strict=False)):
         days[f"2026-03-{k+1:02d}"] = {sym: {"price": float(p), "imb": float(i)}}
     return {"days": days}
 
@@ -42,7 +41,7 @@ def test_no_lookahead_buyhold_matches_product():
     bh = books["buy&hold"]
     expected = [prices[i + 1] / prices[i] - 1 for i in range(len(prices) - 1)]
     assert len(bh) == len(expected)
-    for a, b in zip(bh, expected):
+    for a, b in zip(bh, expected, strict=False):
         assert abs(a - b) < 1e-9
 
 

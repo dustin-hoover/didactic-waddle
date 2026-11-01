@@ -56,7 +56,7 @@ def hl_cross_section():
     try:
         meta, ctxs = _post("https://api.hyperliquid.xyz/info", {"type": "metaAndAssetCtxs"})
         rows = []
-        for a, c in zip(meta["universe"], ctxs):
+        for a, c in zip(meta["universe"], ctxs, strict=False):
             fr = float(c.get("funding") or 0)
             rows.append((a["name"], fr * 24 * 365 * 100))
         rows.sort(key=lambda r: r[1], reverse=True)

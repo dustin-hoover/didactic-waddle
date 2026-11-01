@@ -60,7 +60,7 @@ def test_reserve_and_flywheel_state_persist(tmp_path):
     # steep uptrend so the machine skims and (with ratio trigger) can reinvest
     up = bars_from_closes([float(100 * 1.03 ** i) for i in range(200)])
     TradingEngine(_cfg(p)).advance(up[:2])           # activate from near the start
-    reps = TradingEngine(_cfg(p)).advance(up)        # process the rest
+    TradingEngine(_cfg(p)).advance(up)               # process the rest
     snap = TradingEngine(_cfg(p)).snapshot(up[-1].close)
     assert snap["reserve"] > 0                        # profit was banked
     assert snap["total"] >= snap["trading_equity"]   # reserve adds to total

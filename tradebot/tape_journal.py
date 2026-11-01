@@ -76,7 +76,7 @@ def _pearson(xs: List[float], ys: List[float]) -> Optional[float]:
     if n < 3:
         return None
     mx, my = sum(xs) / n, sum(ys) / n
-    cov = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
+    cov = sum((x - mx) * (y - my) for x, y in zip(xs, ys, strict=False))
     vx = sum((x - mx) ** 2 for x in xs) ** 0.5
     vy = sum((y - my) ** 2 for y in ys) ** 0.5
     return cov / (vx * vy) if vx and vy else None
@@ -107,11 +107,11 @@ def _edge(imb: List[float], fwd: List[float]) -> dict:
     """Shared edge stats for a signal vs. forward returns."""
     n = len(imb)
     corr = _pearson(imb, fwd)
-    hits = sum(1 for i, r in zip(imb, fwd) if (i > 0) == (r > 0))
-    acc = [r for i, r in zip(imb, fwd) if i > 0]
-    dist = [r for i, r in zip(imb, fwd) if i <= 0]
+    hits = sum(1 for i, r in zip(imb, fwd, strict=False) if (i > 0) == (r > 0))
+    acc = [r for i, r in zip(imb, fwd, strict=False) if i > 0]
+    dist = [r for i, r in zip(imb, fwd, strict=False) if i <= 0]
     eq_flow = eq_hold = 1.0
-    for i, r in zip(imb, fwd):
+    for i, r in zip(imb, fwd, strict=False):
         eq_hold *= (1 + r)
         if i > 0:
             eq_flow *= (1 + r)
@@ -150,11 +150,11 @@ def analyze(journal: dict) -> dict:
         out["verdict"] = "not enough data yet — keep the journal running"
         return out
     corr = _pearson(imb, fwd)
-    hits = sum(1 for i, r in zip(imb, fwd) if (i > 0) == (r > 0))
-    acc = [r for i, r in zip(imb, fwd) if i > 0]
-    dist = [r for i, r in zip(imb, fwd) if i <= 0]
+    hits = sum(1 for i, r in zip(imb, fwd, strict=False) if (i > 0) == (r > 0))
+    acc = [r for i, r in zip(imb, fwd, strict=False) if i > 0]
+    dist = [r for i, r in zip(imb, fwd, strict=False) if i <= 0]
     eq_flow = eq_hold = 1.0
-    for i, r in zip(imb, fwd):
+    for i, r in zip(imb, fwd, strict=False):
         eq_hold *= (1 + r)
         if i > 0:
             eq_flow *= (1 + r)

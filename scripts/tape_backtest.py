@@ -110,7 +110,6 @@ def daily_flow(symbol: str, days: int, max_swaps: int, sample_blocks: int = 900)
 
 
 def analyze(symbol, series):
-    rows = [(i, s) for i, s in enumerate(series) if s]
     # pair imbalance_t with return_t+1, using consecutive available days
     imb, fwd = [], []
     acc_ret, dist_ret = [], []
@@ -127,7 +126,7 @@ def analyze(symbol, series):
         print("  too few usable days to judge — deepen the window (ETH_RPC_URL) and retry.")
         return
     corr = _pearson(imb, fwd)
-    hits = sum(1 for i, r in zip(imb, fwd) if (i > 0) == (r > 0))
+    hits = sum(1 for i, r in zip(imb, fwd, strict=False) if (i > 0) == (r > 0))
     print(f"  corr(imbalance_t, return_t+1) : {corr:+.3f}" if corr is not None else "  corr: n/a")
     print(f"  directional hit-rate          : {hits}/{len(imb)} = {hits/len(imb):.0%}")
     if acc_ret:
@@ -136,7 +135,7 @@ def analyze(symbol, series):
         print(f"  mean fwd return | distribution : {sum(dist_ret)/len(dist_ret):+.2%} (n={len(dist_ret)})")
     # flow-following vs buy&hold (go long next day iff today's flow is positive)
     eq_flow, eq_hold = 1.0, 1.0
-    for i, r in zip(imb, fwd):
+    for i, r in zip(imb, fwd, strict=False):
         eq_hold *= (1 + r)
         if i > 0:
             eq_flow *= (1 + r)

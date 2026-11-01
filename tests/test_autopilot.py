@@ -94,6 +94,60 @@ def test_regime_gate_blocks_new_longs_but_allows_selling(tmp_path):
     assert d_sell.action == "sell" and d_sell.proposal is not None
 
 
+def test_kill_file_halts_all_activity(tmp_path):
+    kf = tmp_path / "KILL"
+    ap = _ap(tmp_path, enabled=True, live=False, kill_file=str(kf))
+    # Without the file, a buy proposes as usual.
+    assert ap.decide("b1", "0xabc", 1.0, 0.0, 100, "WETH", PRICES, NOW).action == "buy"
+    # Engage the kill: every path holds, even a de-risking sell.
+    kf.write_text("stop\n")
+    d_buy = ap.decide("b1", "0xabc", 1.0, 0.0, 100, "WETH", PRICES, NOW)
+    assert d_buy.action == "hold" and d_buy.blocked == "kill"
+    d_sell = ap.decide("b1", "0xabc", 0.0, 1.0, 100, "WETH", PRICES, NOW, regime_on=False)
+    assert d_sell.action == "hold" and d_sell.blocked == "kill"
+    # Clear it: activity resumes.
+    kf.unlink()
+    assert ap.decide("b1", "0xabc", 1.0, 0.0, 100, "WETH", PRICES, NOW).action == "buy"
+
+
+def test_kill_env_var_halts_activity(tmp_path, monkeypatch):
+    ap = _ap(tmp_path, enabled=True, live=False, kill_file=str(tmp_path / "nope"))
+    monkeypatch.setenv("TB_KILL", "1")
+    d = ap.decide("b1", "0xabc", 1.0, 0.0, 100, "WETH", PRICES, NOW)
+    assert d.action == "hold" and d.blocked == "kill"
+
+
+def test_drawdown_breaker_trips_and_resets(tmp_path):
+    ap = _ap(tmp_path, enabled=True, live=False, max_drawdown_frac=0.15)
+    # Establish a high-water mark at $100 equity (a normal buy).
+    d0 = ap.decide("b1", "0xabc", 1.0, 0.0, 100, "WETH", PRICES, NOW)
+    assert d0.action == "buy" and ap.state.hwm_equity == 100
+    # Equity now 84 => 16% off the high (> 15%): new risk-on is paused...
+    d_dd = ap.decide("b1", "0xabc", 1.0, 0.0, 84, "WETH", PRICES, NOW)
+    assert d_dd.action == "hold" and d_dd.blocked == "drawdown"
+    # ...but de-risking (selling) is still allowed while underwater.
+    d_sell = ap.decide("b1", "0xabc", 0.0, 1.0, 84, "WETH", PRICES, NOW)
+    assert d_sell.action == "sell"
+    # Recover to 90 (10% off high, within tolerance): risk-on resumes.
+    d_ok = ap.decide("b1", "0xabc", 1.0, 0.0, 90, "WETH", PRICES, NOW)
+    assert d_ok.action == "buy"
+
+
+def test_drawdown_breaker_does_not_block_before_a_high_is_set(tmp_path):
+    # With no prior equity history, the first buy at a low equity must not trip.
+    ap = _ap(tmp_path, enabled=True, live=False, max_drawdown_frac=0.15)
+    d = ap.decide("b1", "0xabc", 1.0, 0.0, 10, "WETH", PRICES, NOW)
+    assert d.action == "buy"
+
+
+def test_hwm_persists_across_reload(tmp_path):
+    ap = _ap(tmp_path, enabled=True, live=True, max_drawdown_frac=0.15)
+    ap.decide("b1", "0xabc", 1.0, 0.0, 100, "WETH", PRICES, NOW)
+    ap.record_fill(10.0, NOW)                       # record_fill persists state
+    ap2 = Autopilot(ap.cfg, ap.state_path)
+    assert ap2.state.hwm_equity == 100              # high-water mark survived the reload
+
+
 def test_injected_propose_fn_used(tmp_path):
     # A non-EVM chain injects its own proposal builder; the autopilot must use it.
     calls = {}

@@ -90,7 +90,6 @@ def main():
     btc = feed.history("BTC", "1d", 1000)
     dates = [b.date[:10] for b in btc]
     btc_close = [b.close for b in btc]
-    idx = {d: i for i, d in enumerate(dates)}
 
     coins = {}
     for sym, slug in UNIVERSE:

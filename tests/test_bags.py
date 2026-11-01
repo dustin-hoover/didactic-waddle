@@ -5,7 +5,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tradebot.bags import BagSpec, Supervisor, SpawnPolicy
+from tradebot.bags import Supervisor, SpawnPolicy
 from tradebot.ohlcv import Bar
 
 

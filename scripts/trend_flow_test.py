@@ -125,7 +125,6 @@ def main():
         print(f"{sym:<7}{d['buy&hold']:>+9.1%}{d['trend']:>+9.1%}"
               f"{d['trend+accum']:>+9.1%}{d['trend+distexit']:>+10.1%}")
     # honest read
-    base = _stats(books["trend"])
     print("\nread: compare each overlay to trend-only. An overlay 'helps' only if it "
           "lifts Sharpe or cuts maxDD without gutting return. Flow history is ~60 "
           "days, so treat any gap as a hint, not a result.")

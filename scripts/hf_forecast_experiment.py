@@ -53,7 +53,7 @@ def _solve(A, b):
         for r in range(n):
             if r != col and abs(M[r][col]) > 0:
                 f = M[r][col]
-                M[r] = [a - f * b_ for a, b_ in zip(M[r], M[col])]
+                M[r] = [a - f * b_ for a, b_ in zip(M[r], M[col], strict=False)]
     return [M[i][n] for i in range(n)]
 
 
@@ -127,7 +127,6 @@ def run(symbol="BTC", bars=1000, warmup=200, refit_every=5, cost_bps=10.0,
 
     # precompute causal features
     feats = [features(closes, rets, i) for i in range(n)]
-    dim = len(feats[0]) + 1  # + bias
 
     # ---- strategies, stepped together, no lookahead ----
     eq_bh = [1.0]; dr_bh = []
@@ -164,7 +163,7 @@ def run(symbol="BTC", bars=1000, warmup=200, refit_every=5, cost_bps=10.0,
             coeffs = ridge_fit(Xs, ytr, lam=lam)
 
         xf = [1.0] + [(feats[t][j] - mean[j]) / std[j] for j in range(len(feats[t]))]
-        pred = sum(c * x for c, x in zip(coeffs, xf))
+        pred = sum(c * x for c, x in zip(coeffs, xf, strict=False))
         long_fc = 1 if pred > thr else 0
         c_fc = cost if long_fc != pos_fc else 0.0
         r_fc = long_fc * rnext - c_fc

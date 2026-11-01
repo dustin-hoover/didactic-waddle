@@ -21,7 +21,7 @@ import os
 import ssl
 import statistics
 import urllib.request
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional
 
 
@@ -131,7 +131,7 @@ def hl_cross_section() -> Dict[str, float]:
     """Hyperliquid current funding, annualized % per coin (hourly funding)."""
     meta, ctxs = _post("https://api.hyperliquid.xyz/info", {"type": "metaAndAssetCtxs"})
     out: Dict[str, float] = {}
-    for a, cx in zip(meta["universe"], ctxs):
+    for a, cx in zip(meta["universe"], ctxs, strict=False):
         out[a["name"]] = round(float(cx.get("funding") or 0) * 24 * 365 * 100, 1)
     return out
 
