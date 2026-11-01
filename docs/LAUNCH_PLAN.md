@@ -1,4 +1,7 @@
-# Otherworldly: launch and business plan
+# Geodyssey: launch and business plan
+
+(The combined site was first called Otherworldly; renamed Geodyssey on 2026-11-01. The world repos' docs still say
+"Other Worldly Project" and the visit counter account is still `otherworldly`; see the rename checklist below.)
 
 A plan only. Nothing here changes the live atlases until the owner says "merge" on the work that carries it out.
 Written area by area with the owner; sections marked **draft** are not yet agreed.
@@ -7,8 +10,8 @@ Written area by area with the owner; sections marked **draft** are not yet agree
 
 | Topic | Decision | When |
 |---|---|---|
-| Name | **Otherworldly** (the name already used by the visit counter) | 2026-10-09 |
-| Domain | Not chosen yet. `otherworldly.com` and `.app` are taken; `otherworldlyatlas.com` (~$16 first year) and `otherworldly.world` (~$47) were available on 2026-10-09 | open |
+| Name | **Geodyssey** (renamed from Otherworldly) | 2026-11-01 |
+| Domain | Not chosen yet. `geodyssey.com` is taken. Available on 2026-11-01: `geodyssey.app` (~$20 first year), `geodysseyatlas.com` (~$16), `geodyssey.net` (~$19), `geodyssey.io` (~$40), `geodyssey.world` (~$47) | open |
 | Owner's name | Must not be tied to the combined site once worlds are merged | 2026-10-09 |
 | Repos | Stay in the owner's account for now (no move to an organisation yet) | 2026-10-09 |
 | Page hosting | Stay on GitHub Pages for now | 2026-10-09 |
@@ -17,6 +20,32 @@ Written area by area with the owner; sections marked **draft** are not yet agree
 | Lawyer | Owner is in the US and has no IP lawyer yet | 2026-10-09 |
 | Social accounts | Mostly automated: clips and posts prepared and scheduled, owner only approves | 2026-10-09 |
 | Launch timing | No public push until the combined site (gallery and domain) exists | 2026-10-09 |
+
+## The name: Geodyssey
+
+### Others already using the name (web search, 2026-11-01)
+- **Geodyssey**, a surreal first-person puzzle game on Steam (released August 2026).
+- **Geodyssey: Geography Quiz**, an iPhone and iPad app of flags, capitals and world maps.
+- **Geodyssey**, a UK travel company for Latin America and the Caribbean (geodyssey.co.uk). Who owns `geodyssey.com` was not
+  checked.
+- **Geodyssey**, a series of novels by Piers Anthony.
+- Geodyssey Research, LLC, a Florida company.
+
+The game and the geography quiz app sit closest to us (games, maps, globes). Two products with the same name in the
+same field is the classic trademark conflict, and a fan site inviting ads is a commercial use. **Before the domain
+is bought, socials are claimed or anything is printed, the lawyer should run a trademark clearance search** (USPTO
+records and common-law use). If the name is risky, a distinguishing form such as "Geodyssey Atlas" may be enough,
+or the lawyer may advise another name. Cost: a clearance search is often bundled into the IP consult, or ~$150–500
+on its own.
+
+### Rename checklist (after clearance, on work branches, merged only on "merge")
+- Domain and social handles (`@geodyssey` is likely taken on some platforms; check together before announcing).
+- Visit counter: GoatCounter lets the account code be changed, or a new `geodyssey` site can be added; the atlases'
+  counter snippet allows the hostname `otherworldly` today and would need the new name.
+- Docs in both world repos: "The Other Worldly Project" in README files, CLAUDE.md and `docs/otherworldly/`
+  (the folder name can stay, or move to `docs/geodyssey/`).
+- Each world page keeps its own title (Arda Atlas, The Known World) with "part of Geodyssey" on the gallery only,
+  until the owner wants the name on the world pages too.
 
 ## Found while reading the repos (for the lawyer review)
 
@@ -160,7 +189,7 @@ service throttled full-text checks. **A lawyer should confirm all of it.**
 1. **See the lawyer before the public launch, not only before money.** Launch is when the rights holders notice,
    and Arda's sourcing is a question best answered privately first. One flat-fee consult (~$300–800) or a free one
    through Volunteer Lawyers for the Arts, the state bar's referral service, or a law-school IP clinic.
-2. **Bring the lawyer a packet:** the laws, a link to each world, the sources ledger, the Arda tracing note, and
+2. **Bring the lawyer a packet:** the trademark clearance question for "Geodyssey" (above), the laws, a link to each world, the sources ledger, the Arda tracing note, and
    the money plan (area 3). Ask: Is Arda's geography safe or must it be redrawn? Are ads on a fan reference site
    acceptable? What disclaimers and DMCA process do we need? Should payments go through an LLC?
 3. **Redraw Arda the Known World way** if the lawyer says so: our own generalised coastline and outlines, positions
