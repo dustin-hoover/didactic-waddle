@@ -1,0 +1,7 @@
+step,removes_spof,spof_type,members_protected,add_hop_a,add_hop_b,kind,km,cost_radio_or_class_usd,cost_if_aerial_fiber_usd
+1,SP-06-13,link,2243,BDN-Z-08-N10,BDN-Z-08-N29,land,6.44,8000,149975
+2,SP-10-14,link,1537,BDN-Z-18-N18,BDN-Z-08-N10,land,5.37,8000,125055
+3,BDN-Z-08-N10,node,1537,BDN-Z-18-N18,BDN-Z-01-N06,land,6.58,8000,153415
+4,BDN-Z-18-N18,node,1310,BDN-Z-04-N12,BDN-Z-01-N06,land,6.6,8000,153711
+5,SP-11-28,link,429,BDN-Z-07-N04,BDN-Z-10-N11,land,4.6,8000,107290
+6,BDN-Z-10-N11,,,,,none within 7 km,,,

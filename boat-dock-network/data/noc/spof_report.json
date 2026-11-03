@@ -1,0 +1,344 @@
+{
+ "members_total": 4211,
+ "spine_links": 41,
+ "spine_bridges_without_headends": 9,
+ "headend_homing": {
+  "HE-NW": [
+   "BDN-Z-02-N13"
+  ],
+  "HE-E": [
+   "BDN-Z-12-N30"
+  ]
+ },
+ "before": {
+  "bridges": 5,
+  "cut_nodes": 8,
+  "members_behind_a_spof": 2367,
+  "spofs": [
+   {
+    "element": "SP-06-13",
+    "type": "link",
+    "kind": "land",
+    "isolates_nodes": [
+     "BDN-Z-01-N06",
+     "BDN-Z-03-N07",
+     "BDN-Z-04-N02",
+     "BDN-Z-04-N12",
+     "BDN-Z-04-N24",
+     "BDN-Z-06-N14",
+     "BDN-Z-07-N04",
+     "BDN-Z-08-N10",
+     "BDN-Z-10-N11",
+     "BDN-Z-10-N28",
+     "BDN-Z-15-N15",
+     "BDN-Z-18-N18",
+     "BDN-Z-18-N21"
+    ],
+    "members": 2243
+   },
+   {
+    "element": "BDN-Z-02-N13",
+    "type": "node",
+    "kind": "T2",
+    "isolates_nodes": [
+     "BDN-Z-01-N06",
+     "BDN-Z-03-N07",
+     "BDN-Z-04-N02",
+     "BDN-Z-04-N12",
+     "BDN-Z-04-N24",
+     "BDN-Z-06-N14",
+     "BDN-Z-07-N04",
+     "BDN-Z-08-N10",
+     "BDN-Z-10-N11",
+     "BDN-Z-10-N28",
+     "BDN-Z-15-N15",
+     "BDN-Z-18-N18",
+     "BDN-Z-18-N21"
+    ],
+    "members": 2243
+   },
+   {
+    "element": "SP-06-10",
+    "type": "link",
+    "kind": "water_long",
+    "isolates_nodes": [
+     "BDN-Z-03-N07",
+     "BDN-Z-04-N02",
+     "BDN-Z-04-N12",
+     "BDN-Z-04-N24",
+     "BDN-Z-06-N14",
+     "BDN-Z-07-N04",
+     "BDN-Z-08-N10",
+     "BDN-Z-10-N11",
+     "BDN-Z-10-N28",
+     "BDN-Z-15-N15",
+     "BDN-Z-18-N18",
+     "BDN-Z-18-N21"
+    ],
+    "members": 1751
+   },
+   {
+    "element": "BDN-Z-01-N06",
+    "type": "node",
+    "kind": "T2",
+    "isolates_nodes": [
+     "BDN-Z-03-N07",
+     "BDN-Z-04-N02",
+     "BDN-Z-04-N12",
+     "BDN-Z-04-N24",
+     "BDN-Z-06-N14",
+     "BDN-Z-07-N04",
+     "BDN-Z-08-N10",
+     "BDN-Z-10-N11",
+     "BDN-Z-10-N28",
+     "BDN-Z-15-N15",
+     "BDN-Z-18-N18",
+     "BDN-Z-18-N21"
+    ],
+    "members": 1751
+   },
+   {
+    "element": "SP-10-14",
+    "type": "link",
+    "kind": "land",
+    "isolates_nodes": [
+     "BDN-Z-03-N07",
+     "BDN-Z-04-N02",
+     "BDN-Z-04-N12",
+     "BDN-Z-04-N24",
+     "BDN-Z-06-N14",
+     "BDN-Z-07-N04",
+     "BDN-Z-10-N11",
+     "BDN-Z-10-N28",
+     "BDN-Z-15-N15",
+     "BDN-Z-18-N18",
+     "BDN-Z-18-N21"
+    ],
+    "members": 1537
+   },
+   {
+    "element": "BDN-Z-08-N10",
+    "type": "node",
+    "kind": "T3",
+    "isolates_nodes": [
+     "BDN-Z-03-N07",
+     "BDN-Z-04-N02",
+     "BDN-Z-04-N12",
+     "BDN-Z-04-N24",
+     "BDN-Z-06-N14",
+     "BDN-Z-07-N04",
+     "BDN-Z-10-N11",
+     "BDN-Z-10-N28",
+     "BDN-Z-15-N15",
+     "BDN-Z-18-N18",
+     "BDN-Z-18-N21"
+    ],
+    "members": 1537
+   },
+   {
+    "element": "SP-14-18",
+    "type": "link",
+    "kind": "land",
+    "isolates_nodes": [
+     "BDN-Z-03-N07",
+     "BDN-Z-04-N02",
+     "BDN-Z-04-N12",
+     "BDN-Z-04-N24",
+     "BDN-Z-07-N04",
+     "BDN-Z-10-N11",
+     "BDN-Z-10-N28",
+     "BDN-Z-15-N15",
+     "BDN-Z-18-N18",
+     "BDN-Z-18-N21"
+    ],
+    "members": 1350
+   },
+   {
+    "element": "BDN-Z-06-N14",
+    "type": "node",
+    "kind": "T2",
+    "isolates_nodes": [
+     "BDN-Z-03-N07",
+     "BDN-Z-04-N02",
+     "BDN-Z-04-N12",
+     "BDN-Z-04-N24",
+     "BDN-Z-07-N04",
+     "BDN-Z-10-N11",
+     "BDN-Z-10-N28",
+     "BDN-Z-15-N15",
+     "BDN-Z-18-N18",
+     "BDN-Z-18-N21"
+    ],
+    "members": 1350
+   },
+   {
+    "element": "BDN-Z-18-N18",
+    "type": "node",
+    "kind": "T2",
+    "isolates_nodes": [
+     "BDN-Z-03-N07",
+     "BDN-Z-04-N02",
+     "BDN-Z-04-N12",
+     "BDN-Z-04-N24",
+     "BDN-Z-07-N04",
+     "BDN-Z-10-N11",
+     "BDN-Z-10-N28",
+     "BDN-Z-15-N15",
+     "BDN-Z-18-N21"
+    ],
+    "members": 1310
+   },
+   {
+    "element": "SP-11-28",
+    "type": "link",
+    "kind": "water_long",
+    "isolates_nodes": [
+     "BDN-Z-07-N04",
+     "BDN-Z-10-N28",
+     "BDN-Z-15-N15"
+    ],
+    "members": 429
+   },
+   {
+    "element": "BDN-Z-10-N11",
+    "type": "node",
+    "kind": "T2",
+    "isolates_nodes": [
+     "BDN-Z-07-N04",
+     "BDN-Z-10-N28",
+     "BDN-Z-15-N15"
+    ],
+    "members": 429
+   },
+   {
+    "element": "BDN-Z-10-N28",
+    "type": "node",
+    "kind": "T3",
+    "isolates_nodes": [
+     "BDN-Z-07-N04",
+     "BDN-Z-15-N15"
+    ],
+    "members": 311
+   },
+   {
+    "element": "BDN-Z-16-N05",
+    "type": "node",
+    "kind": "T2",
+    "isolates_nodes": [
+     "BDN-Z-17-N16",
+     "BDN-Z-17-N27"
+    ],
+    "members": 124
+   }
+  ]
+ },
+ "plan": {
+  "added": [
+   {
+    "removes_spof": "SP-06-13",
+    "spof_type": "link",
+    "members_protected": 2243,
+    "add_hop": {
+     "a": "BDN-Z-08-N10",
+     "b": "BDN-Z-08-N29",
+     "kind": "land",
+     "km": 6.44,
+     "cost_radio_or_class": 8000,
+     "cost_if_aerial_fiber": 149975
+    }
+   },
+   {
+    "removes_spof": "SP-10-14",
+    "spof_type": "link",
+    "members_protected": 1537,
+    "add_hop": {
+     "a": "BDN-Z-18-N18",
+     "b": "BDN-Z-08-N10",
+     "kind": "land",
+     "km": 5.37,
+     "cost_radio_or_class": 8000,
+     "cost_if_aerial_fiber": 125055
+    }
+   },
+   {
+    "removes_spof": "BDN-Z-08-N10",
+    "spof_type": "node",
+    "members_protected": 1537,
+    "add_hop": {
+     "a": "BDN-Z-18-N18",
+     "b": "BDN-Z-01-N06",
+     "kind": "land",
+     "km": 6.58,
+     "cost_radio_or_class": 8000,
+     "cost_if_aerial_fiber": 153415
+    }
+   },
+   {
+    "removes_spof": "BDN-Z-18-N18",
+    "spof_type": "node",
+    "members_protected": 1310,
+    "add_hop": {
+     "a": "BDN-Z-04-N12",
+     "b": "BDN-Z-01-N06",
+     "kind": "land",
+     "km": 6.6,
+     "cost_radio_or_class": 8000,
+     "cost_if_aerial_fiber": 153711
+    }
+   },
+   {
+    "removes_spof": "SP-11-28",
+    "spof_type": "link",
+    "members_protected": 429,
+    "add_hop": {
+     "a": "BDN-Z-07-N04",
+     "b": "BDN-Z-10-N11",
+     "kind": "land",
+     "km": 4.6,
+     "cost_radio_or_class": 8000,
+     "cost_if_aerial_fiber": 107290
+    }
+   },
+   {
+    "spof": "BDN-Z-10-N11",
+    "fix": null,
+    "note": "no candidate hop <= 7.0 km"
+   }
+  ],
+  "hops": 5,
+  "total_cost_low": 40000,
+  "total_cost_high": 689446,
+  "spofs_remaining": [
+   "BDN-Z-10-N11",
+   "BDN-Z-16-N05"
+  ]
+ },
+ "after": {
+  "bridges": 0,
+  "cut_nodes": 2,
+  "members_behind_a_spof": 553,
+  "spofs": [
+   {
+    "element": "BDN-Z-10-N11",
+    "type": "node",
+    "kind": "T2",
+    "isolates_nodes": [
+     "BDN-Z-07-N04",
+     "BDN-Z-10-N28",
+     "BDN-Z-15-N15"
+    ],
+    "members": 429
+   },
+   {
+    "element": "BDN-Z-16-N05",
+    "type": "node",
+    "kind": "T2",
+    "isolates_nodes": [
+     "BDN-Z-17-N16",
+     "BDN-Z-17-N27"
+    ],
+    "members": 124
+   }
+  ]
+ }
+}
