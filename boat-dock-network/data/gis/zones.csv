@@ -1,0 +1,14 @@
+zone_id,name,region,county,phase,premises_passed_est,notes
+Z-PC,Prairie Creek,Central,Benton,1,,High demand; FTTH candidate; pilot
+Z-RB,Rocky Branch,Central,Benton,1,,Large residential shoreline; pilot
+Z-HC,Hickory Creek,Central,Benton,2,,Residential coves
+Z-LB,Lost Bridge,North,Benton,2,,North-shore residential
+Z-HB,Horseshoe Bend,Central,Benton,2,,Residential-heavy
+Z-DAM,Dam Site,North,Carroll/Benton,2,,Core node + on-ramp candidate
+Z-STK,Starkey,North,Benton,3,,Marina/park anchor
+Z-INC,Indian Creek,North,Benton,3,,Cove cluster
+Z-WE,War Eagle,South,Washington/Benton,3,,Long finger; relay-heavy
+Z-BT,Beaver Town/Ventris,East,Carroll,3,,East-shore residential/resort
+Z-ES,Eureka Springs approach,East,Carroll,4,,Tourism/resort demand
+Z-WR,White River upper,South,Washington,4,,Sparse; wireless-first
+Z-CC,Upper coves/creeks,South,Washington/Benton,4,,Long tail; demand-driven

@@ -1,0 +1,4 @@
+parcel_id,address,owner_name,building_type,occupancy,zone_id,serviceability,medium,assigned_node,demand_flag,dock_present,boat_reachable,launch_ramp,lat,lon
+,,,home,year_round,Z-PC,not_passed,,,,,,,
+,,,home,seasonal,Z-RB,not_passed,,,,,,,
+,,,marina,year_round,Z-PC,not_passed,,,,,,,
