@@ -1,0 +1,78 @@
+<title>WAKE Cooperative Governance</title>
+<style>
+:root{--bg:#eef1f2;--surface:#fff;--ink:#0b0b0b;--muted:#52514e;--line:#dfe4e6;--g:#e7e7e2;--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c0f10;--surface:#16191a;--ink:#f3f5f5;--muted:#c3c2b7;--line:#2a2f30;--g:#282d2e;--s1:#3987e5;--s2:#d95926;--s3:#199e70;}}
+:root[data-theme="dark"]{--bg:#0c0f10;--surface:#16191a;--ink:#f3f5f5;--muted:#c3c2b7;--line:#2a2f30;--g:#282d2e;--s1:#3987e5;--s2:#d95926;--s3:#199e70;}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:max(16px,env(safe-area-inset-top)) 16px 28px}
+.wrap{max-width:1000px;margin:0 auto} h1{margin:0 0 2px;font-size:22px} .sub{color:var(--muted);font-size:13px;margin:0 0 14px;font-family:ui-monospace,Menlo,monospace}
+.tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.tile b{display:block;font-size:18px;font-variant-numeric:tabular-nums} .tile span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.rail{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 15px}
+.card h3{margin:0 0 6px;font-size:14px} .card p{margin:4px 0;font-size:12.5px;color:var(--muted);line-height:1.5}
+.badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;margin-bottom:4px}
+.gov{background:#2a78d622;color:var(--s1)} .eco{background:#1baf7a22;color:var(--s3)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+figure{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+figcaption{font-size:13px;font-weight:600} .cap{font-size:11px;color:var(--muted);margin-bottom:4px}
+svg{width:100%;height:auto;display:block;overflow:visible} .g{stroke:var(--g);stroke-width:.2}
+.yt{font-size:2.4px;fill:var(--muted);text-anchor:end} .xt{font-size:2.7px;fill:var(--muted);text-anchor:middle} .dl{font-size:2.7px;fill:var(--ink);text-anchor:middle;font-variant-numeric:tabular-nums}
+.lg{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:6px} .lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;margin-top:6px}
+.step{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 9px} .arw{color:var(--muted)}
+.note{color:var(--muted);font-size:11.5px;line-height:1.5;margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+@media (max-width:780px){.tiles{grid-template-columns:repeat(3,1fr)} .rail,.grid2{grid-template-columns:1fr}}
+</style>
+<div class="wrap">
+<h1>WAKE — Cooperative Governance</h1>
+<p class="sub">Boat Dock Network · earn 1 WAKE per month of membership · non-transferable · tenure-weighted voting</p>
+<div class="tiles">
+  <div class="tile"><b>1 / mo</b><span>WAKE per member</span></div>
+  <div class="tile"><b>1.5&times;</b><span>host-node accrual</span></div>
+  <div class="tile"><b>120</b><span>vote cap (10 yr)</span></div>
+  <div class="tile"><b>50% / yr</b><span>pool redistributed</span></div>
+  <div class="tile"><b>100&rarr;11%</b><span>founder vote share Y1&rarr;Y8</span></div>
+  <div class="tile"><b>310,120</b><span>total WAKE by Y8</span></div>
+</div>
+
+<div class="rail">
+  <div class="card"><span class="badge gov">GOVERNANCE RAIL</span>
+    <h3>WAKE units &mdash; voice, not value</h3>
+    <p>Earned by loyalty (1/month, 1.5&times; for host-nodes). <b>Non-transferable</b> &mdash;
+    can't be bought or sold, has no price. It is your vote weight and a public record of
+    tenure. Because it can't be traded and pays no dividend, it isn't a security.</p>
+    <div class="flow"><span class="step">Stay a member</span><span class="arw">&rarr;</span>
+      <span class="step">+1 WAKE/mo</span><span class="arw">&rarr;</span>
+      <span class="step">more voting weight</span></div>
+    <div class="flow"><span class="step">Leave</span><span class="arw">&rarr;</span>
+      <span class="step">WAKE &rarr; Commons Pool</span><span class="arw">&rarr;</span>
+      <span class="step">50%/yr back to active members</span></div>
+  </div>
+  <div class="card"><span class="badge eco">ECONOMICS RAIL</span>
+    <h3>Patronage dividends &mdash; the money part</h3>
+    <p>Members share surplus the way electric &amp; telephone co-ops have for a century:
+    <b>patronage dividends</b> allocated by how much service you buy, paid as cash or bill
+    credit. Kept <b>separate</b> from WAKE on purpose &mdash; that separation is what keeps
+    the token clear of securities law while members still share in success.</p>
+    <div class="flow"><span class="step">Co-op earns surplus</span><span class="arw">&rarr;</span>
+      <span class="step">members vote split</span><span class="arw">&rarr;</span>
+      <span class="step">dividend + reinvest</span></div>
+  </div>
+</div>
+
+<div class="grid2">
+  <figure><figcaption>WAKE supply grows as the co-op matures</figcaption>
+    <div class="cap">Circulating (active members) + Commons Pool. Lapsed influence recycles back.</div><svg viewBox="0 0 100 58" preserveAspectRatio="xMidYMid meet" role="img"><line x1="12" y1="50.00" x2="97" y2="50.00" class="g"/><text x="10.8" y="51.0" class="yt">0k</text><line x1="12" y1="38.75" x2="97" y2="38.75" class="g"/><text x="10.8" y="39.8" class="yt">84k</text><line x1="12" y1="27.50" x2="97" y2="27.50" class="g"/><text x="10.8" y="28.5" class="yt">167k</text><line x1="12" y1="16.25" x2="97" y2="16.25" class="g"/><text x="10.8" y="17.2" class="yt">251k</text><line x1="12" y1="5.00" x2="97" y2="5.00" class="g"/><text x="10.8" y="6.0" class="yt">335k</text><polygon points="12.00,49.27 24.14,47.05 36.29,43.22 48.43,38.00 60.57,31.95 72.71,25.57 84.86,19.04 97.00,12.43 97.00,50.00 84.86,50.00 72.71,50.00 60.57,50.00 48.43,50.00 36.29,50.00 24.14,50.00 12.00,50.00" fill="var(--s1)" fill-opacity="0.85"/><polygon points="12.00,49.25 24.14,46.91 36.29,42.81 48.43,37.11 60.57,30.41 72.71,23.25 84.86,15.85 97.00,8.33 97.00,12.43 84.86,19.04 72.71,25.57 60.57,31.95 48.43,38.00 36.29,43.22 24.14,47.05 12.00,49.27" fill="var(--s2)" fill-opacity="0.85"/><circle cx="12.00" cy="49.25" r="0.8" fill="var(--ink)"><title>Y1: 5,590 total WAKE</title></circle><circle cx="24.14" cy="46.91" r="0.8" fill="var(--ink)"><title>Y2: 22,968 total WAKE</title></circle><circle cx="36.29" cy="42.81" r="0.8" fill="var(--ink)"><title>Y3: 53,506 total WAKE</title></circle><circle cx="48.43" cy="37.11" r="0.8" fill="var(--ink)"><title>Y4: 95,920 total WAKE</title></circle><circle cx="60.57" cy="30.41" r="0.8" fill="var(--ink)"><title>Y5: 145,799 total WAKE</title></circle><circle cx="72.71" cy="23.25" r="0.8" fill="var(--ink)"><title>Y6: 199,112 total WAKE</title></circle><circle cx="84.86" cy="15.85" r="0.8" fill="var(--ink)"><title>Y7: 254,165 total WAKE</title></circle><circle cx="97.00" cy="8.33" r="0.8" fill="var(--ink)"><title>Y8: 310,119 total WAKE</title></circle><text x="17.31" y="56.5" class="xt">Y1</text><text x="27.94" y="56.5" class="xt">Y2</text><text x="38.56" y="56.5" class="xt">Y3</text><text x="49.19" y="56.5" class="xt">Y4</text><text x="59.81" y="56.5" class="xt">Y5</text><text x="70.44" y="56.5" class="xt">Y6</text><text x="81.06" y="56.5" class="xt">Y7</text><text x="91.69" y="56.5" class="xt">Y8</text></svg>
+    <div class="lg"><span><i style="background:var(--s1)"></i>Circulating WAKE</span><span><i style="background:var(--s2)"></i>Commons Pool</span></div></figure>
+  <figure><figcaption>Power decentralizes over time</figcaption>
+    <div class="cap">Founding cohort's share of total votes &mdash; falls as new members join &amp; accrue.</div><svg viewBox="0 0 100 58" preserveAspectRatio="xMidYMid meet" role="img"><line x1="12" y1="50.00" x2="97" y2="50.00" class="g"/><text x="10.8" y="51.0" class="yt">0%</text><line x1="12" y1="38.75" x2="97" y2="38.75" class="g"/><text x="10.8" y="39.8" class="yt">25%</text><line x1="12" y1="27.50" x2="97" y2="27.50" class="g"/><text x="10.8" y="28.5" class="yt">50%</text><line x1="12" y1="16.25" x2="97" y2="16.25" class="g"/><text x="10.8" y="17.2" class="yt">75%</text><line x1="12" y1="5.00" x2="97" y2="5.00" class="g"/><text x="10.8" y="6.0" class="yt">100%</text><polyline points="12.00,5.00 24.14,22.55 36.29,32.63 48.43,37.94 60.57,40.87 72.71,42.71 84.86,43.97 97.00,44.91" fill="none" stroke="var(--s2)" stroke-width="0.8"/><circle cx="12.00" cy="5.00" r="0.9" fill="var(--s2)"><title>Y1: 100.0%</title></circle><circle cx="24.14" cy="22.55" r="0.9" fill="var(--s2)"><title>Y2: 61.0%</title></circle><circle cx="36.29" cy="32.63" r="0.9" fill="var(--s2)"><title>Y3: 38.6%</title></circle><circle cx="48.43" cy="37.94" r="0.9" fill="var(--s2)"><title>Y4: 26.8%</title></circle><circle cx="60.57" cy="40.87" r="0.9" fill="var(--s2)"><title>Y5: 20.3%</title></circle><circle cx="72.71" cy="42.71" r="0.9" fill="var(--s2)"><title>Y6: 16.2%</title></circle><circle cx="84.86" cy="43.97" r="0.9" fill="var(--s2)"><title>Y7: 13.4%</title></circle><circle cx="97.00" cy="44.91" r="0.9" fill="var(--s2)"><title>Y8: 11.3%</title></circle><text x="12.00" y="3.0" class="dl">100%</text><text x="48.43" y="35.9" class="dl">27%</text><text x="97.00" y="42.9" class="dl">11%</text><text x="17.31" y="56.5" class="xt">Y1</text><text x="27.94" y="56.5" class="xt">Y2</text><text x="38.56" y="56.5" class="xt">Y3</text><text x="49.19" y="56.5" class="xt">Y4</text><text x="59.81" y="56.5" class="xt">Y5</text><text x="70.44" y="56.5" class="xt">Y6</text><text x="81.06" y="56.5" class="xt">Y7</text><text x="91.69" y="56.5" class="xt">Y8</text></svg></figure>
+</div>
+<figure style="margin-top:12px"><figcaption>Voting weight by tenure (linear, capped at 10 years)</figcaption>
+  <div class="cap">weight = 1 + min(months, 120). Loyalty is voice; the cap prevents entrenchment. Anti-whale: no member exceeds 2% of total at tally.</div><svg viewBox="0 0 100 58" preserveAspectRatio="xMidYMid meet" role="img"><line x1="12" y1="50.00" x2="97" y2="50.00" class="g"/><text x="10.8" y="51.0" class="yt">0</text><line x1="12" y1="38.75" x2="97" y2="38.75" class="g"/><text x="10.8" y="39.8" class="yt">32</text><line x1="12" y1="27.50" x2="97" y2="27.50" class="g"/><text x="10.8" y="28.5" class="yt">65</text><line x1="12" y1="16.25" x2="97" y2="16.25" class="g"/><text x="10.8" y="17.2" class="yt">98</text><line x1="12" y1="5.00" x2="97" y2="5.00" class="g"/><text x="10.8" y="6.0" class="yt">130</text><rect x="14.43" y="49.31" width="7.29" height="0.69" rx="0.6" fill="var(--s1)"><title>1mo: 2 votes</title></rect><rect x="26.57" y="47.58" width="7.29" height="2.42" rx="0.6" fill="var(--s1)"><title>6mo: 7 votes</title></rect><rect x="38.71" y="45.50" width="7.29" height="4.50" rx="0.6" fill="var(--s1)"><title>1yr: 13 votes</title></rect><rect x="50.86" y="41.35" width="7.29" height="8.65" rx="0.6" fill="var(--s1)"><title>2yr: 25 votes</title></rect><rect x="63.00" y="28.88" width="7.29" height="21.12" rx="0.6" fill="var(--s1)"><title>5yr: 61 votes</title></rect><rect x="75.14" y="8.12" width="7.29" height="41.88" rx="0.6" fill="var(--s1)"><title>10yr: 121 votes</title></rect><rect x="87.29" y="8.12" width="7.29" height="41.88" rx="0.6" fill="var(--s1)"><title>15yr: 121 votes</title></rect><text x="18.07" y="48.3" class="dl">2</text><text x="30.21" y="46.6" class="dl">7</text><text x="42.36" y="44.5" class="dl">13</text><text x="54.50" y="40.3" class="dl">25</text><text x="66.64" y="27.9" class="dl">61</text><text x="78.79" y="7.1" class="dl">121</text><text x="90.93" y="7.1" class="dl">121</text><text x="18.07" y="56.5" class="xt">1mo</text><text x="30.21" y="56.5" class="xt">6mo</text><text x="42.36" y="56.5" class="xt">1yr</text><text x="54.50" y="56.5" class="xt">2yr</text><text x="66.64" y="56.5" class="xt">5yr</text><text x="78.79" y="56.5" class="xt">10yr</text><text x="90.93" y="56.5" class="xt">15yr</text></svg></figure>
+
+<p class="note"><b>Not legal advice.</b> This is a mechanism design; a securities + cooperative
+attorney must review before launch (see docs/16). Launches off-chain (DockOS ledger + Snapshot
+voting); optional non-transferable on-chain mirror later. Numbers from
+<span style="font-family:ui-monospace,monospace">software/governance/tokenomics_sim.py</span> on the verified subscriber curve.</p>
+</div>

@@ -1,0 +1,10 @@
+criterion,weight_pct,dsn_ozarksgo,uniti,lumen,cox,aristotle,notes
+path_route_diversity,20,,,,,,physically separate route vs the other on-ramp (prove with maps)
+price_per_mbps_transit,18,,,,,,$/Mbps at 10/25/100G (lower is better)
+transport_mrc_to_headends,15,,,,,,monthly lease of waves/dark fiber to POP A and POP B
+upgrade_path_to_100g,12,,,,,,ease/cost of 10G->25G->100G with minimal rework
+install_lead_time,10,,,,,,weeks to turn up each service
+sla_latency_mtr,10,,,,,,availability %, latency, MTTR
+contract_term_flexibility,8,,,,,,length, early-term, capacity flex
+coop_alignment,7,,,,,,co-op/wholesale-member terms; community fit
+TOTAL,100,,,,,,score each 1-5; weighted total = sum(weight*score)/100

@@ -1,0 +1,454 @@
+{
+ "day": "2026-10-06",
+ "crew": "Crew 1 \u2014 Lake",
+ "yard": {
+  "lat": 36.35480605543821,
+  "lon": -94.05785675159409
+ },
+ "stops": [
+  {
+   "eta": "2026-10-06T08:13:05.312613-05:00",
+   "lat": 36.36475720434358,
+   "lon": -93.9436059955035,
+   "seq": 1,
+   "wo_id": 6,
+   "finish": "2026-10-06T09:43:05.312613-05:00",
+   "travel": {
+    "mode": "boat",
+    "path": [
+     [
+      -94.05785675159409,
+      36.35480605543821
+     ],
+     [
+      -94.05729943083267,
+      36.35616303028894
+     ],
+     [
+      -94.05562746854842,
+      36.356615355239185
+     ],
+     [
+      -94.04893961941141,
+      36.35706768018943
+     ],
+     [
+      -94.04503837408149,
+      36.35480605543821
+     ],
+     [
+      -94.04113712875157,
+      36.35344908058748
+     ],
+     [
+      -93.97983184499564,
+      36.34666420633381
+     ],
+     [
+      -93.97425863738147,
+      36.34259328178162
+     ],
+     [
+      -93.96757078824446,
+      36.338522357229415
+     ],
+     [
+      -93.95475241073186,
+      36.336260732478195
+     ],
+     [
+      -93.95419508997044,
+      36.337165382378686
+     ],
+     [
+      -93.95196580692476,
+      36.35706768018943
+     ],
+     [
+      -93.9436059955035,
+      36.36430487939334
+     ],
+     [
+      -93.9436059955035,
+      36.36475720434358
+     ]
+    ],
+    "minutes": 28.088543557766002,
+    "water_min": 18.1,
+    "dock_to_site_m": 0
+   },
+   "wo_type": "repair",
+   "priority": "P1",
+   "status": "scheduled",
+   "note": "Outage #1: 37 members impacted",
+   "blocked_reason": null,
+   "address": null,
+   "member": null,
+   "phone": null,
+   "plan_name": null,
+   "radius_username": null,
+   "captures": {},
+   "checklist": [
+    "Check NOC ticket + last alarms",
+    "Diagnose on site",
+    "Swap from spare kit if needed",
+    "Verify with NOC",
+    "Record resolution"
+   ],
+   "required_captures": [
+    "resolution"
+   ]
+  },
+  {
+   "eta": "2026-10-06T09:54:32.328088-05:00",
+   "lat": 36.365274522,
+   "lon": -93.944337055,
+   "seq": 2,
+   "wo_id": 1,
+   "finish": "2026-10-06T12:24:32.328088-05:00",
+   "travel": {
+    "mode": "boat",
+    "path": [
+     [
+      -94.05785675159409,
+      36.35480605543821
+     ],
+     [
+      -94.05729943083267,
+      36.35616303028894
+     ],
+     [
+      -94.05562746854842,
+      36.356615355239185
+     ],
+     [
+      -94.04893961941141,
+      36.35706768018943
+     ],
+     [
+      -94.04503837408149,
+      36.35480605543821
+     ],
+     [
+      -94.04113712875157,
+      36.35344908058748
+     ],
+     [
+      -93.97983184499564,
+      36.34666420633381
+     ],
+     [
+      -93.97425863738147,
+      36.34259328178162
+     ],
+     [
+      -93.96757078824446,
+      36.338522357229415
+     ],
+     [
+      -93.95475241073186,
+      36.336260732478195
+     ],
+     [
+      -93.95419508997044,
+      36.337165382378686
+     ],
+     [
+      -93.95196580692476,
+      36.35706768018943
+     ],
+     [
+      -93.9436059955035,
+      36.36430487939334
+     ],
+     [
+      -93.9436059955035,
+      36.36475720434358
+     ]
+    ],
+    "minutes": 29.538801470876997,
+    "water_min": 18.1,
+    "dock_to_site_m": 87
+   },
+   "wo_type": "cpe-wireless-nlos",
+   "priority": "P3",
+   "status": "scheduled",
+   "note": null,
+   "blocked_reason": null,
+   "address": "10 Lost Bridge Rd (example)",
+   "member": "Ada Harper",
+   "phone": null,
+   "plan_name": "Shoreline",
+   "radius_username": "aa-bb-cc-00-00-01",
+   "captures": {},
+   "checklist": [
+    "Confirm member + site; note dock access",
+    "Mount CPE (eave/pole/dock mount)",
+    "Aim to base node \u2014 record RSSI",
+    "Scan CPE MAC label",
+    "Router + Wi-Fi walkthrough",
+    "Speed test at router",
+    "Photos: mount + cable path",
+    "Explain WAKE + member portal"
+   ],
+   "required_captures": [
+    "device_mac",
+    "speed_down_mbps",
+    "speed_up_mbps",
+    "rssi_dbm"
+   ]
+  },
+  {
+   "eta": "2026-10-06T12:38:18.015732-05:00",
+   "lat": 36.368767347,
+   "lon": -93.945221655,
+   "seq": 3,
+   "wo_id": 2,
+   "finish": "2026-10-06T15:08:18.015732-05:00",
+   "travel": {
+    "mode": "boat",
+    "path": [
+     [
+      -93.9436059955035,
+      36.36475720434358
+     ],
+     [
+      -93.9436059955035,
+      36.36385255444309
+     ],
+     [
+      -93.94527795778775,
+      36.363400229492854
+     ],
+     [
+      -93.94639259931058,
+      36.36520952929383
+     ],
+     [
+      -93.94583527854917,
+      36.36837580394554
+     ]
+    ],
+    "minutes": 13.76146073415724,
+    "water_min": 1.1,
+    "dock_to_site_m": 70
+   },
+   "wo_type": "cpe-wireless-nlos",
+   "priority": "P3",
+   "status": "scheduled",
+   "note": null,
+   "blocked_reason": null,
+   "address": "11 Lost Bridge Rd (example)",
+   "member": "Ben Ortiz",
+   "phone": null,
+   "plan_name": "Shoreline",
+   "radius_username": "aa-bb-cc-00-00-02",
+   "captures": {},
+   "checklist": [
+    "Confirm member + site; note dock access",
+    "Mount CPE (eave/pole/dock mount)",
+    "Aim to base node \u2014 record RSSI",
+    "Scan CPE MAC label",
+    "Router + Wi-Fi walkthrough",
+    "Speed test at router",
+    "Photos: mount + cable path",
+    "Explain WAKE + member portal"
+   ],
+   "required_captures": [
+    "device_mac",
+    "speed_down_mbps",
+    "speed_up_mbps",
+    "rssi_dbm"
+   ]
+  }
+ ],
+ "return": {
+  "path": [
+   [
+    -93.94583527854917,
+    36.36837580394554
+   ],
+   [
+    -93.95196580692476,
+    36.35254443068699
+   ],
+   [
+    -93.9530804484476,
+    36.34847350613479
+   ],
+   [
+    -93.95419508997044,
+    36.336260732478195
+   ],
+   [
+    -93.97091471281296,
+    36.33897468217966
+   ],
+   [
+    -93.99320754326966,
+    36.347568856234304
+   ],
+   [
+    -93.99655146783816,
+    36.34847350613479
+   ],
+   [
+    -94.00045271316809,
+    36.34892583108503
+   ],
+   [
+    -94.02386018514763,
+    36.349830480985524
+   ],
+   [
+    -94.04838229865,
+    36.35480605543821
+   ],
+   [
+    -94.0517262232185,
+    36.35706768018943
+   ],
+   [
+    -94.05674211007126,
+    36.356615355239185
+   ],
+   [
+    -94.05785675159409,
+    36.355258380388456
+   ],
+   [
+    -94.05785675159409,
+    36.35480605543821
+   ]
+  ],
+  "minutes": 19.7
+ },
+ "crew_id": "CREW-1",
+ "vehicle": {
+  "kind": "boat",
+  "name": "Center console 1",
+  "status": "available",
+  "yard_id": "YARD-NW",
+  "boat_class": "center_console",
+  "vehicle_id": "BOAT-1"
+ },
+ "weather": {
+  "reason": "clear, light wind",
+  "source": "override",
+  "classes": {
+   "jon": true,
+   "barge": true,
+   "pontoon": true,
+   "center_console": true
+  }
+ },
+ "load_list": [
+  {
+   "for": "jobs",
+   "qty": 2.0,
+   "sku": "cpe-mount-j-mount-eave-dock-mount-hardware",
+   "item": "CPE mount \u2014 J-mount / eave / dock mount + hardware",
+   "unit": "set"
+  },
+  {
+   "for": "jobs",
+   "qty": 2.0,
+   "sku": "ethernet-poe-cable-outdoor-cat6-poe-connectors",
+   "item": "ethernet/PoE + cable \u2014 outdoor CAT6 + PoE + connectors",
+   "unit": "lot"
+  },
+  {
+   "for": "jobs",
+   "qty": 2.0,
+   "sku": "grounding-surge-surge-protector-ground",
+   "item": "grounding/surge \u2014 surge protector + ground",
+   "unit": "set"
+  },
+  {
+   "for": "jobs",
+   "qty": 2.0,
+   "sku": "nlos-cpe-radio-tarana-g1-residential-node",
+   "item": "nLOS CPE radio \u2014 Tarana G1 residential node",
+   "unit": "ea"
+  },
+  {
+   "for": "jobs",
+   "qty": 2.0,
+   "sku": "router-gateway-wi-fi-6-7-router",
+   "item": "router/gateway \u2014 Wi-Fi 6/7 router",
+   "unit": "ea"
+  },
+  {
+   "for": "spare kit",
+   "qty": 2.0,
+   "sku": "spare-nlos-cpe-tarana-g1-residential-node",
+   "item": "spare nLOS CPE \u2014 Tarana G1 residential node",
+   "unit": "ea"
+  },
+  {
+   "for": "spare kit",
+   "qty": 2.0,
+   "sku": "spare-ptmp-cpe-cambium-ubiquiti-sm",
+   "item": "spare PtMP CPE \u2014 Cambium/Ubiquiti SM",
+   "unit": "ea"
+  },
+  {
+   "for": "spare kit",
+   "qty": 1.0,
+   "sku": "spare-backhaul-radio-airfiber-cnwave",
+   "item": "spare backhaul radio \u2014 airFiber/cnWave",
+   "unit": "ea"
+  },
+  {
+   "for": "spare kit",
+   "qty": 2.0,
+   "sku": "spare-router-gateway-wi-fi-6-7-router",
+   "item": "spare router/gateway \u2014 Wi-Fi 6/7 router",
+   "unit": "ea"
+  },
+  {
+   "for": "spare kit",
+   "qty": 1.0,
+   "sku": "fiber-field-kit-pigtails-sleeves-connectors-cleaver",
+   "item": "fiber field kit \u2014 pigtails, sleeves, connectors, cleaver",
+   "unit": "kit"
+  },
+  {
+   "for": "spare kit",
+   "qty": 1.0,
+   "sku": "patch-jumpers-assorted-fiber-ethernet-jumpers",
+   "item": "patch/jumpers \u2014 assorted fiber + ethernet jumpers",
+   "unit": "lot"
+  },
+  {
+   "for": "spare kit",
+   "qty": 1.0,
+   "sku": "poe-injectors-fuses-assorted-poe-fuses",
+   "item": "PoE injectors/fuses \u2014 assorted PoE + fuses",
+   "unit": "lot"
+  },
+  {
+   "for": "spare kit",
+   "qty": 1.0,
+   "sku": "portable-battery-lifepo4-field-battery",
+   "item": "portable battery \u2014 LiFePO4 field battery",
+   "unit": "ea"
+  },
+  {
+   "for": "spare kit",
+   "qty": 1.0,
+   "sku": "hardware-consumables-mounts-clamps-ties-tape",
+   "item": "hardware/consumables \u2014 mounts, clamps, ties, tape",
+   "unit": "lot"
+  },
+  {
+   "for": "spare kit",
+   "qty": 1.0,
+   "sku": "test-gear-assigned-otdr-power-meter-spectrum-shared",
+   "item": "test gear (assigned) \u2014 OTDR/power meter/spectrum (shared)",
+   "unit": "set"
+  }
+ ],
+ "tieup_source": "default (not enough measured stops yet)",
+ "boat_tieup_min": 10.0
+}

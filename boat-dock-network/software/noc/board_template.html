@@ -1,0 +1,404 @@
+<title>DockOS NOC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+:root{
+  --ground:#EDF2F1; --surface:#FFFFFF; --sunk:#F5F8F7; --ink:#0C1A1F; --muted:#51656B; --line:#CCD9D8;
+  --water:#CFE3EA; --shore:#7FA3AE; --link:#6E8D96; --up:#1C5E88; --out:#C2332B; --outsoft:#F3D6D3;
+  --warn:#B7791F; --go:#1E7A4B; --plan:#1E7A4B; --chip:#E3ECEB; --onaccent:#FFFFFF; --focus:#1C5E88;
+  --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  color-scheme:dark;
+  --ground:#0B1519; --surface:#121F24; --sunk:#0F1B20; --ink:#E4EEED; --muted:#8FA6AB; --line:#24363C;
+  --water:#123642; --shore:#3E6A77; --link:#5F7F88; --up:#5AA6D6; --out:#EF6A60; --outsoft:#3A1D1C;
+  --warn:#E5B454; --go:#45B37B; --plan:#45B37B; --chip:#1A2A30; --onaccent:#06131A; --focus:#5AA6D6;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0B1519; --surface:#121F24; --sunk:#0F1B20; --ink:#E4EEED; --muted:#8FA6AB; --line:#24363C;
+  --water:#123642; --shore:#3E6A77; --link:#5F7F88; --up:#5AA6D6; --out:#EF6A60; --outsoft:#3A1D1C;
+  --warn:#E5B454; --go:#45B37B; --plan:#45B37B; --chip:#1A2A30; --onaccent:#06131A; --focus:#5AA6D6;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font:15px/1.45 var(--f-body)}
+.wrap{max-width:1280px;margin:0 auto;padding-inline:16px;padding-block:0 48px}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-size:13px;letter-spacing:.01em}
+
+/* top bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--ground);border-bottom:1px solid var(--line)}
+.bar .wrap{padding-block:12px 10px;display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:10px 24px}
+.mark{font:700 13px/1 var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.headline{font:700 30px/1.05 var(--f-display);margin:4px 0 0;text-wrap:balance}
+.headline em{font-style:normal;color:var(--out)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:var(--chip);font:600 13px/1.2 var(--f-body);white-space:nowrap}
+.chip b{font:700 15px/1 var(--f-display);font-variant-numeric:tabular-nums}
+.chip.red{color:var(--out)} .chip.red span{color:var(--ink)}
+.clock{font:600 13px/1.3 var(--f-body);color:var(--muted);text-align:right}
+.demo{margin:14px 0 0;font-size:13px;color:var(--muted);max-width:90ch}
+
+/* layout */
+.grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:20px;margin-top:16px;align-items:start}
+@media (max-width:980px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel h2{font:700 15px/1 var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+
+/* map */
+.mapbox{background:var(--water);border:1px solid var(--line);border-radius:10px;overflow:hidden;position:relative}
+.mapbox canvas{display:block;width:100%;height:clamp(340px,62vh,640px);touch-action:manipulation}
+.seg{display:inline-flex;background:var(--chip);border-radius:8px;padding:3px;gap:2px;margin-bottom:10px}
+.seg button{border:0;background:none;padding:8px 12px;border-radius:6px;font:700 15px/1 var(--f-display);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font:600 12px/1.3 var(--f-body);color:var(--muted)}
+.legend i{display:inline-block;vertical-align:middle;margin-right:5px}
+.lg-line{width:20px;height:3px;border-radius:2px}
+.lg-dot{width:10px;height:10px;border-radius:50%}
+.tip{position:absolute;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.18);max-width:240px}
+.tip b{font:700 15px/1.2 var(--f-display);display:block}
+
+/* incident */
+.inc{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+.pill{display:inline-block;font:700 11px/1 var(--f-body);letter-spacing:.07em;text-transform:uppercase;padding:5px 8px;border-radius:4px;background:var(--chip);color:var(--muted)}
+.pill.outage{background:var(--out);color:var(--onaccent)} .pill.degraded{background:var(--warn);color:var(--onaccent)}
+.pill.power{background:var(--up);color:var(--onaccent)} .pill.ok{background:var(--go);color:var(--onaccent)}
+.inc h3{font:700 26px/1.1 var(--f-display);margin:8px 0 4px;text-wrap:balance}
+.inc .det{color:var(--muted);margin:0}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:14px 0 0;font-size:14px}
+.facts dt{color:var(--muted)} .facts dd{margin:0;font-variant-numeric:tabular-nums}
+.facts dd strong{font:700 17px/1 var(--f-display)}
+.triage{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.triage .row{display:flex;height:14px;border-radius:3px;overflow:hidden;background:var(--chip)}
+.triage .row span{display:block;height:100%}
+.triage p{margin:8px 0 0;font-size:13px;color:var(--muted)}
+.triage .k{display:flex;justify-content:space-between;font:600 13px/1.2 var(--f-body);margin-bottom:6px}
+.sms{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.bubble{background:var(--sunk);border:1px solid var(--line);border-radius:14px 14px 14px 4px;padding:10px 12px;font-size:14px;max-width:60ch}
+.small{font-size:12px;color:var(--muted);margin:6px 0 0}
+.nodes{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
+.nodes span{font-family:var(--f-mono);font-size:11.5px;padding:2px 6px;border-radius:4px;background:var(--outsoft);color:var(--ink)}
+
+/* tabs + tables */
+.tabs{display:flex;gap:4px;margin:28px 0 0;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{background:none;border:0;border-bottom:3px solid transparent;padding:10px 12px 8px;font:700 17px/1 var(--f-display);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--up)}
+.pane{padding-top:16px}
+.tscroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{font:700 12px/1.2 var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar-in{display:inline-block;height:8px;border-radius:2px;background:var(--out);vertical-align:middle;margin-right:8px}
+.lede{max-width:78ch;margin:0 0 14px}
+.lede strong{color:var(--out)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:0 0 16px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.stat .v{font:700 30px/1 var(--f-display);font-variant-numeric:tabular-nums}
+.stat .v.bad{color:var(--out)} .stat .v.good{color:var(--go)}
+.stat .l{font-size:13px;color:var(--muted);margin-top:4px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+@media (max-width:900px){.two{grid-template-columns:minmax(0,1fr)}}
+.two>div{min-width:0}
+h4{font:700 14px/1 var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.zst{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.zst i{width:9px;height:9px;border-radius:50%;background:var(--go)}
+.zst.outage{color:var(--out)} .zst.outage i{background:var(--out)}
+@media (max-width:520px){.headline{font-size:25px}.clock{text-align:left}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<header class="bar">
+  <div class="wrap">
+    <div>
+      <div class="mark">DockOS NOC · Beaver Lake</div>
+      <h1 class="headline" id="headline">Loading…</h1>
+    </div>
+    <div>
+      <div class="clock" id="clock"></div>
+      <div class="chips" id="chips" style="margin-top:6px"></div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <p class="demo">Snapshot from the NOC end-to-end test: the designed network (2 head-ends, 30 spine sites, 41 hops) with real lake and road routing and synthetic members. It shows the alarm-storm moment, 90 seconds after a backbone hop was cut.</p>
+
+  <div class="grid">
+    <section class="panel" aria-label="Network map">
+      <div class="seg" role="group" aria-label="Map view">
+        <button id="mLive" aria-pressed="true">Live</button>
+        <button id="mSpof" aria-pressed="false">Single points of failure</button>
+      </div>
+      <div class="mapbox" id="mapbox">
+        <canvas id="map" role="img" aria-label="Beaver Lake backbone with the current outage"></canvas>
+        <div class="tip" id="tip" hidden></div>
+      </div>
+      <div class="legend" id="legend"></div>
+    </section>
+
+    <section class="panel" aria-label="Open incidents">
+      <h2>Open incidents</h2>
+      <div id="incidents"></div>
+    </section>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tRing" aria-selected="true">Ring audit</button>
+    <button class="tab" role="tab" id="tLog" aria-selected="false">Test-run log</button>
+    <button class="tab" role="tab" id="tStatus" aria-selected="false">Public status page</button>
+  </div>
+  <section class="pane" id="pRing"></section>
+  <section class="pane" id="pLog" hidden></section>
+  <section class="pane" id="pStatus" hidden></section>
+</main>
+
+<script id="data" type="application/json">/*__DATA__*/null</script>
+<script>
+(function(){
+const D = JSON.parse(document.getElementById('data').textContent);
+const TZ = 'America/Chicago';
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const t = (iso, opt) => iso ? new Date(iso).toLocaleString('en-US', Object.assign({timeZone: TZ, hour:'numeric', minute:'2-digit'}, opt||{})) : '—';
+const tsec = iso => t(iso, {second:'2-digit'});
+const day = iso => new Date(iso).toLocaleDateString('en-US', {timeZone: TZ, weekday:'short', month:'short', day:'numeric'});
+const dur = (a, b) => { const m = Math.round((new Date(b) - new Date(a)) / 60000); return m >= 60 ? `${Math.floor(m/60)} h ${String(m%60).padStart(2,'0')} min` : `${m} min`; };
+const short = id => id.replace(/^BDN-Z-\d\d-/, '');
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+const B = D.board, inc = B.incidents, outage = inc.find(i => i.kind === 'outage');
+const alerts = Object.fromEntries(B.alerts_by_disposition.map(a => [a.disposition, a.n]));
+const nAlarms = Object.values(alerts).reduce((a, b) => a + b, 0);
+const zname = Object.fromEntries(D.status.map(z => [z.zone_id, z.name]));
+
+// ---------- header
+$('headline').innerHTML = outage
+  ? `<em>${inc.filter(i => i.kind === 'outage').length} outage</em> · ${outage.impacted_services} members dark in ${outage.zones.length} zones`
+  : 'All members online';
+$('clock').textContent = `${day(D.now)} · ${tsec(D.now)} (test clock)`;
+$('chips').innerHTML = [
+  `<span class="chip red"><b>${nAlarms}</b><span>alarms → ${alerts.root_cause||0} root cause</span></span>`,
+  `<span class="chip"><b>${outage ? outage.impacted_business : 0}</b> businesses</span>`,
+  `<span class="chip"><b>${B.notifications_queued}</b> notices queued</span>`,
+].join('');
+
+// ---------- incident card
+function incidentCard(o){
+  const k = o.kind;
+  const sup = alerts.suppressed || 0, root = alerts.root_cause || 0, other = nAlarms - sup - root;
+  return `<article class="inc">
+    <span class="pill ${k}">${k}</span> <span class="mono" style="color:var(--muted)">#${o.outage_id}</span>
+    <h3>${esc(o.cause)}</h3>
+    <p class="det mono">${esc(o.detail)}</p>
+    <dl class="facts">
+      <dt>Down since</dt><dd>${tsec(o.started_at)} · detected ${tsec(o.detected_at)}</dd>
+      <dt>Members dark</dt><dd><strong>${o.impacted_services}</strong> active services, ${o.impacted_business} business · seasonal holds excluded</dd>
+      <dt>Crew</dt><dd>${o.assigned_crew ? `${esc(o.assigned_crew)} by ${esc(o.travel_mode)}, <b>next stop</b> · on site ${t(o.crew_eta)}` : 'assigning'} <span class="mono">(${o.wo_status} P1 #${o.wo_id} at ${esc(short(D.wo.node_id))})</span></dd>
+      <dt>Member ETA</dt><dd><strong>${t(o.eta)}</strong> <span style="color:var(--muted)">arrival + 1.5 h repair</span></dd>
+      <dt>Zones</dt><dd>${o.zones.map(z => esc(zname[z] || z)).join(', ')}</dd>
+    </dl>
+    <div class="nodes" aria-label="Dark sites">${o.dark_nodes.map(n => `<span>${esc(short(n))}</span>`).join('')}</div>
+    <div class="triage">
+      <div class="k"><span>Alarm triage</span><span>${nAlarms} alarms</span></div>
+      <div class="row" role="img" aria-label="${root} root cause, ${sup} suppressed">
+        <span style="width:${100*root/nAlarms}%;background:var(--out)"></span>
+        <span style="width:${100*sup/nAlarms}%;background:var(--outsoft)"></span>
+        <span style="width:${100*other/nAlarms}%;background:var(--link)"></span>
+      </div>
+      <p><b style="color:var(--out)">${root}</b> root cause paged. <b>${sup}</b> site alarms are downstream of the cut, so they are suppressed rather than paged. Of the ${o.dark_nodes.length} dark sites, 8 were predicted dark before their own alarms arrived.</p>
+    </div>
+    <div class="sms">
+      <div class="k" style="font:600 13px/1.2 var(--f-body);margin-bottom:8px">What members received (SMS, sent once)</div>
+      <div class="bubble">${esc(D.notice)}</div>
+      <p class="small">An email goes out too. Repeat alarms don't send another notice.</p>
+    </div>
+  </article>`;
+}
+$('incidents').innerHTML = inc.length ? inc.map(incidentCard).join('') : '<p>No open incidents.</p>';
+
+// ---------- map
+const cvs = $('map'), box = $('mapbox'), tip = $('tip');
+let mode = 'live', pts = [];
+const nodes = Object.fromEntries(B.nodes.map(n => [n.id, n]));
+const spofLinks = new Set(D.spof.rows.filter(r => r.type === 'link').map(r => r.element));
+const spofNodes = new Set(D.spof.rows.filter(r => r.type === 'node').map(r => r.element));
+const remaining = new Set(D.spof.remaining);
+const planHops = D.spof.plan.filter(p => p.add_hop).map(p => p.add_hop);
+let bb = [Infinity, Infinity, -Infinity, -Infinity];
+D.lake.forEach(p => p[0].forEach(([x, y]) => { bb = [Math.min(bb[0],x), Math.min(bb[1],y), Math.max(bb[2],x), Math.max(bb[3],y)]; }));
+B.nodes.forEach(n => { bb = [Math.min(bb[0],n.lon), Math.min(bb[1],n.lat), Math.max(bb[2],n.lon), Math.max(bb[3],n.lat)]; });
+const kx = Math.cos(36.3 * Math.PI / 180);
+
+function draw(){
+  const dpr = window.devicePixelRatio || 1, w = cvs.clientWidth, h = cvs.clientHeight;
+  cvs.width = w * dpr; cvs.height = h * dpr;
+  const g = cvs.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const pad = 22, sx = (bb[2]-bb[0]) * kx, sy = bb[3]-bb[1];
+  const s = Math.min((w - 2*pad) / sx, (h - 2*pad) / sy);
+  const ox = (w - sx*s) / 2, oy = (h - sy*s) / 2;
+  const P = (lon, lat) => [ox + (lon - bb[0]) * kx * s, oy + (bb[3] - lat) * s];
+  // land + lake
+  g.fillStyle = css('--sunk'); g.fillRect(0, 0, w, h);
+  g.beginPath();
+  D.lake.forEach(poly => poly.forEach(ring => ring.forEach(([x, y], i) => { const [a, b] = P(x, y); i ? g.lineTo(a, b) : g.moveTo(a, b); })));
+  g.fillStyle = css('--water'); g.fill('evenodd'); g.strokeStyle = css('--shore'); g.lineWidth = 0.8; g.stroke();
+
+  const line = (a, b, color, width, dash) => { const [x1,y1] = P(a.lon,a.lat), [x2,y2] = P(b.lon,b.lat);
+    g.beginPath(); g.setLineDash(dash || []); g.moveTo(x1,y1); g.lineTo(x2,y2); g.strokeStyle = color; g.lineWidth = width; g.stroke(); g.setLineDash([]); };
+  const red = css('--out'), link = css('--link'), warn = css('--warn'), up = css('--up'), plan = css('--plan'), ink = css('--ink'), surf = css('--surface');
+  const dark = new Set(B.nodes.filter(n => n.state !== 'up').map(n => n.id));
+
+  B.links.forEach(l => {
+    const a = nodes[l.a], b = nodes[l.b];
+    if (mode === 'live') {
+      if (l.state === 'root') line(a, b, red, 5);
+      else if (l.state === 'ring_open') line(a, b, warn, 3, [6, 4]);
+      else if (dark.has(l.a) && dark.has(l.b)) line(a, b, red, 1.4, [2, 3]);
+      else line(a, b, link, l.kind === 'water_long' ? 2.2 : 1.6);
+    } else {
+      line(a, b, spofLinks.has(l.id) ? red : link, spofLinks.has(l.id) ? 4 : 1.6);
+    }
+  });
+  if (mode === 'spof') planHops.forEach((hp, i) => {
+    line(nodes[hp.a], nodes[hp.b], plan, 3, [7, 5]);
+    const [x1,y1] = P(nodes[hp.a].lon, nodes[hp.a].lat), [x2,y2] = P(nodes[hp.b].lon, nodes[hp.b].lat);
+    const mx = (x1+x2)/2, my = (y1+y2)/2;
+    g.beginPath(); g.arc(mx, my, 9, 0, 7); g.fillStyle = plan; g.fill();
+    g.fillStyle = surf; g.font = '700 12px ' + css('--f-display'); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('+' + (i+1), mx, my + 0.5);
+  });
+  // root-cause marker on the cut
+  if (mode === 'live') B.links.filter(l => l.state === 'root').forEach(l => {
+    const [x1,y1] = P(nodes[l.a].lon, nodes[l.a].lat), [x2,y2] = P(nodes[l.b].lon, nodes[l.b].lat);
+    const mx = (x1+x2)/2, my = (y1+y2)/2;
+    g.strokeStyle = surf; g.lineWidth = 6; g.beginPath(); g.moveTo(mx-6,my-6); g.lineTo(mx+6,my+6); g.moveTo(mx+6,my-6); g.lineTo(mx-6,my+6); g.stroke();
+    g.strokeStyle = red; g.lineWidth = 3; g.stroke();
+    label(g, mx + 10, my - 12, l.id + ' cut', red);
+  });
+  pts = [];
+  B.nodes.forEach(n => {
+    const [x, y] = P(n.lon, n.lat); pts.push([x, y, n]);
+    const r = n.tier === 'T2' ? 5.5 : n.tier === 'T3' ? 4 : 6.5;
+    g.beginPath();
+    if (n.tier === 'T0') g.rect(x - r, y - r, 2*r, 2*r); else g.arc(x, y, r, 0, 7);
+    let fill = up, stroke = surf, lw = 1.5;
+    if (mode === 'live') {
+      if (n.state === 'dark') { fill = surf; stroke = red; lw = 2.2; }
+      if (n.state === 'root') { fill = red; }
+    } else {
+      if (spofNodes.has(n.id)) { fill = remaining.has(n.id) ? warn : red; }
+    }
+    if (n.tier === 'T0') fill = ink;
+    g.fillStyle = fill; g.fill(); g.strokeStyle = stroke; g.lineWidth = lw; g.stroke();
+    if (n.tier === 'T0') label(g, x + 9, y + 4, n.id, ink);
+  });
+  if (mode === 'live' && D.wo && nodes[D.wo.node_id]) {
+    const n = nodes[D.wo.node_id], [x, y] = P(n.lon, n.lat);
+    g.beginPath(); g.arc(x, y, 11, 0, 7); g.strokeStyle = red; g.lineWidth = 1.5; g.setLineDash([3,3]); g.stroke(); g.setLineDash([]);
+    label(g, x + 14, y + 16, `P1 → ${short(n.id)} · ${D.wo.assigned_crew} by ${D.wo.travel_mode}`, ink);
+  }
+  if (mode === 'spof') remaining.forEach(id => { const n = nodes[id]; const [x, y] = P(n.lon, n.lat); label(g, x + 9, y - 8, short(id) + ' still a SPOF', warn); });
+}
+function label(g, x, y, text, color){
+  g.font = '600 12px ' + css('--f-body'); g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+  const w = g.measureText(text).width;
+  x = Math.min(x, cvs.clientWidth - w - 6);
+  g.fillStyle = css('--surface'); g.globalAlpha = 0.85; g.fillRect(x - 3, y - 12, w + 6, 16); g.globalAlpha = 1;
+  g.fillStyle = color; g.fillText(text, x, y);
+}
+function legend(){
+  const L = (cls, style, text) => `<span><i class="${cls}" style="${style}"></i>${text}</span>`;
+  $('legend').innerHTML = mode === 'live'
+    ? [L('lg-line','background:var(--out);height:5px','Root cause (cut hop)'), L('lg-dot','border:2px solid var(--out);background:var(--surface)','Dark site'),
+       L('lg-dot','background:var(--up)','Up site'), L('lg-line','background:var(--link)','Working hop'), L('lg-dot','background:var(--ink);border-radius:2px','Head-end')].join('')
+    : [L('lg-line','background:var(--out);height:4px','Bridge hop (no alternate path)'), L('lg-dot','background:var(--out)','Cut site'),
+       L('lg-line','background:var(--plan);height:3px','Proposed ring-closing hop'), L('lg-dot','background:var(--warn)','Cut site with no fix within 7 km')].join('');
+}
+function setMode(m){ mode = m; $('mLive').setAttribute('aria-pressed', m === 'live'); $('mSpof').setAttribute('aria-pressed', m === 'spof');
+  cvs.setAttribute('aria-label', m === 'live' ? 'Beaver Lake backbone with the current outage' : 'Backbone single points of failure and the proposed ring-closing hops');
+  legend(); draw(); }
+$('mLive').onclick = () => setMode('live'); $('mSpof').onclick = () => setMode('spof');
+cvs.addEventListener('pointermove', e => {
+  const r = cvs.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  let best = null, bd = 196;
+  pts.forEach(([px, py, n]) => { const d = (px-x)**2 + (py-y)**2; if (d < bd) { bd = d; best = [px, py, n]; } });
+  if (!best) { tip.hidden = true; return; }
+  const n = best[2];
+  const st = mode === 'live' ? ({up:'Up', dark:'Dark — behind the cut', root:'Root cause'})[n.state]
+    : spofNodes.has(n.id) ? (remaining.has(n.id) ? 'Cut site — no fix within 7 km' : 'Cut site — fixed by the plan') : 'Protected';
+  tip.innerHTML = `<b>${esc(n.id)}</b>${n.tier} · ${esc(n.power.replace('_',' + '))}${n.zone ? ' · ' + esc(zname[n.zone] || n.zone) : ''}<br>${st}`;
+  tip.hidden = false;
+  tip.style.left = Math.min(best[0] + 12, cvs.clientWidth - 250) + 'px'; tip.style.top = (best[1] + 12) + 'px';
+});
+cvs.addEventListener('pointerleave', () => tip.hidden = true);
+new ResizeObserver(() => draw()).observe(box);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw);
+new MutationObserver(draw).observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme']});
+setMode('live');
+
+// ---------- ring audit
+const S = D.spof, maxM = Math.max(...S.rows.map(r => r.members));
+const money = v => '$' + Math.round(v).toLocaleString('en-US');
+$('pRing').innerHTML = `
+  <p class="lede">The docs call the backbone a ring. On the designed topology, weighted by Year-5 members, it isn't one yet: <strong>${S.before.members_behind_a_spof.toLocaleString()} of ${S.members_total.toLocaleString()} members (${Math.round(100*S.before.members_behind_a_spof/S.members_total)}%) sit behind a single point of failure</strong>. The NW head-end is single-homed into ${esc(short(S.homing['HE-NW'][0]))}, which is itself the worst cut site. Switch the map to <em>Single points of failure</em> to see them.</p>
+  <div class="stats">
+    <div class="stat"><div class="v bad">${S.before.bridges} + ${S.before.cut_nodes}</div><div class="l">bridge hops + cut sites today</div></div>
+    <div class="stat"><div class="v bad">${S.before.members_behind_a_spof.toLocaleString()}</div><div class="l">members behind a SPOF today</div></div>
+    <div class="stat"><div class="v">+${S.plan.filter(p => p.add_hop).length} hops</div><div class="l">${money(S.low)} as PtP radio · ${money(S.high)} if all aerial fiber</div></div>
+    <div class="stat"><div class="v good">${S.after.members_behind_a_spof.toLocaleString()}</div><div class="l">behind a SPOF after · ${S.after.bridges} bridges, ${S.after.cut_nodes} cut sites left</div></div>
+  </div>
+  <div class="two">
+    <div>
+      <h4>Single points of failure, worst first</h4>
+      <div class="tscroll"><table>
+        <thead><tr><th>Element</th><th>Type</th><th class="n">Sites cut off</th><th>Members behind it</th></tr></thead>
+        <tbody>${S.rows.map(r => `<tr><td class="mono">${esc(r.element)}</td><td>${r.type === 'link' ? esc(r.kind.replace('_', ' ')) + ' hop' : esc(r.kind) + ' site'}</td>
+          <td class="n">${r.n}</td><td class="n" style="text-align:left"><span class="bar-in" style="width:${Math.max(3, 90*r.members/maxM)}px"></span>${r.members.toLocaleString()}</td></tr>`).join('')}</tbody>
+      </table></div>
+    </div>
+    <div>
+      <h4>Ring-closing plan (cheapest hop that removes the worst SPOF, ≤ 7 km)</h4>
+      <div class="tscroll"><table>
+        <thead><tr><th>#</th><th>Removes</th><th>Add hop</th><th class="n">km</th><th class="n">Radio</th><th class="n">Fiber</th></tr></thead>
+        <tbody>${S.plan.map((p, i) => p.add_hop
+          ? `<tr><td>+${i+1}</td><td class="mono">${esc(short(p.removes_spof))}</td><td class="mono">${esc(short(p.add_hop.a))} ↔ ${esc(short(p.add_hop.b))}</td><td class="n">${p.add_hop.km}</td><td class="n">${money(p.add_hop.cost_radio_or_class)}</td><td class="n">${money(p.add_hop.cost_if_aerial_fiber)}</td></tr>`
+          : `<tr><td>—</td><td class="mono">${esc(short(p.spof))}</td><td colspan="4" style="color:var(--warn)">No other site within 7 km. Needs a new relay site or a dual-radio node.</td></tr>`).join('')}</tbody>
+      </table></div>
+      <p class="small">Radio prices assume a clear path, and LiDAR showed canopy blocks about half of paths, so survey these five hops before Phase-2 procurement. The pro forma is unchanged (doc 24 §2).</p>
+    </div>
+  </div>`;
+
+// ---------- run log
+const kindPill = k => `<span class="pill ${k}">${k}</span>`;
+$('pLog').innerHTML = `
+  <p class="lede">Every incident the NOC opened during the test run, in order. Outages close when telemetry recovers, not when the crew reports done. Credits post to the next bill automatically.</p>
+  <div class="tscroll"><table>
+    <thead><tr><th>#</th><th>Kind</th><th>What broke</th><th>Started</th><th class="n">Lasted</th><th class="n">Members</th><th class="n">Credits</th></tr></thead>
+    <tbody>${D.log.map(o => `<tr><td class="mono">${o.outage_id}</td><td>${kindPill(o.kind)}</td>
+      <td>${esc(o.detail)}</td><td style="white-space:nowrap">${day(o.started_at)} ${t(o.started_at)}</td>
+      <td class="n">${o.resolved_at ? dur(o.started_at, o.resolved_at) : 'open'}</td>
+      <td class="n">${o.kind === 'outage' ? (o.impacted_services ?? 0) : o.kind === 'power' ? (o.impacted_services ?? 0) + ' at risk' : '—'}</td>
+      <td class="n">${o.credits_usd ? '$' + Number(o.credits_usd).toFixed(2) : '—'}</td></tr>`).join('')}</tbody>
+  </table></div>
+  <p class="small">Credit rule: businesses get 2× the prorated time for outages over 4 h; residential members get whole days for outages of 24 h or more.</p>`;
+
+// ---------- status page preview
+const down = D.status.filter(z => z.state !== 'operational');
+$('pStatus').innerHTML = `
+  <p class="lede">What the public sees at status.boatdock.network at this moment: zone-level state only. No names, addresses or contacts (the test checks this).</p>
+  <div class="tscroll"><table>
+    <thead><tr><th>Area</th><th>State</th><th>Since</th><th>Expected back</th><th class="n">Members</th></tr></thead>
+    <tbody>${D.status.slice().sort((a, b) => (a.state === 'operational') - (b.state === 'operational') || a.name.localeCompare(b.name)).map(z => `<tr>
+      <td>${esc(z.name)}</td><td><span class="zst ${z.state}"><i></i>${z.state === 'operational' ? 'Normal' : 'Outage'}</span></td>
+      <td>${z.since ? t(z.since) : ''}</td><td>${z.eta ? t(z.eta) : ''}</td><td class="n">${z.members_affected || ''}</td></tr>`).join('')}</tbody>
+  </table></div>
+  <p class="small">${down.length} of ${D.status.length} areas affected. Cause shown publicly: “${esc(outage ? outage.cause : '')}”.</p>`;
+
+// ---------- tabs
+const tabs = [['tRing','pRing'],['tLog','pLog'],['tStatus','pStatus']];
+tabs.forEach(([tb, pn]) => $(tb).onclick = () => tabs.forEach(([a, b]) => { $(a).setAttribute('aria-selected', a === tb); $(b).hidden = a !== tb; }));
+})();
+</script>

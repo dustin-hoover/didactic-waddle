@@ -1,0 +1,8 @@
+item,category,spec,qty,unit,unit_cost_est_usd,vendor_primary,vendor_alt,notes
+flat drop fiber,fiber,self-support/messenger flat drop,LEN_FT,ft,0.35,TBD,,length from survey
+ONT,optics,XGS-PON ONT,1,ea,120,TBD,,
+router/gateway,radio,Wi-Fi 6/7 router,1,ea,150,TBD,,
+drop hardware,mount,"clamps, span/dead-end, NID",1,set,60,TBD,,
+splice/connectorization,fiber,"pigtails, sleeves, connectors",1,lot,40,TBD,,
+install labor,labor,"pull, terminate, activate, test",1,lot,300,,,
+boat mobilization (if water),transport,vessel + fuel share,1,lot,40,,,

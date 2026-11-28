@@ -1,0 +1,317 @@
+<title>Boat Dock Network White Paper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link id="wp-fonts" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@500&family=Barlow:wght@500;600&display=swap">
+<style id="wp-style">
+:root{
+  --paper:#F3F6F5; --leaf:#FFFFFF; --sunk:#E8EEEC; --ink:#10222A; --muted:#51656B; --rule:#CAD6D4;
+  --channel:#1E6B52; --channel-soft:#DDEDE6; --nun:#B23A2E; --nun-soft:#F5DEDA; --water:#2C6E8F; --water-soft:#DCEAF1;
+  --amber:#9A6412; --amber-soft:#F4E6CC; --onaccent:#FFFFFF; --focus:#2C6E8F;
+  --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --f-ui:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-body:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  color-scheme:dark;
+  --paper:#0C171B; --leaf:#122027; --sunk:#172830; --ink:#E3ECEB; --muted:#93A8AD; --rule:#26393F;
+  --channel:#4FB08A; --channel-soft:#16332A; --nun:#EE7466; --nun-soft:#3A1E1B; --water:#6AAFD3; --water-soft:#14303D;
+  --amber:#E2B460; --amber-soft:#3A2D14; --onaccent:#071217; --focus:#6AAFD3;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#0C171B; --leaf:#122027; --sunk:#172830; --ink:#E3ECEB; --muted:#93A8AD; --rule:#26393F;
+  --channel:#4FB08A; --channel-soft:#16332A; --nun:#EE7466; --nun-soft:#3A1E1B; --water:#6AAFD3; --water-soft:#14303D;
+  --amber:#E2B460; --amber-soft:#3A2D14; --onaccent:#071217; --focus:#6AAFD3;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-padding-top:84px}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.62 var(--f-body);-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+a{color:var(--water);text-underline-offset:2px}
+img{max-width:100%}
+
+/* control bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--paper);border-bottom:1px solid var(--rule)}
+.bar-in{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font:500 14px/1.3 var(--f-ui)}
+.brand{font:700 15px/1 var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-right:auto}
+.state{display:inline-flex;align-items:center;gap:8px}
+.pill{display:inline-block;font:700 11.5px/1 var(--f-ui);letter-spacing:.08em;text-transform:uppercase;padding:5px 8px;border-radius:4px}
+.pill.draft{background:var(--amber-soft);color:var(--amber)} .pill.final{background:var(--channel);color:var(--onaccent)}
+.pill.editing{background:var(--water);color:var(--onaccent)}
+.meta{color:var(--muted)}
+.btn{border:1px solid var(--rule);background:var(--leaf);border-radius:7px;padding:7px 12px;font:600 14px/1 var(--f-ui);cursor:pointer;min-height:36px}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--water);border-color:var(--water);color:var(--onaccent)}
+.btn.go{background:var(--channel);border-color:var(--channel);color:var(--onaccent)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.note{min-height:36px;border:1px solid var(--rule);border-radius:7px;padding:6px 10px;background:var(--leaf);width:min(320px,100%);font:500 14px/1.3 var(--f-ui)}
+.confirm{width:100%;background:var(--amber-soft);color:var(--ink);border-radius:8px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.msg{width:100%;font:600 13.5px/1.35 var(--f-ui);color:var(--muted)}
+
+/* layout */
+.page{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:0 80px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:40px}
+@media (max-width:900px){.page{grid-template-columns:minmax(0,1fr);gap:0}}
+.toc{position:sticky;top:76px;align-self:start;max-height:calc(100vh - 96px);overflow:auto;padding:28px 4px 0 0;font:500 13.5px/1.35 var(--f-ui)}
+@media (max-width:900px){.toc{position:static;max-height:none;padding-top:18px;border-bottom:1px solid var(--rule);padding-bottom:14px}}
+.toc h2{font:700 13px/1 var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.toc a{display:grid;grid-template-columns:30px 1fr;gap:4px;padding:5px 6px;border-radius:5px;color:var(--ink);text-decoration:none}
+.toc a:hover{background:var(--sunk)}
+.toc a span{color:var(--muted);font-variant-numeric:tabular-nums}
+@media (max-width:900px){.toc ol{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}}
+
+.doc{min-width:0;max-width:760px}
+.cover{padding:44px 0 26px;border-bottom:3px double var(--rule)}
+.kicker{font:700 14px/1 var(--f-display);letter-spacing:.16em;text-transform:uppercase;color:var(--channel)}
+.cover h1{font:700 clamp(38px,6vw,58px)/1 var(--f-display);letter-spacing:.005em;margin:12px 0 12px;text-wrap:balance}
+.cover .sub{font:400 21px/1.45 var(--f-body);color:var(--muted);margin:0;max-width:44ch;text-wrap:pretty}
+.cover dl{display:flex;flex-wrap:wrap;gap:6px 26px;margin:22px 0 0;font:500 14px/1.4 var(--f-ui)}
+.cover dt{color:var(--muted)} .cover dd{margin:0 0 0 6px;font-weight:600}
+.cover dl div{display:flex}
+
+section.s{padding-top:34px}
+section.s>header{display:flex;align-items:baseline;gap:14px;border-bottom:1px solid var(--rule);padding-bottom:8px;margin-bottom:14px}
+.snum{font:700 15px/1 var(--f-mono);color:var(--channel);min-width:2.2em}
+section.s h2{font:700 32px/1.1 var(--f-display);margin:0;text-wrap:balance}
+.body h3{font:700 22px/1.2 var(--f-display);margin:26px 0 6px;letter-spacing:.01em}
+.body h4{font:600 16px/1.3 var(--f-ui);margin:18px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.body p{margin:0 0 14px;max-width:68ch}
+.body ul,.body ol{margin:0 0 14px;padding-left:1.3em;max-width:68ch}
+.body li{margin:3px 0}
+.body blockquote{margin:16px 0;padding:10px 16px;border-left:3px solid var(--water);background:var(--water-soft);border-radius:0 6px 6px 0}
+.body blockquote p:last-child{margin-bottom:0}
+.body code{font:500 .86em var(--f-mono);background:var(--sunk);padding:1px 5px;border-radius:4px}
+.body .flag{background:var(--nun-soft);border-left:3px solid var(--nun);padding:10px 16px;border-radius:0 6px 6px 0;margin:16px 0}
+.body .flag p:last-child{margin-bottom:0}
+.body .proposed{background:var(--amber-soft);border-left:3px solid var(--amber);padding:10px 16px;border-radius:0 6px 6px 0;margin:16px 0}
+.body .proposed p:last-child{margin-bottom:0}
+.body .figs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:8px;overflow:hidden;margin:16px 0 20px}
+.body .figs div{background:var(--leaf);padding:12px 14px}
+.body .figs:has(>div:nth-child(4):last-child){grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:640px){.body .figs,.body .figs:has(>div:nth-child(4):last-child){grid-template-columns:repeat(2,minmax(0,1fr))}}
+.body .figs b{display:block;font:700 28px/1 var(--f-display);font-variant-numeric:tabular-nums}
+.body .figs span{display:block;font:500 13px/1.3 var(--f-ui);color:var(--muted);margin-top:4px}
+.tw{overflow-x:auto;margin:14px 0 20px;border:1px solid var(--rule);border-radius:8px;background:var(--leaf)}
+.body table{border-collapse:collapse;width:100%;font:500 14.5px/1.4 var(--f-ui)}
+.body th{font:700 12px/1.2 var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;padding:9px 12px;border-bottom:1px solid var(--rule);white-space:nowrap;background:var(--sunk)}
+.body td{padding:8px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
+.body tr:last-child td{border-bottom:0}
+.body td.n,.body th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.body tr.total td{font-weight:700;border-top:2px solid var(--rule)}
+.body .neg{color:var(--nun)}
+
+/* editing */
+.editing .body,.editing section.s h2[contenteditable]{outline:1px dashed var(--water);outline-offset:6px;border-radius:2px}
+.editing .body:focus,.editing section.s h2:focus{outline:2px solid var(--water)}
+.edit-hint{font:600 13px/1.4 var(--f-ui);color:var(--water);margin:10px 0 0}
+
+/* decisions */
+.dec{display:grid;gap:12px;margin:12px 0 18px}
+.d{background:var(--leaf);border:1px solid var(--rule);border-radius:9px;padding:14px 16px;font:500 15px/1.45 var(--f-ui)}
+.d-top{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.d-id{font:700 13px/1 var(--f-mono);color:var(--muted)}
+.d-area{font:700 11px/1 var(--f-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--water);background:var(--water-soft);padding:4px 7px;border-radius:4px}
+.st{margin-left:auto;font:700 11.5px/1 var(--f-ui);letter-spacing:.07em;text-transform:uppercase;padding:5px 8px;border-radius:4px}
+.st.open{background:var(--nun-soft);color:var(--nun)} .st.decided{background:var(--channel);color:var(--onaccent)} .st.deferred{background:var(--sunk);color:var(--muted)}
+.d h3{font:700 20px/1.2 var(--f-display);margin:8px 0 6px}
+.d dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;margin:0}
+.d dt{color:var(--muted)} .d dd{margin:0}
+.d .rec{color:var(--channel);font-weight:600}
+.d .dz{margin-top:10px;padding-top:10px;border-top:1px solid var(--rule)}
+.d .dz label{display:block;font:600 12.5px/1.2 var(--f-ui);color:var(--muted);margin:8px 0 4px}
+.d select,.d textarea{width:100%;border:1px solid var(--rule);border-radius:7px;padding:8px 10px;background:var(--paper);min-height:40px}
+.d textarea{min-height:64px;resize:vertical}
+.d .made{margin-top:8px;padding:8px 10px;background:var(--channel-soft);border-radius:6px}
+.dfilter{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 6px}
+.dfilter button{border:1px solid var(--rule);background:var(--leaf);border-radius:999px;padding:6px 12px;font:600 13px/1 var(--f-ui);cursor:pointer}
+.dfilter button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.log{font:500 14px/1.45 var(--f-ui)}
+.log li{margin:4px 0}
+.log b{font-family:var(--f-mono);font-size:13px}
+@media (max-width:520px){body{font-size:16.5px}section.s h2{font-size:27px}.bar-in{gap:8px}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+</style>
+
+<header class="bar"><div class="bar-in" id="bar"></div></header>
+<div class="page">
+  <nav class="toc" aria-label="Contents"><h2>Contents</h2><ol id="toc"></ol></nav>
+  <main class="doc" id="doc"></main>
+</div>
+<script id="wp-state" type="application/json">__STATE__</script>
+<script id="wp-app">
+(function(){
+"use strict";
+const S = JSON.parse(document.getElementById('wp-state').textContent);
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtDate = iso => { try { return new Date(iso).toLocaleDateString('en-US', {year:'numeric', month:'short', day:'numeric'}); } catch(e){ return iso; } };
+let art = null, comments = null, readOnly = false, editing = false, confirming = false, busy = false, filter = 'all', msg = '';
+
+// ---------------------------------------------------------------- sanitizer (edits are HTML)
+const OK_TAGS = new Set(['P','H3','H4','UL','OL','LI','STRONG','B','EM','I','A','TABLE','THEAD','TBODY','TR','TH','TD','CODE','BLOCKQUOTE','BR','SPAN','DIV','SUP','SUB']);
+const DROP = new Set(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','LINK','META','FORM','INPUT','BUTTON','TEXTAREA','SELECT','SVG','MATH','TEMPLATE']);
+const OK_CLASS = /^(figs|tw|flag|proposed|n|total|neg)$/;
+function clean(html){
+  const doc = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html');
+  const walk = el => {
+    for (const ch of [...el.childNodes]) {
+      if (ch.nodeType === 8) { ch.remove(); continue; }
+      if (ch.nodeType !== 1) continue;
+      if (DROP.has(ch.tagName)) { ch.remove(); continue; }
+      if (!OK_TAGS.has(ch.tagName)) { walk(ch); ch.replaceWith(...ch.childNodes); continue; }
+      for (const a of [...ch.attributes]) {
+        const n = a.name.toLowerCase();
+        if (n === 'class') { const k = a.value.split(/\s+/).filter(c => OK_CLASS.test(c)).join(' '); k ? ch.setAttribute('class', k) : ch.removeAttribute('class'); }
+        else if (n === 'href' && ch.tagName === 'A') { if (!/^(https:\/\/|#[\w.~-]*$)/.test(a.value.trim())) ch.removeAttribute('href'); }
+        else if ((n === 'colspan' || n === 'rowspan') && /^\d{1,2}$/.test(a.value)) {}
+        else ch.removeAttribute(a.name);
+      }
+      walk(ch);
+    }
+  };
+  const root = doc.body.firstChild; walk(root);
+  return root.innerHTML.trim();
+}
+
+// ---------------------------------------------------------------- render
+function openCount(){ return S.decisions.filter(d => d.status === 'open').length; }
+function renderBar(){
+  const b = $('bar'), final = S.meta.status === 'final';
+  let h = `<span class="brand">Boat Dock Network · White Paper</span>
+    <span class="state"><span class="pill ${editing ? 'editing' : S.meta.status}">${editing ? 'Editing' : final ? 'Final' : 'Draft'}</span>
+    <span class="meta">v${S.meta.version} · ${fmtDate(S.meta.updated)} · ${openCount()} open decision${openCount() === 1 ? '' : 's'}</span></span>`;
+  if (comments) h += `<button class="btn" id="bComment" title="Select text in the paper, then comment on it">Comment on selection</button>`;
+  if (art && !readOnly) {
+    if (editing) h += `<input class="note" id="note" maxlength="140" placeholder="What changed? (goes in the change log)" aria-label="Change note">
+      <button class="btn primary" id="bSave">Save as v${S.meta.version + 1}</button><button class="btn" id="bDiscard">Discard</button>`;
+    else if (final) h += `<button class="btn" id="bReopen">Reopen for edits</button>`;
+    else h += `<button class="btn primary" id="bEdit">Edit</button><button class="btn go" id="bFinal">Finalize plan</button>`;
+  }
+  if (confirming) {
+    const oc = openCount();
+    h += `<div class="confirm" role="alert"><span>${oc ? `<b>${oc} decision${oc === 1 ? ' is' : 's are'} still open.</b> Finalizing marks the plan final with them unresolved.` : 'Every decision is resolved.'} Finalize as v${S.meta.version + 1}?</span>
+      <button class="btn go" id="bFinalYes">Finalize</button><button class="btn" id="bFinalNo">Keep drafting</button></div>`;
+  }
+  if (msg) h += `<div class="msg" role="status">${esc(msg)}</div>`;
+  else if (art && readOnly) h += `<div class="msg">You're viewing a read-only copy. Comments still work if they're enabled for you.</div>`;
+  b.innerHTML = h;
+  const on = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
+  on('bEdit', () => { editing = true; msg = ''; render(); });
+  on('bDiscard', () => { editing = false; msg = 'Changes discarded.'; Object.assign(S, JSON.parse(document.getElementById('wp-state').textContent)); render(); });
+  on('bSave', () => save('edit'));
+  on('bFinal', () => { confirming = true; renderBar(); });
+  on('bFinalNo', () => { confirming = false; renderBar(); });
+  on('bFinalYes', () => { confirming = false; save('finalize'); });
+  on('bReopen', () => save('reopen'));
+  on('bComment', async () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !$('doc').contains(sel.anchorNode)) { msg = 'Select some text in the paper first, then press Comment on selection.'; renderBar(); return; }
+    try { await comments.openComposer({range: sel.getRangeAt(0)}); } catch(e) { msg = 'Commenting isn’t available in this view.'; renderBar(); }
+  });
+}
+function renderToc(){
+  $('toc').innerHTML = S.sections.map(s => `<li><a href="#${s.id}"><span>${esc(s.num)}</span>${esc(s.title)}</a></li>`).join('')
+    + `<li><a href="#decisions"><span>D</span>Open decisions register</a></li><li><a href="#changelog"><span>Δ</span>Change log</a></li>`;
+}
+function decisionCard(d){
+  const edit = editing;
+  return `<article class="d" data-id="${esc(d.id)}">
+    <div class="d-top"><span class="d-id">${esc(d.id)}</span><span class="d-area">${esc(d.area)}</span><span class="st ${d.status}">${d.status}</span></div>
+    <h3>${esc(d.question)}</h3>
+    <dl><dt>Options</dt><dd>${esc(d.options)}</dd><dt>Recommended</dt><dd class="rec">${esc(d.recommendation)}</dd><dt>Discussed in</dt><dd>${esc(d.ref)}</dd></dl>
+    ${!edit && (d.decision || d.note) ? `<div class="made">${d.decision ? `<b>Decision:</b> ${esc(d.decision)}` : ''}${d.note ? `${d.decision ? '<br>' : ''}<b>Notes:</b> ${esc(d.note)}` : ''}</div>` : ''}
+    ${edit ? `<div class="dz">
+      <label for="st-${esc(d.id)}">Status</label>
+      <select id="st-${esc(d.id)}" data-f="status">${['open','decided','deferred'].map(v => `<option value="${v}" ${d.status === v ? 'selected' : ''}>${v[0].toUpperCase() + v.slice(1)}</option>`).join('')}</select>
+      <label for="dc-${esc(d.id)}">Decision</label><textarea id="dc-${esc(d.id)}" data-f="decision" maxlength="600">${esc(d.decision)}</textarea>
+      <label for="nt-${esc(d.id)}">Notes</label><textarea id="nt-${esc(d.id)}" data-f="note" maxlength="600">${esc(d.note)}</textarea></div>` : ''}
+  </article>`;
+}
+function renderDoc(){
+  const m = S.meta;
+  let h = `<div class="cover"><div class="kicker">${esc(m.kicker)}</div><h1>${esc(m.title)}</h1><p class="sub">${esc(m.subtitle)}</p>
+    <dl><div><dt>Status</dt><dd>${m.status === 'final' ? 'Final' : 'Working draft'}</dd></div><div><dt>Version</dt><dd>${m.version}</dd></div>
+    <div><dt>Updated</dt><dd>${fmtDate(m.updated)}</dd></div><div><dt>Prepared for</dt><dd>${esc(m.preparedFor)}</dd></div></dl>
+    ${editing ? `<p class="edit-hint">Editing: click into any section title or text to change it. Decision statuses are editable in the register. Save when you're done; each save becomes a new version.</p>` : ''}</div>`;
+  for (const s of S.sections) {
+    h += `<section class="s" id="${esc(s.id)}"><header><span class="snum">${esc(s.num)}</span><h2 ${editing ? 'contenteditable="true" spellcheck="true"' : ''} data-t="${esc(s.id)}">${esc(s.title)}</h2></header>
+      <div class="body" data-b="${esc(s.id)}" ${editing ? 'contenteditable="true" spellcheck="true"' : ''}>${s.html}</div></section>`;
+  }
+  const f = filter, list = S.decisions.filter(d => f === 'all' || d.status === f);
+  h += `<section class="s" id="decisions"><header><span class="snum">D</span><h2>Open decisions register</h2></header>
+    <div class="body"><p>The plan is final when these are resolved. Each one links back to where it's discussed. ${art && !readOnly && S.meta.status !== 'final' ? 'Press <b>Edit</b> to record a decision.' : ''}</p></div>
+    <div class="dfilter" role="group" aria-label="Filter decisions">${['all','open','decided','deferred'].map(v => `<button data-flt="${v}" aria-pressed="${f === v}">${v[0].toUpperCase() + v.slice(1)} (${v === 'all' ? S.decisions.length : S.decisions.filter(d => d.status === v).length})</button>`).join('')}</div>
+    <div class="dec">${list.map(decisionCard).join('') || '<p class="meta">None in this view.</p>'}</div></section>`;
+  h += `<section class="s" id="changelog"><header><span class="snum">Δ</span><h2>Change log</h2></header>
+    <ol class="log" reversed>${S.changelog.slice().reverse().map(c => `<li><b>v${c.v}</b> · ${fmtDate(c.date)} · ${esc(c.note)}</li>`).join('')}</ol></section>`;
+  $('doc').innerHTML = h;
+  $('doc').classList.toggle('editing', editing);
+  document.querySelectorAll('[data-flt]').forEach(b => b.onclick = () => { collect(); filter = b.dataset.flt; renderDoc(); });
+  document.querySelectorAll('#doc [contenteditable]').forEach(el => el.addEventListener('paste', e => {
+    e.preventDefault(); const t = (e.clipboardData || window.clipboardData).getData('text/plain'); document.execCommand('insertText', false, t);
+  }));
+  if (editing) document.querySelectorAll('.d [data-f]').forEach(el => el.addEventListener('change', () => { collect(); renderBar(); }));
+}
+function render(){ renderBar(); renderToc(); renderDoc(); }
+
+// ---------------------------------------------------------------- collect + save
+function collect(){
+  if (!editing) return;
+  document.querySelectorAll('[data-t]').forEach(el => { const s = S.sections.find(x => x.id === el.dataset.t); if (s) s.title = el.textContent.trim().slice(0, 140) || s.title; });
+  document.querySelectorAll('[data-b]').forEach(el => { const s = S.sections.find(x => x.id === el.dataset.b); if (s) s.html = clean(el.innerHTML); });
+  document.querySelectorAll('.d').forEach(card => {
+    const d = S.decisions.find(x => x.id === card.dataset.id); if (!d) return;
+    card.querySelectorAll('[data-f]').forEach(el => { d[el.dataset.f] = el.value.trim(); });
+  });
+}
+function documentFor(state){
+  const css = document.getElementById('wp-style').textContent;
+  const js = document.getElementById('wp-app').textContent;
+  const fonts = document.getElementById('wp-fonts').getAttribute('href');
+  const json = JSON.stringify(state).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
+    + '<title>' + esc(state.meta.title) + '</title><link rel="preconnect" href="https://fonts.googleapis.com">'
+    + '<link id="wp-fonts" rel="stylesheet" href="' + fonts + '"><style id="wp-style">' + css + '</style></head><body>'
+    + '<header class="bar"><div class="bar-in" id="bar"></div></header><div class="page"><nav class="toc" aria-label="Contents"><h2>Contents</h2><ol id="toc"></ol></nav><main class="doc" id="doc"></main></div>'
+    + '<script id="wp-state" type="application/json">' + json + '<\/script><script id="wp-app">' + js + '<\/script></body></html>';
+}
+async function save(kind){
+  if (busy || !art) return;
+  collect();
+  const next = JSON.parse(JSON.stringify(S));
+  const now = new Date().toISOString();
+  next.meta.version = S.meta.version + 1; next.meta.updated = now;
+  let note;
+  if (kind === 'finalize') { next.meta.status = 'final'; note = `Plan finalized${openCount() ? ` with ${openCount()} decision(s) still open` : ''}.`; }
+  else if (kind === 'reopen') { next.meta.status = 'draft'; note = 'Reopened for edits.'; }
+  else { note = ($('note') && $('note').value.trim()) || 'Edited sections and decisions.'; }
+  next.changelog.push({v: next.meta.version, date: now, note});
+  busy = true; msg = 'Saving…'; renderBar();
+  try {
+    await art.publish(documentFor(next));
+    msg = 'Saved. Loading the new version…'; renderBar();
+  } catch (e) {
+    busy = false;
+    const c = e && e.code;
+    if (c === 'conflict') msg = 'Someone else saved a newer version first. Loading it now; re-apply your change there.';
+    else if (c === 'not_writer' || c === 'not_granted') { readOnly = true; editing = false; msg = 'This copy is read-only for you, so it can’t be saved.'; }
+    else if (c === 'rate_limited') msg = 'Saving too often. Wait a minute and save again.';
+    else if (c === 'too_large') msg = 'The paper is too large to save. Shorten a section and try again.';
+    else msg = 'The save didn’t go through (' + (c || 'unknown error') + '). Your edits are still on screen; try Save again.';
+    render();
+  }
+}
+
+render();
+(async () => {
+  const use = window.claude && window.claude.use;
+  if (!use) return;
+  try { art = await use('artifact'); } catch(e) { art = null; }
+  try { comments = await use('comments'); } catch(e) { comments = null; }
+  if (art || comments) renderBar();
+})();
+})();
+</script>

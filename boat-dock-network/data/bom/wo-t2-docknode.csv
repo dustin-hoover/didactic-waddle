@@ -1,0 +1,18 @@
+item,category,spec,qty,unit,unit_cost_est_usd,vendor_primary,vendor_alt,notes
+nLOS sector radio,radio,Tarana G1 base node (CBRS/6GHz),N_SECTORS,ea,3500,Tarana,,primary zone coverage; qty from survey
+PtMP sector radio,radio,Cambium PMP 450m sector,N_LOS_SECTORS,ea,1800,Cambium,Ubiquiti,for clean-LOS clusters
+backhaul radio,radio,Ubiquiti airFiber AF60-LR / cnWave,1,ea,900,Ubiquiti,Cambium,link to spine/core
+XGS-PON OLT (optional),optics,XGS-PON OLT chassis + line card,1,ea,6000,TBD,,include only if FTTH in zone
+optical splitter,optics,1x32 splitter + cassette,2,ea,250,TBD,,for PON distribution
+aggregation switch/router,radio,MikroTik CCR/CRS or Juniper ACX,1,ea,1500,MikroTik,Juniper,zone aggregation + routing
+outdoor cabinet,enclosure,NEMA-4X insulated cabinet w/ mgmt,1,ea,2200,TBD,,marine-rated
+mast,mount,aluminum mast 30-50ft + tilt base,1,ea,1800,TBD,,height from LOS survey
+guy/anchor kit,mount,guy wires + anchors + hardware,1,set,400,TBD,,
+rack UPS,power,rack UPS 3kVA + batteries,1,ea,1200,TBD,,grid sites
+solar array (remote option),power,600-1200W panels + LiFePO4 + MPPT,1,set,4500,TBD,,off-grid sites; 2-3 day autonomy
+grounding kit,power,ground rods + bonding + surge,1,set,600,TBD,,lightning protection
+cabling/connectors,misc,"CAT6 STP, fiber patch, PoE, hardware",1,lot,700,TBD,,
+site prep + concrete pad,labor,pad/pier mount prep,1,lot,1500,,,contractor or crew
+install labor (capitalized),labor,crew build + test + as-built,1,lot,4000,,,boat crew; capitalized to plant
+USACE/site permit,permit,shoreline/site permit + easement,1,lot,1500,,,varies; see doc 12
+boat mobilization,transport,vessel + fuel + haul,1,lot,600,,,
